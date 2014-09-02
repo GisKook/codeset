@@ -7,6 +7,7 @@
 #include <string.h>
 
 #define MAX_EVENT 64 
+#define MAX_ACCEPTSOCKETS 1024
 
 int main(){ 
 	int efd = epoll_create1(O_CLOEXEC);
@@ -36,11 +37,17 @@ int main(){
 	memset((void*)&listen_addr, 0, sizeof(listen_addr));
 	listen_addr.sin_family = AF_INET;
 	listen_addr.sin_addr.s_addr = htonl(INADDR_ANY);
-	listen_addr.sin_port = htons(30000);
+	listen_addr.sin_port = htons(40000);
 	if(bind(listen_fd, (struct sockaddr*)&listen_addr, sizeof(struct sockaddr_in)) == -1){
 		fprintf(stderr, "bind listen socket error. %s %d\n", __FILE__,__LINE__);
 		close(listen_fd);
 		close(efd);
+
+		return -1;
+	}
+
+	if( -1 == listen(listen_fd, MAX_ACCEPTSOCKETS)){
+		fprintf(stderr, "listen error. %s %d\n", __FILE__,__LINE__);
 
 		return -1;
 	}
