@@ -82,6 +82,7 @@ int main(){
 				ev.data.fd = conn_fd;
 				if(epoll_ctl(efd, EPOLL_CTL_ADD, conn_fd, &ev) == -1){
 					fprintf(stderr, "connected socket add to epoll error. %s %d\n", __FILE__,__LINE__);
+					
 					close(conn_fd);
 				}
 			}else if(events[i].data.fd == STDIN_FILENO){ 
