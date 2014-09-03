@@ -60,7 +60,7 @@ int sockets_buffer_add(struct sockets_buffer* sockets_buf, int fd,char *ip, unsi
 		}
 		memset(sockets_buf->slot[index], 0 , sizeof(struct fd_buffer));
 		sockets_buf->slot[index]->fd = fd;
-		memset(sockets_buf->slot[index]->ip, buf, strlen(buf));
+		memcpy(sockets_buf->slot[index]->ip, ip, strlen(ip));
 		if( unlikely((sockets_buf->slot[index]->fifo = kfifo_init(MAXFIFOLEN)) == NULL)){
 			fprintf(stderr, "fifo init error. %s %s %d\n", __FILE__, __FUNCTION__, __LINE__);
 
@@ -80,7 +80,7 @@ int sockets_buffer_add(struct sockets_buffer* sockets_buf, int fd,char *ip, unsi
 			struct fd_buffer* element = (struct fd_buffer*)malloc(sizeof(struct fd_buffer));
 			memset(element, 0, sizeof(struct fd_buffer));
 			element->fd = fd;
-			memset(sockets_buf->slot[index]->ip, buf, strlen(buf));
+			memcpy(sockets_buf->slot[index]->ip, ip, strlen(ip));
 			if(unlikely((element->fifo = kfifo_init(MAXFIFOLEN)) == NULL)){ 
 				fprintf(stderr, "fifo init error.%s %s %d\n",__FILE__, __FUNCTION__, __LINE__);
 
@@ -133,20 +133,18 @@ int sockets_buffer_destroy(struct sockets_buffer* buf){
 	return 0; 
 }
 
-int print_cached_message(struct sockets_buffer* buf){
+int sockets_buffer_print(struct sockets_buffer* buf){
 	assert(buf != NULL);
 	struct fd_buffer** fdbuf = buf->slot;
 	int i;
-	struct fd_buffer* prev;
-	struct fd_buffer* next;
 	struct fd_buffer* p;
 
 	for(i = 0;i < buf->slotcount; ++i){ 
 		if(fdbuf[i] != NULL){ 
 			p = fdbuf[i];
-			for(;p!=NULL;prev = p, p=p->next, next = p->next){
+			for(;p!=NULL;p=p->next){
 				fprintf(stdout, "received message from %s  :", p->ip);
-				debug_printbytes(p->fifo->buffer+p->fifo->in, kfifo_len(p->fifo));
+				debug_printbytes(p->fifo->buffer+p->fifo->out, kfifo_len(p->fifo));
 			}
 		}
 	}

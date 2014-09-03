@@ -12,13 +12,13 @@ int print_cmds(){
 	fprintf(stdout, "--------------------------------------------\n");
 	return 0;
 }
-int getcmd(unsigned char* buf){ 
+int getcmd(unsigned char* buf, struct sockets_buffer* socketbuf){ 
 	if(memcmp(buf, "quit",4) == 0){
 		return QUIT;
 	}else if(memcmp(buf, "prm", 3) == 0){
 		return PRM;
-	}else if(memcmp(buf, "pcm", 3) == 0){
-
+	}else if(memcmp(buf, "pcm", 3) == 0){ 
+		sockets_buffer_print(socketbuf);
 		return PCM;
 	}else{
 		print_cmds();

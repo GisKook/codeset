@@ -5,7 +5,7 @@
 #define QUIT 1
 #define PRM 2
 #define PCM 3
-
-int getcmd(unsigned char* buf);
+struct sockets_buffer;
+int getcmd(unsigned char* buf, struct sockets_buffer* socketbuf);
 
 #endif

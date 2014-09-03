@@ -7,6 +7,6 @@ struct sockets_buffer* sockets_buffer_add(struct sockets_buffer* sockets_buf, in
 int sockets_buffer_del(struct sockets_buffer* buf, int fd);
 int sockets_buffer_destroy(struct sockets_buffer* buf);
 
-int print_cached_message(struct socket* buf);
+int sockets_buffer_print(struct sockets_buffer* buf);
 
 #endif

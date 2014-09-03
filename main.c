@@ -97,15 +97,14 @@ int main(){
 				}
 			}else if(events[i].data.fd == STDIN_FILENO){ 
 				len = read(STDIN_FILENO, buf, MAX_RECVLEN);
-				int cmd = getcmd(buf);
-				
+				int cmd = getcmd(buf, socket_buf);
 			}else{ 
 				len = read(events[i].data.fd, buf, MAX_RECVLEN);
 				buf[len] = 0;
 				if(len < 0){
 					assert(0);
 				}
-				sockets_buffer_add(socket_buf, events[i].data.fd, buf, len);
+				sockets_buffer_add(socket_buf, events[i].data.fd,"192.168.1.1",  buf, len);
 			}
 		}
 	}

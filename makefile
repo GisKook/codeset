@@ -1,7 +1,7 @@
 TARGET = test
-SRC = main.c cnconsole.c sockets_buffer.c kfifo.c
+SRC = main.c cnconsole.c sockets_buffer.c kfifo.c toolkit.c
 $(TARGET):$(SRC)
-	gcc -g -Wall -o $@ $^
+	gcc -g -o $@ $^
 
 clean:
 	rm $(TARGET)
