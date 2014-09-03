@@ -4,11 +4,13 @@
 #include <string.h>
 #include "kfifo.h"
 #include "cndef.h"
+#include "toolkit.h"
 
 #define MAXFIFOLEN 4096
 
 struct fd_buffer{
 	int fd;
+	char ip[16];
 	struct kfifo* fifo;	
 	struct fd_buffer* next;
 };
@@ -39,7 +41,7 @@ struct sockets_buffer* sockets_buffer_create(unsigned int slotcount){
 	return sockets_buf;
 }
 
-int sockets_buffer_add(struct sockets_buffer* sockets_buf, int fd, char *buf, int len){
+int sockets_buffer_add(struct sockets_buffer* sockets_buf, int fd,char *ip, unsigned char *buf, int len){
 	assert(buf != NULL);
 	assert(len > 0);
 	assert(sockets_buf != NULL);
@@ -58,6 +60,7 @@ int sockets_buffer_add(struct sockets_buffer* sockets_buf, int fd, char *buf, in
 		}
 		memset(sockets_buf->slot[index], 0 , sizeof(struct fd_buffer));
 		sockets_buf->slot[index]->fd = fd;
+		memset(sockets_buf->slot[index]->ip, buf, strlen(buf));
 		if( unlikely((sockets_buf->slot[index]->fifo = kfifo_init(MAXFIFOLEN)) == NULL)){
 			fprintf(stderr, "fifo init error. %s %s %d\n", __FILE__, __FUNCTION__, __LINE__);
 
@@ -67,7 +70,7 @@ int sockets_buffer_add(struct sockets_buffer* sockets_buf, int fd, char *buf, in
 	}else{ 
 		struct fd_buffer* p = sockets_buf->slot[index];
 		struct fd_buffer* prev = p;
-		for( ;p != NULL; p=p->next, prev=p){
+		for( ;p != NULL; prev=p, p=p->next){
 			if(p->fd == fd){
 				kfifo_put(sockets_buf->slot[index]->fifo, buf,len);
 				break;
@@ -77,6 +80,7 @@ int sockets_buffer_add(struct sockets_buffer* sockets_buf, int fd, char *buf, in
 			struct fd_buffer* element = (struct fd_buffer*)malloc(sizeof(struct fd_buffer));
 			memset(element, 0, sizeof(struct fd_buffer));
 			element->fd = fd;
+			memset(sockets_buf->slot[index]->ip, buf, strlen(buf));
 			if(unlikely((element->fifo = kfifo_init(MAXFIFOLEN)) == NULL)){ 
 				fprintf(stderr, "fifo init error.%s %s %d\n",__FILE__, __FUNCTION__, __LINE__);
 
@@ -99,7 +103,7 @@ int sockets_buffer_del(struct sockets_buffer* buf, int fd){
 	struct fd_buffer* prev = NULL;
 	struct fd_buffer* next = NULL;
 	assert(p != NULL);
-	for(;p!=NULL;p=p->next, prev = p, next = p->next){
+	for(;p!=NULL;prev = p,p=p->next, next = p->next){
 		if(p->fd == fd){
 			kfifo_free(p->fifo);
 			p->fifo = NULL;
@@ -127,6 +131,25 @@ int sockets_buffer_destroy(struct sockets_buffer* buf){
 	buf = NULL; 
 
 	return 0; 
+}
+
+int print_cached_message(struct sockets_buffer* buf){
+	assert(buf != NULL);
+	struct fd_buffer** fdbuf = buf->slot;
+	int i;
+	struct fd_buffer* prev;
+	struct fd_buffer* next;
+	struct fd_buffer* p;
+
+	for(i = 0;i < buf->slotcount; ++i){ 
+		if(fdbuf[i] != NULL){ 
+			p = fdbuf[i];
+			for(;p!=NULL;prev = p, p=p->next, next = p->next){
+				fprintf(stdout, "received message from %s  :", p->ip);
+				debug_printbytes(p->fifo->buffer+p->fifo->in, kfifo_len(p->fifo));
+			}
+		}
+	}
 }
 
 

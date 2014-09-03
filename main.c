@@ -7,7 +7,8 @@
 #include <string.h>
 #include <assert.h>
 #include "cndef.h"
-#include "kfifo.h"
+#include "sockets_buffer.h"
+#include "cnconsole.h"
 
 #define MAX_EVENT 64 
 #define MAX_ACCEPTSOCKETS 1024
@@ -24,11 +25,11 @@ int main(){
 	struct epoll_event ev;
 	ev.events = EPOLLIN;
 	ev.data.fd = STDIN_FILENO;
-//	if(-1 == epoll_ctl(efd, EPOLL_CTL_ADD, STDIN_FILENO, &ev)){
-//		fprintf(stderr, "add to epoll error. %s %d\n", __FILE__,__LINE__);
-//		
-//		return -1;
-//	}
+	if(-1 == epoll_ctl(efd, EPOLL_CTL_ADD, STDIN_FILENO, &ev)){
+		fprintf(stderr, "add to epoll error. %s %d\n", __FILE__,__LINE__);
+		
+		return -1;
+	}
 	
 	int listen_fd = socket(AF_INET, SOCK_STREAM, 0);
 	if(listen_fd == -1){
@@ -70,10 +71,12 @@ int main(){
 	int nfds = 0;
 	int i;
 	int conn_fd;
-	char buf[MAX_RECVLEN];
+	unsigned char buf[MAX_RECVLEN];
 	int len;
 
 	
+	struct sockets_buffer* socket_buf = sockets_buffer_create(MAX_ACCEPTSOCKETS);
+	assert(socket_buf != NULL);
 	for(;;){ 
 		nfds = epoll_wait(efd, events, MAX_EVENT, -1);
 
@@ -93,16 +96,20 @@ int main(){
 					close(conn_fd);
 				}
 			}else if(events[i].data.fd == STDIN_FILENO){ 
-				printf("this is stdin\n");
+				len = read(STDIN_FILENO, buf, MAX_RECVLEN);
+				int cmd = getcmd(buf);
+				
 			}else{ 
 				len = read(events[i].data.fd, buf, MAX_RECVLEN);
 				buf[len] = 0;
 				if(len < 0){
 					assert(0);
 				}
+				sockets_buffer_add(socket_buf, events[i].data.fd, buf, len);
 			}
 		}
 	}
+	sockets_buffer_destroy(socket_buf);
 
 	return 0;
 }

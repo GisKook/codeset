@@ -54,5 +54,6 @@ static inline unsigned int kfifo_len(struct kfifo *fifo)
 	return fifo->in - fifo->out;
 }
 
+
 #endif
 
