@@ -5,9 +5,13 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <string.h>
+#include <assert.h>
+#include "cndef.h"
+#include "kfifo.h"
 
 #define MAX_EVENT 64 
 #define MAX_ACCEPTSOCKETS 1024
+#define MAX_RECVLEN 4096
 
 int main(){ 
 	int efd = epoll_create1(O_CLOEXEC);
@@ -20,11 +24,11 @@ int main(){
 	struct epoll_event ev;
 	ev.events = EPOLLIN;
 	ev.data.fd = STDIN_FILENO;
-	if(-1 == epoll_ctl(efd, EPOLL_CTL_ADD, STDIN_FILENO, &ev)){
-		fprintf(stderr, "add to epoll error. %s %d\n", __FILE__,__LINE__);
-		
-		return -1;
-	}
+//	if(-1 == epoll_ctl(efd, EPOLL_CTL_ADD, STDIN_FILENO, &ev)){
+//		fprintf(stderr, "add to epoll error. %s %d\n", __FILE__,__LINE__);
+//		
+//		return -1;
+//	}
 	
 	int listen_fd = socket(AF_INET, SOCK_STREAM, 0);
 	if(listen_fd == -1){
@@ -63,24 +67,27 @@ int main(){
 	}
 
 	struct epoll_event events[MAX_EVENT];
-
 	int nfds = 0;
 	int i;
 	int conn_fd;
+	char buf[MAX_RECVLEN];
+	int len;
+
+	
 	for(;;){ 
 		nfds = epoll_wait(efd, events, MAX_EVENT, -1);
 
 		for(i = 0; i< nfds; ++i){
 			if(events[i].data.fd == listen_fd){ 
 				conn_fd = accept(listen_fd, NULL, NULL);
-				if(conn_fd == -1){
+				if(unlikely(conn_fd == -1)){
 					fprintf(stderr, "conn socket error. %s %d\n", __FILE__,__LINE__);
 					continue;
 				}
 				fcntl(conn_fd, F_SETFD, fcntl(conn_fd, F_GETFD, 0)|O_NONBLOCK);
 				ev.events = EPOLLIN | EPOLLET;
 				ev.data.fd = conn_fd;
-				if(epoll_ctl(efd, EPOLL_CTL_ADD, conn_fd, &ev) == -1){
+				if(unlikely(epoll_ctl(efd, EPOLL_CTL_ADD, conn_fd, &ev) == -1)){
 					fprintf(stderr, "connected socket add to epoll error. %s %d\n", __FILE__,__LINE__);
 					
 					close(conn_fd);
@@ -88,10 +95,13 @@ int main(){
 			}else if(events[i].data.fd == STDIN_FILENO){ 
 				printf("this is stdin\n");
 			}else{ 
-				printf("a\n");
+				len = read(events[i].data.fd, buf, MAX_RECVLEN);
+				buf[len] = 0;
+				if(len < 0){
+					assert(0);
+				}
 			}
 		}
-
 	}
 
 	return 0;
