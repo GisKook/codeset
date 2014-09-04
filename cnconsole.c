@@ -3,7 +3,7 @@
 #include "cnconsole.h"
 #include "sockets_buffer.h"
 
-int print_cmds(){ 
+int console_print_cmds(){ 
 	fprintf(stdout, "--------------------------------------------\n");
 	fprintf(stdout, "recognized cmds:\n");
 	fprintf(stdout, "    1.quit    \n");
@@ -12,7 +12,7 @@ int print_cmds(){
 	fprintf(stdout, "--------------------------------------------\n");
 	return 0;
 }
-int getcmd(unsigned char* buf, struct sockets_buffer* socketbuf){ 
+int console_parsecmd(unsigned char* buf, struct sockets_buffer* socketbuf){ 
 	if(memcmp(buf, "quit",4) == 0){
 		return QUIT;
 	}else if(memcmp(buf, "prm", 3) == 0){
@@ -21,7 +21,7 @@ int getcmd(unsigned char* buf, struct sockets_buffer* socketbuf){
 		sockets_buffer_print(socketbuf);
 		return PCM;
 	}else{
-		print_cmds();
+		console_print_cmds();
 		return -1;
 	}
 }

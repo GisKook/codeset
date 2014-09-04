@@ -74,7 +74,6 @@ int main(){
 	unsigned char buf[MAX_RECVLEN];
 	int len;
 
-	
 	struct sockets_buffer* socket_buf = sockets_buffer_create(MAX_ACCEPTSOCKETS);
 	assert(socket_buf != NULL);
 	for(;;){ 
@@ -97,7 +96,7 @@ int main(){
 				}
 			}else if(events[i].data.fd == STDIN_FILENO){ 
 				len = read(STDIN_FILENO, buf, MAX_RECVLEN);
-				int cmd = getcmd(buf, socket_buf);
+				int cmd = console_parsecmd(buf, socket_buf);
 			}else{ 
 				len = read(events[i].data.fd, buf, MAX_RECVLEN);
 				buf[len] = 0;
