@@ -18,3 +18,18 @@ void hex2char(char* charbuf, unsigned char* hexbuf, unsigned int len){
 		charbuf[j+1] = byteliterals[*(hexbuf+i)][1];
 	}
 }
+
+unsigned char * toolkit_cmdsep(unsigned char * cmd, unsigned int &len, unsigned char delim){ 
+	unsigned char * s, *e;
+	s = cmd;
+	e = cmd + len;
+	for(;s++ != e;){
+		if( *s == delim ){
+			len -= s - cmd;
+			cmd = s;
+			return s;
+		}
+	}
+
+	return NULL;
+}
