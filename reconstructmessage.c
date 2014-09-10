@@ -1,4 +1,7 @@
 #include <assert.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
 #include "parseprotocol.h"
 #include "kfifo.h"
 #include "list.h"
@@ -7,9 +10,10 @@
 
 
 struct reconstructmessage{
-	struct parseprotocol_request* message;
+	struct parseprotocol_request * message;
 	struct list_head list;
-}
+	unsigned char processed;
+};
 
 #define TMPSIZE 1024
 unsigned char tmp[TMPSIZE];
@@ -24,7 +28,7 @@ int reconstructmessage_add(struct list_head * head, struct kfifo* fifo){
 		if(unlikely( rcmsg == NULL )){
 			fprintf(stderr, "malloc error. %s %s %d\n", __FILE__, __FUNCTION__, __LINE__);
 		}
-		rcmsg->message = malloc(sizeof(struct parseprotocol_parserequest));
+		rcmsg->message = malloc(sizeof(struct parseprotocol_request));
 		if(unlikely( rcmsg->message == NULL )){
 			fprintf(stderr, "malloc error. %s %s %d\n", __FILE__, __FUNCTION__, __LINE__);
 		}
@@ -49,7 +53,7 @@ int reconstructmessage_clear(struct reconstructmessage* msg ){
 	}
 	parseprotocol_clear(msg->message);
 	msg->message = NULL;
-	list_del(msg->list);
+	list_del(&msg->list);
 	free(msg);
 	msg = NULL;
 
