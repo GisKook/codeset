@@ -150,4 +150,19 @@ int sockets_buffer_print(struct sockets_buffer* buf){
 	}
 }
 
+struct kfifo* sockets_buffer_getfifo(struct sockets_buffer * sbuf, int fd){
+	assert(sbuf != NULL);
+	if(unlikely( sbuf == NULL )){
+		fprintf(stderr, "arguments error. %s %s %d\n", __FILE__, __FUNCTION__, __LINE__);
+		return NULL;
+	}
+	int slotindex = fd % sbuf->slotcount;
+	struct fd_buffer* pos;
+	for(pos = sbuf->slot[slotindex]; pos != NULL; pos = sbuf->slot[slotindex]->next){ 
+		if( sbuf->slot[slotindex]->fd  == fd ){
+			return sbuf->slot[slotindex]->fifo;
+		}
+	}
 
+	return NULL;
+}

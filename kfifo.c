@@ -39,7 +39,7 @@ struct kfifo *kfifo_init( unsigned int size)
 	}
 
 	;
-	if ((fifo->buffer = malloc(size)) == NULL) {
+	if ((fifo->buffer = (unsigned char*)malloc(size)) == NULL) {
 		return (struct kfifo*)0;
 	}
 	fifo->size = size;

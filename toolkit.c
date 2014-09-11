@@ -33,3 +33,17 @@ unsigned char * toolkit_cmdsep(unsigned char * cmd, unsigned int &len, unsigned 
 
 	return NULL;
 }
+
+char* toolkit_strsep(char* stringp, char delim){
+	char*s,*tok;
+	if(((s=stringp)==NULL))
+		return NULL;
+	for (tok=s;;){
+		if (*s++==delim ) {
+			s[-1]=0;
+			stringp = s;
+			return tok;
+		}
+		if(*s==0){stringp=tok; return NULL;}
+	}
+}

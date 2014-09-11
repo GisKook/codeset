@@ -7,11 +7,12 @@
 #include "list.h"
 #include "cndef.h"
 #include "fmtreportsockdata.h"
-
+#include "toolkit.h"
 
 struct fmtreportsockdata{
 	struct parseprotocol_request * message;
 	struct list_head list;
+	int fd;
 	unsigned char processed;
 };
 
@@ -19,16 +20,21 @@ struct fmtreportsockdata{
 unsigned char tmp[TMPSIZE];
 unsigned int tmplen = 0;
 int fmtreportsockdata_add(struct list_head * head, struct kfifo* fifo){ 
+	if(unlikely(fifo == NULL)){
+		assert(0);
+		fprintf(stderr, "arguments error. %s %s %d\n", __FILE__, __FUNCTION__, __LINE__);
+		return -1;
+	}
 	memset(tmp+tmplen, 0, TMPSIZE - tmplen);
 	unsigned int len = kfifo_get(fifo, tmp+tmplen, TMPSIZE - tmplen); 
 	unsigned int parselen = len+tmplen;
 	struct fmtreportsockdata* rcmsg;
 	while( toolkit_cmdsep( tmp, parselen, '$') != NULL){
-		rcmsg = malloc(sizeof(struct fmtreportsockdata));
+		rcmsg = (struct fmtreportsockdata*)malloc(sizeof(struct fmtreportsockdata));
 		if(unlikely( rcmsg == NULL )){
 			fprintf(stderr, "malloc error. %s %s %d\n", __FILE__, __FUNCTION__, __LINE__);
 		}
-		rcmsg->message = malloc(sizeof(struct parseprotocol_request));
+		rcmsg->message = (struct parseprotocol_request*)malloc(sizeof(struct parseprotocol_request));
 		if(unlikely( rcmsg->message == NULL )){
 			fprintf(stderr, "malloc error. %s %s %d\n", __FILE__, __FUNCTION__, __LINE__);
 		}

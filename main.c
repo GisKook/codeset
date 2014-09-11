@@ -9,6 +9,7 @@
 #include "cndef.h"
 #include "sockets_buffer.h"
 #include "cnconsole.h"
+#include "processappdata.h"
 
 #define MAX_EVENT 64 
 #define MAX_ACCEPTSOCKETS 1024
@@ -74,8 +75,21 @@ int main(){
 	unsigned char buf[MAX_RECVLEN];
 	int len;
 
+	int fdsig[2];
+	if(pipe2(fdsig,O_CLOEXEC) == -1){
+		fprintf(stderr,"create pipe error.%s %s %d\n", __FILE__, __FUNCTION__, __LINE__);
+		close(listen_fd);
+		close(efd);
+
+		return -1;
+	}
+	char fdbuf[16]; 
+	int buflen;
+
 	struct sockets_buffer* socket_buf = sockets_buffer_create(MAX_ACCEPTSOCKETS);
 	assert(socket_buf != NULL);
+	struct processappdata * pad = processappdata_create(socket_buf, fdsig[0]);
+	assert(pad != NULL);
 	for(;;){ 
 		nfds = epoll_wait(efd, events, MAX_EVENT, -1);
 
@@ -83,14 +97,14 @@ int main(){
 			if(events[i].data.fd == listen_fd){ 
 				conn_fd = accept(listen_fd, NULL, NULL);
 				if(unlikely(conn_fd == -1)){
-					fprintf(stderr, "conn socket error. %s %d\n", __FILE__,__LINE__);
+					fprintf(stderr, "conn socket error. %s %s %d\n", __FILE__,__FUNCTION__,__LINE__);
 					continue;
 				}
 				fcntl(conn_fd, F_SETFD, fcntl(conn_fd, F_GETFD, 0)|O_NONBLOCK);
 				ev.events = EPOLLIN | EPOLLET;
 				ev.data.fd = conn_fd;
 				if(unlikely(epoll_ctl(efd, EPOLL_CTL_ADD, conn_fd, &ev) == -1)){
-					fprintf(stderr, "connected socket add to epoll error. %s %d\n", __FILE__,__LINE__);
+					fprintf(stderr, "connected socket add to epoll error. %s %s %d\n", __FILE__,__FUNCTION__,__LINE__);
 					
 					close(conn_fd);
 				}
@@ -104,6 +118,11 @@ int main(){
 					assert(0);
 				}
 				sockets_buffer_add(socket_buf, events[i].data.fd,"192.168.1.1",  buf, len);
+				memset(fdbuf, 0, 16);
+				buflen = sprintf(fdbuf, "%d*",events[i].data.fd);
+				if(-1 == write(fdsig[1], fdbuf, buflen)){
+					fprintf(stderr, "write pipe error.%s %s %d\n", __FILE__, __FUNCTION__, __LINE__);
+				}
 			}
 		}
 	}
