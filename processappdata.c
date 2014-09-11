@@ -36,7 +36,6 @@ void * operationdb(void * param){
 }
 
 void * forwardmsg(void * param){ 
-
 	struct list_head * head = ((struct datalist*)param)->head;
 	int fd = ((struct datalist*)param)->fd;
 	struct reconstructmessage* entry;
