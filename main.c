@@ -111,6 +111,14 @@ int main(){
 			}else if(events[i].data.fd == STDIN_FILENO){ 
 				len = read(STDIN_FILENO, buf, MAX_RECVLEN);
 				int cmd = console_parsecmd(buf, socket_buf);
+				if(cmd == QUIT){
+					write(fdsig[1], "1*", 2);
+					processappdata_join(pad);
+					close(listen_fd);
+					close(efd);
+
+					goto exit_flag;
+				}
 			}else{ 
 				len = read(events[i].data.fd, buf, MAX_RECVLEN);
 				buf[len] = 0;
@@ -126,6 +134,7 @@ int main(){
 			}
 		}
 	}
+exit_flag:
 	sockets_buffer_destroy(socket_buf);
 
 	return 0;

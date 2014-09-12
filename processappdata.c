@@ -59,6 +59,19 @@ void * forwardmsg(void * param){
 	pthread_exit(0);
 }
 
+int processappdata_exit(struct processappdata* pad, pthread_t tid_db, pthread_t tid_upward){
+	char tipsbuf[64] = {0};
+	sprintf(tipsbuf, "thread 0x%lx prepare to exit.\n", pthread_self()); 
+	fprintf(stdout, tipsbuf);
+	pthread_join(tid_db, NULL);
+	pthread_join(tid_upward, NULL);
+
+	free(pad);
+	pad = NULL;
+
+	return 0;
+}
+
 void * fmtmsg(void * p){
 	struct processappdata * pad = (struct processappdata *)p;
 	pthread_t tid_fmt = pad->fd_sigfmt;
@@ -73,14 +86,14 @@ void * fmtmsg(void * p){
 		fprintf(stderr, "thread create error. %s %s %d\n", __FILE__, __FUNCTION__, __LINE__);
 		return NULL;
 	}
-	fprintf(stdout, "thread %d process database related create successfully.\n", tid_db);
+	fprintf(stdout, "thread 0x%lx process database related create successfully.\n", tid_db);
 		
 	pthread_t tid_upward;
 	if(0 != pthread_create(&tid_upward, NULL, forwardmsg, NULL)){
 		fprintf(stderr,"thread create error. %s %s %d\n", __FILE__, __FUNCTION__, __LINE__);
 		return NULL;
 	}
-	fprintf(stdout, "thread %d forward message create successfully.\n", tid_db);
+	fprintf(stdout, "thread 0x%lx forward message create successfully.\n", tid_db);
 
 	int socketfd;
 	char* tmp = buf;
@@ -89,6 +102,12 @@ void * fmtmsg(void * p){
 		len = read(pad->fd_sigfmt, buf+leftlength, MAX_FIFO_LEN);
 		while(toolkit_strsep(buf, '*') != NULL){ 
 			socketfd=atoi(buf); 
+			if(unlikely(socketfd == 1)){ // magic number 1 means exit.
+				processappdata_exit(pad, tid_db, tid_upward);
+				free(buf);
+				buf = NULL;
+				return NULL;
+			}
 			fmtreportsockdata_add(&pad->head, sockets_buffer_getfifo(pad->sbuf,socketfd));
 		}
 		leftlength = strlen(buf);
@@ -96,7 +115,6 @@ void * fmtmsg(void * p){
 		memset(tmp+leftlength, 0 , len - leftlength); 
 		buf = tmp; 
 	}
-
 }
 
 struct processappdata * processappdata_create(struct sockets_buffer * sbuf, int fd_sigfmt){
@@ -116,7 +134,12 @@ struct processappdata * processappdata_create(struct sockets_buffer * sbuf, int 
 		fprintf(stderr,"thread create error. %s %s %d\n", __FILE__, __FUNCTION__, __LINE__);
 		return NULL;
 	}
-	fprintf(stdout, "thread %d process application data create successfully.\n", pad->threadid_fmt);
+	fprintf(stdout, "thread 0x%lx process application data create successfully.\n", pad->threadid_fmt);
 
 	return pad;
 }
+
+int processappdata_join(struct processappdata* pad){
+	return pthread_join(pad->threadid_fmt, NULL);
+}
+

@@ -36,7 +36,7 @@ struct sockets_buffer* sockets_buffer_create(unsigned int slotcount){
 
 		return NULL;
 	}
-	memset(sockets_buf->slot, 0, sizeof(struct fd_buffer)*slotcount);
+	memset(sockets_buf->slot, 0, sizeof(struct fd_buffer*)*slotcount);
 
 	return sockets_buf;
 }
