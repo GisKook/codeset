@@ -12,7 +12,6 @@
 #include "toolkit.h" 
 #include "cndef.h"
 
-
 #define MAX_FIFO_LEN 4096
 struct processappdata{
 	pthread_t threadid_fmt;
@@ -56,8 +55,18 @@ void * forwardmsg(void * param){
 	for(;;){
 		read(fd, buf, 1); 
 		list_for_each_safe(pos, n, head){
-			entry = container_of(pos, struct fmtreportsockdata, list);
-			if(entry != NULL && entry->message.messagetype == 0){ 
+			entry = container_of(pos, struct fmtreportsockdata, list); 
+			switch( entry->messagetype ){
+				case REQ_LOGIN:
+					break;
+				case REQ_LOGOFF:
+					break;
+				case REQ_HEARTBEAT:
+					break;
+				case REQ_REQ:
+					break;
+				defalut:
+					assert(0);
 			}
 		}
 	} 
