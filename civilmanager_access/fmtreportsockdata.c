@@ -9,17 +9,10 @@
 #include "fmtreportsockdata.h"
 #include "toolkit.h"
 
-struct fmtreportsockdata{
-	struct parseprotocol_request * message;
-	struct list_head list;
-	int fd;
-	unsigned char processed;
-};
-
 #define TMPSIZE 1024
 unsigned char tmp[TMPSIZE];
 unsigned int tmplen = 0;
-int fmtreportsockdata_add(struct list_head * head, struct kfifo* fifo){ 
+int fmtreportsockdata_add(struct list_head * head, struct kfifo* fifo, int fd){ 
 	if(unlikely(fifo == NULL)){
 		assert(0);
 		fprintf(stderr, "arguments error. %s %s %d\n", __FILE__, __FUNCTION__, __LINE__);
@@ -35,6 +28,7 @@ int fmtreportsockdata_add(struct list_head * head, struct kfifo* fifo){
 			fprintf(stderr, "malloc error. %s %s %d\n", __FILE__, __FUNCTION__, __LINE__);
 		}
 		rcmsg->message = (struct parseprotocol_request*)malloc(sizeof(struct parseprotocol_request));
+		rcmsg->message.fd = fd;
 		if(unlikely( rcmsg->message == NULL )){
 			fprintf(stderr, "malloc error. %s %s %d\n", __FILE__, __FUNCTION__, __LINE__);
 		}

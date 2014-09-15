@@ -136,6 +136,7 @@ int main(){
 	}
 exit_flag:
 	sockets_buffer_destroy(socket_buf);
+	processappdata_destroy(pad);
 
 	return 0;
 }

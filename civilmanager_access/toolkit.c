@@ -47,3 +47,4 @@ char* toolkit_strsep(char* stringp, char delim){
 		if(*s==0){stringp=tok; return NULL;}
 	}
 }
+

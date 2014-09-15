@@ -6,5 +6,6 @@
 struct processappdata;
 struct processappdata * processappdata_create(struct sockets_buffer* sbuf,int fd_sigfmt);
 int processappdata_join(struct processappdata* pad);
+int processappdata_destroy(struct processappdata* pad);
 
 #endif
