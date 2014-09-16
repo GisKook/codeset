@@ -11,36 +11,18 @@
 #include "sockets_buffer.h"
 #include "toolkit.h" 
 #include "cndef.h"
+#include "zmq_buffer.h"
 
 #define MAX_FIFO_LEN 4096
 struct processappdata{
 	pthread_t threadid_fmt;
 	int fd_sigfmt;
-	struct list_head head;
+	int fd_sigprocess;
+	struct list_head head; // report message list
 	struct sockets_buffer* sbuf;
 };
 
-void * operationdb(void * param){ 
-//	struct list_head * head = ((struct datalist*)param)->head;
-//	int fd = ((struct datalist*)param)->fd;
-//	struct reconstructmessage* entry;
-//	struct list_head *pos, *n;
-//	for(;;){
-//		read(fd, buf, 1); 
-//		list_for_each_safe(pos, n, head){
-//			entry = container_of(pos, struct reconstructmessage, list);
-//			if(entry->processed == 0 && entry->message->messagetype == REQ_LOGIN){ 
-//
-//			}
-//			
-//		}
-//
-//	}
-
-	pthread_exit(0);
-}
-
-void * forwardmsg(void * param){ 
+void * processmessage(void * param){ 
 	void* ctx = zmq_ctx_new();
 	assert(ctx != NULL);
 	void* socket = zmq_socket(ctx, ZMQ_PUSH); 
@@ -48,8 +30,8 @@ void * forwardmsg(void * param){
 	int rc = zmq_bind(socket, "tcp://*:8888");
 	assert(rc == 0);
 
-	struct list_head * head = ((struct datalist*)param)->head;
-	int fd = ((struct datalist*)param)->fd;
+	struct list_head * head = ((struct processappdata*)param)->head;
+	int fd = ((struct processappdata*)param)->fd_sigprocess;
 	struct fmtreportsockdata* entry;
 	struct list_head *pos, *n;
 	for(;;){
@@ -69,7 +51,7 @@ void * forwardmsg(void * param){
 					assert(0);
 			}
 		}
-	} 
+	}
 	zmq_msg_t msg;
 	rc = zmq_msg_init(&msg);
 	zmq_close(socket);
@@ -89,23 +71,21 @@ int exit(struct processappdata* pad, pthread_t tid_db, pthread_t tid_upward){
 }
 
 void * fmtmsg(void * p){
+	int fd[2];
+	if(-1 == pipe(fd)){
+		fprintf(stderr, "create pipe error. %s %s %d\n", __FILE__, __FUNCTION__, __LINE__);
+		return NULL;
+	}
+
 	struct processappdata * pad = (struct processappdata *)p;
 	pthread_t tid_fmt = pad->fd_sigfmt;
 	char * buf = (char*)malloc(MAX_FIFO_LEN);
 	memset(buf, 0, MAX_FIFO_LEN);
-	int len;
+	pad->fd_sigprocess = fd[0];
 
-	pthread_t tid_db;
-	if(0 != pthread_create(&tid_db, NULL, operationdb, p)){
-		free(pad);
-		pad = NULL;
-		fprintf(stderr, "thread create error. %s %s %d\n", __FILE__, __FUNCTION__, __LINE__);
-		return NULL;
-	}
-	fprintf(stdout, "thread 0x%lx process database related create successfully.\n", tid_db);
-		
+	int len;
 	pthread_t tid_upward;
-	if(0 != pthread_create(&tid_upward, NULL, forwardmsg, p)){
+	if(0 != pthread_create(&tid_upward, NULL, processmessage, p)){
 		fprintf(stderr,"thread create error. %s %s %d\n", __FILE__, __FUNCTION__, __LINE__);
 		return NULL;
 	}
@@ -126,6 +106,7 @@ void * fmtmsg(void * p){
 			}
 			fmtreportsockdata_add(&pad->head, sockets_buffer_getfifo(pad->sbuf,socketfd), socketfd);
 		}
+		wrtie(fd[1], "1",1);
 		leftlength = strlen(buf);
 		memmove(tmp, buf, leftlength);
 		memset(tmp+leftlength, 0 , len - leftlength); 

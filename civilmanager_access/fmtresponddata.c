@@ -4,7 +4,7 @@
 
 struct fmtresponddata{
 	unsigned char* buf;
-	unsigned char len; // the most length is 232
+	unsigned char len; // the max length is 232
 	int fd;
 	struct list_head list;
 }
@@ -20,7 +20,7 @@ int fmtresponddata_add(struct list_head * head, unsigned char * buf, int len, in
 	fmtresponddata->buf = buf;
 	fmtresponddata->len = len;
 	fmtresponddata->fd = fd;
-	list_add(head, &fmtresponddata->list);
+	list_add_tail(head, &fmtresponddata->list);
 
 	return 0;
 }

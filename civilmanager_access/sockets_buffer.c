@@ -8,11 +8,19 @@
 
 #define MAXFIFOLEN 4096
 
+struct write_buffer {
+	struct write_buffer * next;
+	int sz;
+	void *buffer;
+};
+
 struct fd_buffer{
 	int fd;
 	char ip[16];
-	struct kfifo* fifo;	
-	struct fd_buffer* next;
+	unsigned int id;
+	struct kfifo * fifo;	
+	struct write_buffer * buffer;
+	struct fd_buffer * next;
 };
 
 struct sockets_buffer{

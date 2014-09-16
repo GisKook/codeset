@@ -34,7 +34,7 @@ int fmtreportsockdata_add(struct list_head * head, struct kfifo* fifo, int fd){
 		}
 
 		if( likely(0 == parseprotocol_parserequest( rcmsg->message, tmp, parselen))){ 
-			list_add(&rcmsg->list, head);
+			list_add_tail(&rcmsg->list, head);
 		}
 		rcmsg = NULL;
 	}
