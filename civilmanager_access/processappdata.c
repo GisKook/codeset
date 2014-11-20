@@ -16,11 +16,17 @@
 #define MAX_FIFO_LEN 4096
 struct processappdata{
 	pthread_t threadid_fmt;
+	pthread_t threadid_upward;
+	pthread_t threadid_downword;
 	int fd_sigfmt;
-	int fd_sigprocess;
-	struct list_head head; // report message list
 	struct sockets_buffer* sbuf;
 };
+
+void * processlogin(void * param){
+	struct processappdata * pad = (struct processappdata*)param; 
+
+	return NULL;
+}
 
 void * processmessage(void * param){ 
 	void* ctx = zmq_ctx_new();
@@ -70,27 +76,13 @@ int exit(struct processappdata* pad, pthread_t tid_db, pthread_t tid_upward){
 	return 0;
 }
 
-void * fmtmsg(void * p){
-	int fd[2];
-	if(-1 == pipe(fd)){
-		fprintf(stderr, "create pipe error. %s %s %d\n", __FILE__, __FUNCTION__, __LINE__);
-		return NULL;
-	}
-
+void * formatmessage(void * p){
 	struct processappdata * pad = (struct processappdata *)p;
 	pthread_t tid_fmt = pad->fd_sigfmt;
 	char * buf = (char*)malloc(MAX_FIFO_LEN);
 	memset(buf, 0, MAX_FIFO_LEN);
-	pad->fd_sigprocess = fd[0];
-
+	
 	int len;
-	pthread_t tid_upward;
-	if(0 != pthread_create(&tid_upward, NULL, processmessage, p)){
-		fprintf(stderr,"thread create error. %s %s %d\n", __FILE__, __FUNCTION__, __LINE__);
-		return NULL;
-	}
-	fprintf(stdout, "thread 0x%lx forward message create successfully.\n", tid_db);
-
 	int socketfd;
 	char* tmp = buf;
 	int leftlength = 0;
@@ -104,9 +96,8 @@ void * fmtmsg(void * p){
 				buf = NULL;
 				return NULL;
 			}
-			fmtreportsockdata_add(&pad->head, sockets_buffer_getfifo(pad->sbuf,socketfd), socketfd);
+			fmtreportsockdata_add(pad->sbuf, socketfd);
 		}
-		wrtie(fd[1], "1",1);
 		leftlength = strlen(buf);
 		memmove(tmp, buf, leftlength);
 		memset(tmp+leftlength, 0 , len - leftlength); 
@@ -125,13 +116,31 @@ struct processappdata * processappdata_create(struct sockets_buffer * sbuf, int 
 	INIT_LIST_HEAD(&pad->head); 
 	pad->fd_sigfmt = fd_sigfmt;
 	pad->sbuf = sbuf;
-	if(0 != pthread_create(&pad->threadid_fmt, NULL, fmtmsg, pad)){
+	if(0 != pthread_create(&pad->threadid_fmt, NULL, formatmessage, pad)){
 		free(pad);
 		pad = NULL;
 		fprintf(stderr,"thread create error. %s %s %d\n", __FILE__, __FUNCTION__, __LINE__);
 		return NULL;
 	}
-	fprintf(stdout, "thread 0x%lx process application data create successfully.\n", pad->threadid_fmt);
+	fprintf(stdout, "thread 0x%lx format application data create successfully.\n", pad->threadid_fmt);
+
+	if(0 != pthread_create(&pad->threadid_upward, NULL, processappdata, pad)){
+		free(pad);
+		pad = NULL;
+		fprintf(stderr, "thread upword error. %s %s %d\n",__FILE__, __FUNCTION__, __LINE__);
+
+		return NULL;
+	}
+	fprintf(stdout, "thread 0x%lx upword application data create successfully.\n", pad->threadid_upward);
+
+	if(0 != pthread_create(&pad->threadid_downword, NULL, processlogin, pad)){
+		free(pad);
+		pad = NULL;
+		fprintf(stderr, "thread processlogin error. %s %s %d\n",__FILE__, __FUNCTION__, __LINE__);
+
+		return NULL;
+	}
+	fprintf(stdout, "thread 0x%lx processlogin create successfully.\n", pad->threadid_downword);
 
 	return pad;
 }

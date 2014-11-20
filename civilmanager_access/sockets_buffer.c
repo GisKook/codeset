@@ -3,6 +3,7 @@
 #include <assert.h>
 #include <string.h>
 #include "kfifo.h"
+#include "list.h"
 #include "cndef.h"
 #include "toolkit.h"
 
@@ -17,8 +18,10 @@ struct write_buffer {
 struct fd_buffer{
 	int fd;
 	char ip[16];
-	unsigned int id;
+	unsigned int id; 
 	struct kfifo * fifo;	
+	struct list_head highprilist;
+	struct list_head normalprilist;
 	struct write_buffer * buffer;
 	struct fd_buffer * next;
 };
@@ -68,6 +71,8 @@ int sockets_buffer_add(struct sockets_buffer* sockets_buf, int fd,char *ip, unsi
 		}
 		memset(sockets_buf->slot[index], 0 , sizeof(struct fd_buffer));
 		sockets_buf->slot[index]->fd = fd;
+		INIT_LIST_HEAD(&sockets_buf->slot[index]->highprilist);
+		INIT_LIST_HEAD(&sockets_buf->slot[index]->normalprilist);
 		memcpy(sockets_buf->slot[index]->ip, ip, strlen(ip));
 		if( unlikely((sockets_buf->slot[index]->fifo = kfifo_init(MAXFIFOLEN)) == NULL)){
 			fprintf(stderr, "fifo init error. %s %s %d\n", __FILE__, __FUNCTION__, __LINE__);
@@ -88,6 +93,8 @@ int sockets_buffer_add(struct sockets_buffer* sockets_buf, int fd,char *ip, unsi
 			struct fd_buffer* element = (struct fd_buffer*)malloc(sizeof(struct fd_buffer));
 			memset(element, 0, sizeof(struct fd_buffer));
 			element->fd = fd;
+			INIT_LIST_HEAD(&element->highprilist);
+			INIT_LIST_HEAD(&element->normalprilist);
 			memcpy(sockets_buf->slot[index]->ip, ip, strlen(ip));
 			if(unlikely((element->fifo = kfifo_init(MAXFIFOLEN)) == NULL)){ 
 				fprintf(stderr, "fifo init error.%s %s %d\n",__FILE__, __FUNCTION__, __LINE__);
@@ -158,18 +165,44 @@ int sockets_buffer_print(struct sockets_buffer* buf){
 	}
 }
 
-struct kfifo* sockets_buffer_getfifo(struct sockets_buffer * sbuf, int fd){
+struct fd_buffer* sockets_buffer_getfdbuffer(struct sockets_buffer* sbuf, int fd){
 	assert(sbuf != NULL);
 	if(unlikely( sbuf == NULL )){
 		fprintf(stderr, "arguments error. %s %s %d\n", __FILE__, __FUNCTION__, __LINE__);
 		return NULL;
 	}
+
 	int slotindex = fd % sbuf->slotcount;
 	struct fd_buffer* pos;
 	for(pos = sbuf->slot[slotindex]; pos != NULL; pos = sbuf->slot[slotindex]->next){ 
 		if( sbuf->slot[slotindex]->fd  == fd ){
-			return sbuf->slot[slotindex]->fifo;
+			return sbuf->slot[slotindex];
 		}
+	}
+
+	return NULL;
+}
+
+struct kfifo* sockets_buffer_getrawdata(struct sockets_buffer * sbuf, int fd){
+	fd_buffer * fdbuf = sockets_buffer_getfdbuffer(sbuf, fd);
+	if(fdbuf != NULL){
+		return fdbuf->fifo;
+	}
+
+	return NULL;
+}
+struct list_head* sockets_buffer_gethighlist(struct sockets_buffer * sbuf, int fd){
+	fd_buffer * fdbuf = sockets_buffer_getfdbuffer(sbuf, fd);
+	if(fdbuf != NULL){
+		return fdbuf->highprilist;
+	}
+
+	return NULL;
+}
+struct list_head* sockets_buffer_getnormallist(struct sockets_buffer * sbuf, int fd){
+	fd_buffer * fdbuf = sockets_buffer_getfdbuffer(sbuf, fd);
+	if(fdbuf != NULL){
+		return fdbuf->normalprilist;
 	}
 
 	return NULL;

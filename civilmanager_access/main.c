@@ -124,7 +124,10 @@ int main(){
 				buf[len] = 0;
 				if(len < 0){
 					assert(0);
+					epoll_ctl(efd, EPOLL_CTL_DEL, events[i].data.fd,NULL);
+					close(events[i].data.fd);
 				}
+
 				sockets_buffer_add(socket_buf, events[i].data.fd,"192.168.1.1",  buf, len);
 				memset(fdbuf, 0, 16);
 				buflen = sprintf(fdbuf, "%d*",events[i].data.fd);

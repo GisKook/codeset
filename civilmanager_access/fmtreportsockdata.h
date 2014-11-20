@@ -6,7 +6,6 @@
 
 struct fmtreportsockdata{
 	struct parseprotocol_request * message;
-	int fd;
 	struct list_head list;
 };
 
