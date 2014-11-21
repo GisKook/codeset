@@ -16,4 +16,6 @@ int sockets_buffer_destroy(struct sockets_buffer* buf);
 
 int sockets_buffer_print(struct sockets_buffer* buf);
 
+void sockets_buffer_signal(struct sockets_buffer * sbuf, int fd);
+struct int* sockets_buffer_getsignalfdfifo(struct sockets_buffer * sbuf);
 #endif

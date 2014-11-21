@@ -24,6 +24,12 @@ struct processappdata{
 
 void * processlogin(void * param){
 	struct processappdata * pad = (struct processappdata*)param; 
+	int * fds;
+	int fdscount = 0;
+	for(;;){
+		fds = sockets_buffer_getsignalfdfifo(pad->sbuf);
+		fdscount = fds[0]; 
+	}
 
 	return NULL;
 }

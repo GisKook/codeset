@@ -2,10 +2,12 @@
 #include <stdlib.h> 
 #include <assert.h>
 #include <string.h>
+#include <pthread.h>
 #include "kfifo.h"
 #include "list.h"
 #include "cndef.h"
 #include "toolkit.h"
+#include "fdfifo.h"
 
 #define MAXFIFOLEN 4096
 
@@ -27,7 +29,11 @@ struct fd_buffer{
 };
 
 struct sockets_buffer{
-	int slotcount;
+	int slotcount; 
+	pthread_cond_t tasklistready;
+	pthread_mutex_t tasklistlock;
+	struct fdfifo * tasklist;
+	int * activefds;
 	struct fd_buffer** slot;
 };
 
@@ -40,6 +46,10 @@ struct sockets_buffer* sockets_buffer_create(unsigned int slotcount){
 	}
 	memset(sockets_buf, 0, sizeof(struct sockets_buffer));
 	sockets_buf->slotcount = slotcount;
+	pthread_cond_init(&sockets_buf->tasklistready, NULL);
+	pthread_mutex_init(&sockets_buf->tasklistlock, NULL);
+	sockets_buf->tasklist =(struct fdfifo*)malloc(sizeof(struct fdfifo));
+	fdfifo_init(sockets_buf->tasklist, 1024);
 
 	sockets_buf->slot = (struct fd_buffer**)malloc(sizeof(struct fd_buffer*)*slotcount);
 	if(unlikely(sockets_buf->slot == NULL)){
@@ -61,6 +71,7 @@ int sockets_buffer_add(struct sockets_buffer* sockets_buf, int fd,char *ip, unsi
 
 		return -1;
 	}
+
 	int index = fd % sockets_buf->slotcount;
 	if(unlikely(sockets_buf->slot[index] == NULL)){
 		sockets_buf->slot[index] = (struct fd_buffer*)malloc(sizeof(struct fd_buffer));
@@ -142,6 +153,9 @@ int sockets_buffer_destroy(struct sockets_buffer* buf){
 		buf->slot = NULL;
 	}
 
+	pthread_mutex_destroy(&buf->tasklistlock);
+	pthread_cond_destroy(&buf->tasklistready);
+
 	free(buf);
 	buf = NULL; 
 
@@ -206,4 +220,32 @@ struct list_head* sockets_buffer_getnormallist(struct sockets_buffer * sbuf, int
 	}
 
 	return NULL;
+}
+
+void sockets_buffer_signal(struct sockets_buffer * sbuf, int fd){
+	pthread_mutex_lock(&sbuf->tasklistlock);
+	fdfifo_put(sbuf->tasklist, fd);
+	pthread_mutex_unlock(&sbuf->tasklistlock);
+	pthread_cond_signal(&sbuf->tasklistready);
+}
+
+struct int* sockets_buffer_getsignalfdfifo(struct sockets_buffer * sbuf){
+	int * activefds = NULL;
+	for(;;){
+		pthread_mutex_lock(&sbuf->tasklistlock);
+		while(fdfifo_len(sbuf->tasklist) == 0){
+			pthread_cond_wait(&sbuf->tasklistready, &sbuf->tasklistlock);
+		} 
+		fdfifolen = fdfifo_len(sbuf_tasklist);
+		activefds = (int*)malloc((fdfifolen+1)*sizeof(int)); 
+		if(activefds == NULL){
+			fprintf(stderr, "malloc %d bytes error. %s %s %d\n", fdfifolen+1, __FILE__, __FUNCTION__, __LINE__);
+			
+			return NULL;
+		}
+		fdfifo_getall(sbuf, activefds+1);
+		pthread_mutex_unlock(&sbuf->tasklistlock);
+
+		return activefds;
+	}
 }
