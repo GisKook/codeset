@@ -1,6 +1,16 @@
 #include "libpq-fe.h"
 #include "PGDatabase.h" 
 #include <assert.h>
+#include <stdlib.h>
+#include <string.h>
+
+#ifdef _WIN32
+#include <WinSock2.h>
+#endif
+
+#ifdef __linux__
+#include <errno.h>
+#endif
 
 int PGDatabase::Connect( const PGConnInfo& dbConnInfo ) {
 	m_pConnect= PQsetdbLogin(dbConnInfo.pghost, dbConnInfo.pgport,
@@ -49,7 +59,7 @@ bool PGDatabase::BeginTransaction() {
 	if (m_pConnect == NULL) {
 		return false;
 	}
-	PGresult* res = PQexec(m_pConnect, "begin");
+	PGresult* res = PQexec(m_pConnect, "begin transaction");
 	if (PQresultStatus(res) != PGRES_COMMAND_OK) {
 		fprintf(stderr, "BEGIN command failed: %s\n", PQerrorMessage(m_pConnect));
 		PQclear(res);
@@ -112,4 +122,87 @@ PGRecordset* PGDatabase::Query( const char* strSQL ) {
 	pRecordset->Create(res);
 
 	return pRecordset;
+}
+
+bool PGDatabase::AddListener( const char* strTablename )
+{
+	char listentable[256] = {0};
+	memcpy(listentable, "LISTEN ", sizeof("LISTEN ")-1);
+	memcpy(listentable + sizeof("LISTEN ")-1, strTablename, strlen(strTablename));
+	PGresult *res = PQexec(m_pConnect, listentable);
+    if (PQresultStatus(res) != PGRES_COMMAND_OK)
+    {
+        fprintf(stderr, "LISTEN command failed: %s\n", PQerrorMessage(m_pConnect));
+        PQclear(res);
+		return false;
+    }
+
+    /*
+     * should PQclear PGresult whenever it is no longer needed to avoid memory
+     * leaks
+     */
+    PQclear(res);
+
+	return true;
+}
+
+bool PGDatabase::RemoveListener( const char* strTablename )
+{
+	char listentable[256] = {0};
+	memcpy(listentable, "UNLISTEN ", sizeof("UNLISTEN "));
+	memcpy(listentable + sizeof("UNLISTEN "), strTablename, strlen(strTablename));
+	PGresult *res = PQexec(m_pConnect, listentable);
+    if (PQresultStatus(res) != PGRES_COMMAND_OK)
+    {
+        fprintf(stderr, "UNLISTEN command failed: %s\n", PQerrorMessage(m_pConnect));
+        PQclear(res);
+		return false;
+    }
+	
+    /*
+     * should PQclear PGresult whenever it is no longer needed to avoid memory
+     * leaks
+     */
+    PQclear(res);
+
+	return true;
+}
+
+void PGDatabase::GetNotify()
+{
+	PGnotify   *notify;
+    while (true)
+    {
+        /*
+         * Sleep until something happens on the connection.  We use select(2)
+         * to wait for input, but you could also use poll() or similar
+         * facilities.
+         */
+        int         sock;
+        fd_set      input_mask;
+
+        sock = PQsocket(m_pConnect);
+
+        if (sock < 0)
+            break;              /* shouldn't happen */
+
+        FD_ZERO(&input_mask);
+        FD_SET(sock, &input_mask);
+
+        if (select(sock + 1, &input_mask, NULL, NULL, NULL) < 0)
+        {
+            fprintf(stderr, "select() failed: %s\n", strerror(errno));
+        }
+
+		fprintf(stderr, "abc\n");
+        /* Now check for input */
+        PQconsumeInput(m_pConnect);
+        while ((notify = PQnotifies(m_pConnect)) != NULL)
+        {
+            fprintf(stderr,
+                    "ASYNC NOTIFY of '%s' received from backend PID %d\n",
+                    notify->relname, notify->be_pid);
+            PQfreemem(notify);
+        }
+    }
 }
