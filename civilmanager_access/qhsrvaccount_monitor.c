@@ -56,7 +56,7 @@ qhsrvaccount_monitor(PG_FUNCTION_ARGS)
 		}
 		valuelen = strlen(value);
 		memcpy(notify+notifylen, value,valuelen); 
-		*(notify+notifylen+valuelen) = ' ';
+		*(notify+notifylen+valuelen) = '^';
 		notifylen = notifylen+valuelen+1;
 	}
 	elog(INFO, "%s", notify);

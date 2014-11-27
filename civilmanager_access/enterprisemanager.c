@@ -1,6 +1,5 @@
 #define MAXLOGINLEN 32
 #define MAXPASSWORDLEN 32
-#define MAXENTERPRISEIDLEN 32
 
 #include <string.h>
 #include <stdio.h>
@@ -8,6 +7,7 @@
 #include "rbtree.h"
 #include "toolkit.h"
 #include "cndef.h"
+#include "enterprisemanager.h"
 
 struct enterpriseaccount{
 	char login[MAXLOGINLEN];
@@ -76,26 +76,26 @@ struct enterprise * enterprisemanager_search(struct enterprisemanager *manager, 
 }
 
 struct enterprise * _enterprisemanager_insert(struct enterprisemanager *manager, struct enterprise *data){
-	struct rb_node **new = &(manager->root.rb_node), *parent = NULL;
+	struct rb_node **newnode = &(manager->root.rb_node), *parent = NULL;
 	struct enterprise *ent;
 	int result = 0;
 
-	while (*new)
+	while (*newnode)
 	{
-		ent = rb_entry(*new, struct enterprise, node);
+		ent = rb_entry(*newnode, struct enterprise, node);
 		int result = strcmp(data->enterpriseid, ent->enterpriseid);
-		parent = *new;
+		parent = *newnode;
 
 		if (result > 0)
-			new = &((*new)->rb_left);
+			newnode = &((*newnode)->rb_left);
 		else if (result < 0)
-			new = &((*new)->rb_right);
+			newnode = &((*newnode)->rb_right);
 		else
 			return ent;
 	}
 
 	++manager->enterprisecount;
-	rb_link_node(&data->node, parent, new);
+	rb_link_node(&data->node, parent, newnode);
 
 	return NULL;
 }
@@ -138,6 +138,7 @@ struct enterprise * enterprise_create(const char * enterpriseid, int capacity){
 		return NULL;
 	}
 	memset(enterprise->enterpriseaccount, 0, chuncksize);
+	enterprise->accountcapacity = capacity;
 
 	return enterprise;
 }
@@ -154,7 +155,7 @@ int enterprise_addaccount(struct enterprise *enterprise, const char *login, cons
 	struct enterpriseaccount * ea;
 	for(; i < enterprise->accountcount; ++i){
 		ea = &enterprise->enterpriseaccount[i];
-		if(0 == strcmp(ea[i].login, login)){ 
+		if((strlen(ea[i].login) == strlen(login)) && 0 == strcmp(ea[i].login, login)){ 
 			ea[i].issuedfrequency = issuedfrequency;
 			memcpy(ea[i].password, password, MIN(strlen(password), MAXPASSWORDLEN));
 			
@@ -162,11 +163,11 @@ int enterprise_addaccount(struct enterprise *enterprise, const char *login, cons
 		}
 	}
 
-	if(unlikely(enterprise->accountcount >= enterprise->accountcapacity)){ 
-		int newcapacity = enterprise->accountcount * 2;
+	if(unlikely(enterprise->accountcount >= enterprise->accountcapacity && enterprise->accountcount != 0)){ 
+		int newcapacity = enterprise->accountcapacity * 2;
 		ea = (struct enterpriseaccount*)realloc(enterprise->enterpriseaccount,sizeof(struct enterpriseaccount)*newcapacity);
 		if(ea == NULL){
-			fprintf(stderr, "enterprise account malloc error. %s %s %d.\n", __FILE__, __FUNCTION__, __LINE__);
+			fprintf(stderr, "enterprise account malloc %d bytes error. %s %s %d.\n", sizeof(struct enterpriseaccount)*newcapacity,__FILE__, __FUNCTION__, __LINE__);
 			newcapacity = enterprise->accountcount + 1;
 			ea = (struct enterpriseaccount*)malloc(sizeof(struct enterpriseaccount)*newcapacity);
 			if(ea == NULL){
@@ -201,7 +202,7 @@ int enterprise_delaccount(struct enterprise *enterprise, const char *login){
 	struct enterpriseaccount * ea;
 	for(; i < enterprise->accountcount; ++i){
 		ea = &enterprise->enterpriseaccount[i];
-		if(0 == strcmp(ea[i].login, login)){ 
+		if((strlen(ea[i].login) == strlen(login)) && (0 == strcmp(ea[i].login, login))){ 
 			memmove(&ea[i], &ea[i+1], (enterprise->accountcount - i - 1)*sizeof(struct enterpriseaccount));
 			--enterprise->accountcount;
 			memset(&ea[enterprise->accountcount], 0, sizeof(struct enterpriseaccount));
@@ -213,10 +214,4 @@ int enterprise_delaccount(struct enterprise *enterprise, const char *login){
 	return 2;
 }
 
-int main(){
-	struct enterprisemanager * manager = enterprisemanager_init();
-	struct enterprise * enterprise = (struct enterprise*)malloc(sizeof(struct enterprise)); 
-	memset(enterprise, 0, sizeof(struct enterprise));
 
-	return 0;
-}

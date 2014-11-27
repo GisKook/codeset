@@ -35,12 +35,11 @@ int cnconfig_loadfile( const char* filename ){
 		fprintf(stderr,"Error before: [%s]\n",cJSON_GetErrorPtr());
 	}else{ 
 		int count = cJSON_GetArraySize(json);
-		assert(count ==10);
-		if( !cnconfig_setconfig(json, DBHOST, "please check config file: dbHost is not set!\n")||
-			!cnconfig_setconfig(json, DBPORT, "please check config file: dbPort is not set!\n")||
-			!cnconfig_setconfig(json, DBNAME, "please check config file: dbName is not set!\n")||
-			!cnconfig_setconfig(json, DBUSER, "please check config file: dbUser is not set!\n")||
-			!cnconfig_setconfig(json, DBPWD, "please check config file: dbPassword is not set!\n")){
+		if( 0 != cnconfig_setconfig(json, DBHOST, "please check config file: dbHost is not set!\n")||
+			0 != cnconfig_setconfig(json, DBPORT, "please check config file: dbPort is not set!\n")||
+			0 != cnconfig_setconfig(json, DBNAME, "please check config file: dbName is not set!\n")||
+			0 != cnconfig_setconfig(json, DBUSER, "please check config file: dbUser is not set!\n")||
+			0 != cnconfig_setconfig(json, DBPWD, "please check config file: dbPassword is not set!\n")){
 			
 		return -1;;
 		}

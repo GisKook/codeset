@@ -2,6 +2,7 @@
 #ifndef CIVILMANAGER_ACCESS_ENTERPRISEMANAGER_H_H
 #define CIVILMANAGER_ACCESS_ENTERPRISEMANAGER_H_H
 
+#define MAXENTERPRISEIDLEN 32
 struct enterprise;
 struct enterprisemanager;
 

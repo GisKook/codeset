@@ -1,8 +1,10 @@
-#include "fdfifo.h"
 #include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+#include "fdfifo.h"
 
 void fdfifo_init(struct fdfifo * fifo, int capacity){
-	fifo->entry = (int *)malloc(capacity);
+	fifo->entry = (unsigned int *)malloc(capacity);
 	if(fifo->entry == NULL){
 		fprintf(stderr, "fdfifo create error %s %s %d\n", __FUNCTION__, __FILE__, __LINE__);
 		return;
@@ -19,7 +21,7 @@ void fdfifo_destroy(struct fdfifo * fifo){
 unsigned int fdfifo_len(struct fdfifo * fifo){
 	unsigned int len = fifo->in - fifo->out;
 	if(len < 0){
-		len = len + capacity;
+		len = len + fifo->capacity;
 	}
 
 	return len;
@@ -59,7 +61,7 @@ void fdfifo_put(struct fdfifo * fifo, int fd){
 
 unsigned int fdfifo_get(struct fdfifo * fifo){
 	unsigned int fd = fifo->entry[fifo->out++];
-	if(fifo->out >= capacity){
+	if(fifo->out >= fifo->capacity){
 		fifo->out = 0;
 	}
 
