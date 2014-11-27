@@ -14,7 +14,7 @@ void debug_printbytes(unsigned char* buf, unsigned int len);
 void hex2char(char* charbuf, unsigned char* hexbuf, unsigned int len);
 
 unsigned char * toolkit_cmdsep(unsigned char* stringp, unsigned int & len, unsigned char delim);
-unsigned char * toolkit_strsep(char* stringp, char delim);
+char * toolkit_strsep(char** stringp, char delim);
 
 #define TOOLKIT_BYTE2INT(x) ((*x*256*256*256)+(*(x+1)*256*256)+(*(x+2)*256)+(*(x+3)))
 #define TOOLKIT_BYTE2SHORT(x) ((*x*256)+(*(x+1)))

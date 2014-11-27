@@ -18,4 +18,6 @@ void enterprise_destroy(struct enterprise *enterprise);
 int enterprise_addaccount(struct enterprise *enterprise, const char *login, const char *password, int issuedfrequency); 
 int enterprise_delaccount(struct enterprise *enterprise, const char *login); 
 
+void enterprisemanager_print(struct enterprisemanager *manager); 
+
 #endif

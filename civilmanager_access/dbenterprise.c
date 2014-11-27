@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
 #include "cndef.h"
 #include "toolkit.h"
 #include "enterprisemanager.h"
@@ -11,6 +12,7 @@
 char tablename[] = "qhsrvaccount";
 char sqltable[] = "select qtsentId, qtsloginname, qtspassword, qtssendfreq from qhsrvaccount order by qtsentId";
 #define INITLOGINCOUNT 5
+#define MAXATTRCOUNT 128
 
 struct dbenterprise{
 	PGDatabase *db; 
@@ -22,15 +24,53 @@ void * pgdbmonitorcallback(void *par, void* par2){
 	//fprintf(stderr, "%s %s.\n", pmr->tablename, pmr->opvalues);
 	//qhsrvaccount 
 	//pmr->tablename 不解释
-	//pmr->opvalues I 电科导航 电科导航 dkdh11 dkdh11 1 2004-10-19 10:23:54 . 
+	//pmr->opvalues I^电科导航^电科导航^dkdh11^dkdh11^1^2004-10-19 10:23:54 . 
 	//内容解析 所有属性由空格隔开 I(insert) U(update) D(delete) X(unknow) 如果得到的属性为空用$替代
 	struct pgdb_monitor_result *pmr = (struct pgdb_monitor_result *)par;
 	struct enterprisemanager *manager = (struct enterprisemanager *)par2;
-	char opcode;
-	char * value;
-	while((value = toolkit_strsep(pmr->opvalues, ' ')) != NULL){ 
-		
+	char * attr[MAXATTRCOUNT] = {0};
+	int i = 0;
+	char* tmp = (char*)pmr->opvalues;
+	while((attr[i] = toolkit_strsep(&tmp, '^')) != NULL){
+		++i;
 	}
+	attr[i] = tmp;
+	char opcode = *attr[0];
+	char * enterpriseid = attr[2];
+	char * login = attr[3];
+	char * password = attr[4];
+	char * issuedfrequency = attr[5];
+
+	struct enterprise *enterprise = enterprisemanager_search(manager, enterpriseid);
+
+	switch(opcode){
+		case 'I':
+		case 'U':
+			if(enterprise != NULL){
+				enterprise_addaccount(enterprise, login, password, atoi(issuedfrequency));
+			}else{
+				enterprise = enterprise_create(enterpriseid, INITLOGINCOUNT);
+				if(enterprise != NULL){
+					enterprise_addaccount(enterprise, login, password, atoi(issuedfrequency));
+				}
+
+				enterprisemanager_insert(manager, enterprise);
+			}
+			break;
+		case 'D':
+			assert(enterprise != NULL);
+			if(enterprise != NULL){
+				if( 0 == enterprise_delaccount(enterprise, login)){
+					enterprisemanager_delete(manager, enterpriseid);
+				}
+			}
+			break;
+		default:
+			assert(0);
+			break;
+	}
+
+	//enterprisemanager_print(manager);
 }
 
 void * dbenterprise_monitor(void * dbenterprise){ 
@@ -85,6 +125,7 @@ struct dbenterprise * dbenterprise_start(struct enterprisemanager * manager){
 		if(!isequal){
 			enterprisemanager_insert(manager, enterprise);
 			enterprise = enterprise_create(enterpriseid, INITLOGINCOUNT);
+			enterprise_addaccount(enterprise, login, password, atoi(issuedfrequency));
 		}else{
 			enterprise_addaccount(enterprise, login, password, atoi(issuedfrequency));
 		}
@@ -111,6 +152,7 @@ struct dbenterprise * dbenterprise_start(struct enterprisemanager * manager){
 		return NULL;
 	}
 
+	//enterprisemanager_print(manager);
 	return dbenterprise;
 }
 

@@ -20,6 +20,15 @@ typedef struct{
 struct pg_conn;
 typedef struct pg_conn PGconn;
 
+#define MAXTABLENAMELEN 256
+#define MAXOPVALUELEN 1024
+struct pgdb_monitor_result{
+	char tablename[MAXTABLENAMELEN];
+	char opvalues[MAXOPVALUELEN]; 
+};
+
+typedef void (*pgdb_monitor_callback)(struct pgdb_monitor_result *, void*);
+
 class PGDatabase{
 public:
 	// brief 连接数据库
@@ -47,9 +56,7 @@ public:
 
 	// brief 结束事务
 	bool Commit();
-#define __linux__
-#ifdef __linux__
-	// ----linux----
+
 	// brief 对表添加监听
 	bool AddListener(const char* strTablename); 
 
@@ -57,11 +64,8 @@ public:
 	bool RemoveListener(const char* strTablename);
 
 	// brief 得到修改的数据
-	void GetNotify();
+	void GetNotify(pgdb_monitor_callback pmc, void*);
 	
-	// ----linux----
-#endif
-
 private:
 	PGconn* m_pConnect;
 	

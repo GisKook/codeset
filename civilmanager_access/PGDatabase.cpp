@@ -168,9 +168,10 @@ bool PGDatabase::RemoveListener( const char* strTablename )
 	return true;
 }
 
-void PGDatabase::GetNotify()
+void PGDatabase::GetNotify(pgdb_monitor_callback pmc, void* param)
 {
 	PGnotify   *notify;
+	struct pgdb_monitor_result pmr;
     while (true)
     {
         /*
@@ -194,14 +195,16 @@ void PGDatabase::GetNotify()
             fprintf(stderr, "select() failed: %s\n", strerror(errno));
         }
 
-		fprintf(stderr, "abc\n");
         /* Now check for input */
         PQconsumeInput(m_pConnect);
         while ((notify = PQnotifies(m_pConnect)) != NULL)
         {
-            fprintf(stderr,
-                    "ASYNC NOTIFY of '%s' received from backend PID %d\n",
-                    notify->relname, notify->be_pid);
+			memset(pmr.tablename, 0 , MAXTABLENAMELEN);
+			memset(pmr.opvalues, 0 , MAXOPVALUELEN);
+			memcpy(pmr.tablename, notify->relname, strlen(notify->relname));
+			memcpy(pmr.opvalues, notify->extra, strlen(notify->extra));
+			pmc(&pmr,param);
+
             PQfreemem(notify);
         }
     }

@@ -45,7 +45,7 @@ qhsrvaccount_monitor(PG_FUNCTION_ARGS)
 	char* value ;
 	unsigned int valuelen = 0;
 	notify[0] = opcode;
-	notify[1] = ' ';
+	notify[1] = '^';
 	notifylen = 2;
 	
 	int i = 0;
@@ -59,6 +59,7 @@ qhsrvaccount_monitor(PG_FUNCTION_ARGS)
 		*(notify+notifylen+valuelen) = '^';
 		notifylen = notifylen+valuelen+1;
 	}
+	notify[--notifylen] = 0;
 	elog(INFO, "%s", notify);
 
 	int ret;

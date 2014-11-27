@@ -207,11 +207,28 @@ int enterprise_delaccount(struct enterprise *enterprise, const char *login){
 			--enterprise->accountcount;
 			memset(&ea[enterprise->accountcount], 0, sizeof(struct enterpriseaccount));
 
-			return 1; // 更新信息
+			return enterprise->accountcount; 
 		}
 	}
 
-	return 2;
+	return enterprise->accountcount; 
 }
 
+void _enterprise_print(struct enterprise *enterprise){ 
+	fprintf(stdout,"enterpriseid : %s\n", enterprise->enterpriseid);
+	int i;
+	for(i = 0; i < enterprise->accountcount; ++i){ 
+		fprintf(stdout, "    login : %s , password : %s , issuedfrequency : %d\n", enterprise->enterpriseaccount[i].login, enterprise->enterpriseaccount[i].password, enterprise->enterpriseaccount[i].issuedfrequency);
+	}
+}
+
+void enterprisemanager_print(struct enterprisemanager *manager){ 
+	struct rb_root root = manager->root;
+	struct rb_node *parent;
+	struct rb_node *node = rb_first(&root);
+	while (node != NULL){
+		_enterprise_print(rb_entry(node,struct enterprise, node));
+		node = rb_next(node);
+	}
+}
 
