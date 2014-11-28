@@ -10,7 +10,7 @@
 #include "PGDatabase.h"
 
 char tablename[] = "qhsrvaccount";
-char sqltable[] = "select qtsentId, qtsloginname, qtspassword, qtssendfreq from qhsrvaccount order by qtsentId";
+char sqltable[] = "select qtsserverid, qtsentId, qtsloginname, qtspassword, qtssendfreq from qhsrvaccount order by qtsentId";
 #define INITLOGINCOUNT 5
 #define MAXATTRCOUNT 128
 
@@ -36,8 +36,9 @@ void * pgdbmonitorcallback(void *par, void* par2){
 	}
 	attr[i] = tmp;
 	char opcode = *attr[0];
+	char * login = attr[1];
 	char * enterpriseid = attr[2];
-	char * login = attr[3];
+	char * loginname = attr[3];
 	char * password = attr[4];
 	char * issuedfrequency = attr[5];
 
@@ -47,11 +48,11 @@ void * pgdbmonitorcallback(void *par, void* par2){
 		case 'I':
 		case 'U':
 			if(enterprise != NULL){
-				enterprise_addaccount(enterprise, login, password, atoi(issuedfrequency));
+				enterprise_addaccount(enterprise, login, password, atoi(issuedfrequency), loginname);
 			}else{
 				enterprise = enterprise_create(enterpriseid, INITLOGINCOUNT);
 				if(enterprise != NULL){
-					enterprise_addaccount(enterprise, login, password, atoi(issuedfrequency));
+					enterprise_addaccount(enterprise, login, password, atoi(issuedfrequency), loginname);
 				}
 
 				enterprisemanager_insert(manager, enterprise);
@@ -100,34 +101,37 @@ struct dbenterprise * dbenterprise_start(struct enterprisemanager * manager){
 	int tuplecount = res->GetTupleCount();
 	int i;
 	char preenterpriseid[MAXENTERPRISEIDLEN] ={0};
-	char * enterpriseid = NULL;
 	char * login = NULL;
+	char * enterpriseid = NULL;
+	char * loginname = NULL;
 	char * password = NULL;
 	char * issuedfrequency = NULL;
 	struct enterprise * enterprise = NULL;
 	bool isequal = false;
 	if(tuplecount > 0){
-		enterpriseid = res->GetValue(0,0);
-		login = res->GetValue(0, 1);
-		password = res->GetValue(0, 2);
-		issuedfrequency = res->GetValue(0,3);
+		login = res->GetValue(0, 0);
+		enterpriseid = res->GetValue(0,1);
+		loginname = res->GetValue(0,2);
+		password = res->GetValue(0, 3);
+		issuedfrequency = res->GetValue(0,4);
 
 		memcpy(preenterpriseid, enterpriseid, strlen(enterpriseid));
 		enterprise = enterprise_create(enterpriseid, INITLOGINCOUNT);
-		enterprise_addaccount(enterprise, login, password, atoi(issuedfrequency));
+		enterprise_addaccount(enterprise, login, password, atoi(issuedfrequency), loginname);
 	}
 	for (i = 1;i < tuplecount; ++i){
-		enterpriseid = res->GetValue(i,0); 
-		login = res->GetValue(i, 1);
-		password = res->GetValue(i, 2);
-		issuedfrequency = res->GetValue(i,3);
+		login = res->GetValue(i, 0);
+		enterpriseid = res->GetValue(i,1); 
+		loginname = res->GetValue(i,2);
+		password = res->GetValue(i, 3);
+		issuedfrequency = res->GetValue(i,4);
 		isequal = (strlen(preenterpriseid) == strlen(enterpriseid)) && (0 == strcmp(preenterpriseid, enterpriseid));
 		if(!isequal){
 			enterprisemanager_insert(manager, enterprise);
 			enterprise = enterprise_create(enterpriseid, INITLOGINCOUNT);
-			enterprise_addaccount(enterprise, login, password, atoi(issuedfrequency));
+			enterprise_addaccount(enterprise, login, password, atoi(issuedfrequency), loginname);
 		}else{
-			enterprise_addaccount(enterprise, login, password, atoi(issuedfrequency));
+			enterprise_addaccount(enterprise, login, password, atoi(issuedfrequency), loginname);
 		}
 		memset(preenterpriseid, 0, MAXENTERPRISEIDLEN);
 		memcpy(preenterpriseid, enterpriseid, strlen(enterpriseid));
@@ -162,11 +166,11 @@ void dbenterprise_end(struct dbenterprise* dbe){
 	free(dbe);
 }
 
-int main(){
-	cnconfig_loadfile("./conf.json");
-	struct enterprisemanager * em = enterprisemanager_create();
-	struct dbenterprise *dbe = dbenterprise_start(em);
-	pthread_join(dbe->tidmonitor, NULL);
-
-	return 0;
-}
+//int main(){
+//	cnconfig_loadfile("./conf.json");
+//	struct enterprisemanager * em = enterprisemanager_create();
+//	struct dbenterprise *dbe = dbenterprise_start(em);
+//	pthread_join(dbe->tidmonitor, NULL);
+//
+//	return 0;
+//}

@@ -15,7 +15,7 @@ int enterprisemanager_delete(struct enterprisemanager *manager, const char *ente
 
 struct enterprise * enterprise_create(const char * enterpriseid, int capacity);
 void enterprise_destroy(struct enterprise *enterprise); 
-int enterprise_addaccount(struct enterprise *enterprise, const char *login, const char *password, int issuedfrequency); 
+int enterprise_addaccount(struct enterprise *enterprise, const char *login, const char *password, int issuedfrequency, const char * loginname); 
 int enterprise_delaccount(struct enterprise *enterprise, const char *login); 
 
 void enterprisemanager_print(struct enterprisemanager *manager); 

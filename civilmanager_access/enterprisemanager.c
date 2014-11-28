@@ -1,5 +1,6 @@
 #define MAXLOGINLEN 32
 #define MAXPASSWORDLEN 32
+#define MAXLOGINNAMELEN 100
 
 #include <string.h>
 #include <stdio.h>
@@ -13,7 +14,7 @@ struct enterpriseaccount{
 	char login[MAXLOGINLEN];
 	char password[MAXPASSWORDLEN];
 	int issuedfrequency;
-	int fd;
+	char loginname[MAXLOGINNAMELEN];
 };
 
 struct enterprise{
@@ -150,7 +151,7 @@ void enterprise_destroy(struct enterprise *enterprise){
 	enterprise = NULL;
 }
 
-int enterprise_addaccount(struct enterprise *enterprise, const char *login, const char *password, int issuedfrequency){ 
+int enterprise_addaccount(struct enterprise *enterprise, const char *login, const char *password, int issuedfrequency, const char * loginname){ 
 	int i = 0;
 	struct enterpriseaccount * ea;
 	for(; i < enterprise->accountcount; ++i){
@@ -158,6 +159,7 @@ int enterprise_addaccount(struct enterprise *enterprise, const char *login, cons
 		if((strlen(ea[i].login) == strlen(login)) && 0 == strcmp(ea[i].login, login)){ 
 			ea[i].issuedfrequency = issuedfrequency;
 			memcpy(ea[i].password, password, MIN(strlen(password), MAXPASSWORDLEN));
+			memcpy(ea[i].loginname, loginname, MIN(strlen(loginname), MAXLOGINNAMELEN));
 			
 			return 1; // 更新信息
 		}
@@ -179,6 +181,7 @@ int enterprise_addaccount(struct enterprise *enterprise, const char *login, cons
 		memcpy(ea[enterprise->accountcount].login, login, MIN(strlen(login), MAXLOGINLEN));
 		memcpy(ea[enterprise->accountcount].password, password, MIN(strlen(password), MAXLOGINLEN));
 		ea[enterprise->accountcount].issuedfrequency = issuedfrequency;
+		memcpy(ea[enterprise->accountcount].loginname, loginname, MIN(strlen(loginname), MAXLOGINNAMELEN));
 		++enterprise->accountcount;
 		enterprise->accountcapacity = newcapacity;
 		enterprise->enterpriseaccount = ea;
@@ -189,6 +192,7 @@ int enterprise_addaccount(struct enterprise *enterprise, const char *login, cons
 		ea = &enterprise->enterpriseaccount[enterprise->accountcount++];
 		memcpy(ea->login, login, MIN(strlen(login), MAXLOGINLEN));
 		memcpy(ea->password, password, MIN(strlen(password), MAXPASSWORDLEN));
+		memcpy(ea->loginname, loginname, MIN(strlen(loginname), MAXLOGINNAMELEN));
 		ea->issuedfrequency = issuedfrequency;
 
 		return 4;
@@ -218,7 +222,8 @@ void _enterprise_print(struct enterprise *enterprise){
 	fprintf(stdout,"enterpriseid : %s\n", enterprise->enterpriseid);
 	int i;
 	for(i = 0; i < enterprise->accountcount; ++i){ 
-		fprintf(stdout, "    login : %s , password : %s , issuedfrequency : %d\n", enterprise->enterpriseaccount[i].login, enterprise->enterpriseaccount[i].password, enterprise->enterpriseaccount[i].issuedfrequency);
+		fprintf(stdout, "    login : %s , password : %s , issuedfrequency : %d , loginname : %s \n", enterprise->enterpriseaccount[i].login,
+				enterprise->enterpriseaccount[i].password, enterprise->enterpriseaccount[i].issuedfrequency, enterprise->enterpriseaccount[i].loginname);
 	}
 }
 
