@@ -7,11 +7,13 @@
 #include <math.h>
 #include <zmq.h>
 #include "fmtreportsockdata.h"
+#include "parseprotocol.h"
 #include "list.h"
 #include "sockets_buffer.h"
 #include "toolkit.h" 
 #include "cndef.h"
 #include "zmq_buffer.h"
+#include "loginmanager.h"
 
 #define MAX_FIFO_LEN 4096
 struct processappdata{
@@ -20,15 +22,48 @@ struct processappdata{
 	pthread_t threadid_downword;
 	int fd_sigfmt;
 	struct sockets_buffer* sbuf;
+	struct loginmanager * loginmanager;
 };
 
 void * processlogin(void * param){
 	struct processappdata * pad = (struct processappdata*)param; 
+	struct loginmanager * loginmanager = pad->loginmanager;
+	struct login * logindata;
 	int * fds;
 	int fdscount = 0;
+	struct list_head *loginlist;
+	int i;
+	struct fmtreportsockdata * logindata; 
+	struct parseprotocol_request * request;
+	list_head *pos, *n;
+	char * login;
+	char * password;
+	int loginresult = -1; // 0 成功 1 密码错误 2 没有此用户 3 该用户已经登录
 	for(;;){
 		fds = sockets_buffer_getsignalfdfifo(pad->sbuf);
 		fdscount = fds[0]; 
+		for(i = 0; i < fdscount; ++i){ 
+			loginlist = sockets_buffer_gethighlist(pad->sbuf, fds[i+1]); 
+			list_for_each_safe(pos,n,loginlist){ 
+				logindata = list_entry(pos, struct fmtreportsockdata, list);
+				request = logindata->message;
+				if(request->messagetype == REQ_LOGIN){ 
+					login = request->message.login->account;
+					password = request->message.login->password; 
+					logindata = NULL;
+					logindata = loginmanager_search(loginmanager, login);
+					if(logindata == NULL){
+						loginresult = 2; 
+					}else{ 
+						 if(strlen(password) == strlen(logindata->password) && strcmp(password, logindata->password)){ 
+							 loginresult = 0;
+						 }else{
+							 loginresult = 1;
+						 }
+					}
+				}
+			}
+		}
 	}
 
 	return NULL;
@@ -111,7 +146,7 @@ void * formatmessage(void * p){
 	}
 }
 
-struct processappdata * processappdata_create(struct sockets_buffer * sbuf, int fd_sigfmt){
+struct processappdata * processappdata_create(struct sockets_buffer * sbuf, struct loginmanager * loginmanager, int fd_sigfmt){
 	struct processappdata * pad = (struct processappdata*)malloc(sizeof(struct processappdata));
 	memset(pad, 0, sizeof(struct processappdata));
 	assert(pad != NULL);
@@ -122,6 +157,7 @@ struct processappdata * processappdata_create(struct sockets_buffer * sbuf, int 
 	INIT_LIST_HEAD(&pad->head); 
 	pad->fd_sigfmt = fd_sigfmt;
 	pad->sbuf = sbuf;
+	pad->loginmanager = loginmanager;
 	if(0 != pthread_create(&pad->threadid_fmt, NULL, formatmessage, pad)){
 		free(pad);
 		pad = NULL;

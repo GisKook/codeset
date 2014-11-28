@@ -243,6 +243,7 @@ struct int* sockets_buffer_getsignalfdfifo(struct sockets_buffer * sbuf){
 			
 			return NULL;
 		}
+		*activefds = fdfifolen;
 		fdfifo_getall(sbuf, activefds+1);
 		pthread_mutex_unlock(&sbuf->tasklistlock);
 

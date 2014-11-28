@@ -44,6 +44,8 @@ int fmtreportsockdata_add(struct sockets_buffer * sbuf, int fd){
 		rcmsg = NULL;
 	}
 
+	sockets_buffer_signal(sbuf, fd);
+
 	return 0;
 }
 

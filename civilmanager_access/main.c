@@ -10,6 +10,8 @@
 #include "sockets_buffer.h"
 #include "cnconsole.h"
 #include "processappdata.h"
+#include "dblogin.h"
+#include "loginmanager.h"
 
 #define MAX_EVENT 64 
 #define MAX_ACCEPTSOCKETS 1024
@@ -28,10 +30,10 @@ int main(){
 	ev.data.fd = STDIN_FILENO;
 	if(-1 == epoll_ctl(efd, EPOLL_CTL_ADD, STDIN_FILENO, &ev)){
 		fprintf(stderr, "add to epoll error. %s %d\n", __FILE__,__LINE__);
-		
+
 		return -1;
 	}
-	
+
 	int listen_fd = socket(AF_INET, SOCK_STREAM, 0);
 	if(listen_fd == -1){
 		fprintf(stderr, "create listen socket error. %s %d\n", __FILE__,__LINE__);
@@ -57,7 +59,7 @@ int main(){
 
 		return -1;
 	}
-	
+
 	ev.events = EPOLLIN;
 	ev.data.fd = listen_fd;
 	if(-1 == epoll_ctl(efd, EPOLL_CTL_ADD, listen_fd, &ev)){
@@ -88,13 +90,24 @@ int main(){
 
 	struct sockets_buffer* socket_buf = sockets_buffer_create(MAX_ACCEPTSOCKETS);
 	assert(socket_buf != NULL);
+	struct loginmanager * loginmanager = loginmanager_create();
+	assert(loginmanager != NULL);
 	struct processappdata * pad = processappdata_create(socket_buf, fdsig[0]);
 	assert(pad != NULL);
+	struct dblogin * dblogin = dblogin_start(loginmanager);
+	assert(dblogin != NULL);
+
 	for(;;){ 
 		nfds = epoll_wait(efd, events, MAX_EVENT, -1);
 
 		for(i = 0; i< nfds; ++i){
-			if(events[i].data.fd == listen_fd){ 
+			if( (events[i].events & EPOLLERR) ||
+				(events[i].events & EPOLLHUP) || 
+				(events[i].events & EPOLLIN)){
+					fprintf(stderr, "epoll error.\n");
+					close(events[i].data.fd);
+					continue;
+			}else if(events[i].data.fd == listen_fd){ 
 				conn_fd = accept(listen_fd, NULL, NULL);
 				if(unlikely(conn_fd == -1)){
 					fprintf(stderr, "conn socket error. %s %s %d\n", __FILE__,__FUNCTION__,__LINE__);
@@ -105,7 +118,7 @@ int main(){
 				ev.data.fd = conn_fd;
 				if(unlikely(epoll_ctl(efd, EPOLL_CTL_ADD, conn_fd, &ev) == -1)){
 					fprintf(stderr, "connected socket add to epoll error. %s %s %d\n", __FILE__,__FUNCTION__,__LINE__);
-					
+
 					close(conn_fd);
 				}
 			}else if(events[i].data.fd == STDIN_FILENO){ 
@@ -120,15 +133,32 @@ int main(){
 					goto exit_flag;
 				}
 			}else{ 
-				len = read(events[i].data.fd, buf, MAX_RECVLEN);
-				buf[len] = 0;
-				if(len < 0){
-					assert(0);
-					epoll_ctl(efd, EPOLL_CTL_DEL, events[i].data.fd,NULL);
-					close(events[i].data.fd);
-				}
+				for(;;){
+					len = read(events[i].data.fd, buf, MAX_RECVLEN);
+					if(len == -1){ 
+						if(errno != EAGAIN){
+							perror("read");
+							printf ("Closed connection on descriptor %d\n", events[i].data.fd);
 
-				sockets_buffer_add(socket_buf, events[i].data.fd,"192.168.1.1",  buf, len);
+							// Closing the descriptor will make epoll remove it
+							// from the set of descriptors which are monitored.
+							close (events[i].data.fd);
+						}
+						break;
+					}else if(len == 0){
+						printf ("Closed connection on descriptor %d\n", events[i].data.fd);
+
+					    // Closing the descriptor will make epoll remove it
+					    // from the set of descriptors which are monitored.
+					    close (events[i].data.fd);
+						break;
+					}
+
+					buf[len] = 0;
+
+					sockets_buffer_add(socket_buf, events[i].data.fd,"192.168.1.1",  buf, len);
+				}
+				
 				memset(fdbuf, 0, 16);
 				buflen = sprintf(fdbuf, "%d*",events[i].data.fd);
 				if(-1 == write(fdsig[1], fdbuf, buflen)){
@@ -140,6 +170,8 @@ int main(){
 exit_flag:
 	sockets_buffer_destroy(socket_buf);
 	processappdata_destroy(pad);
+	loginmanager_destroy(loginmanager);
+	dblogin_end(dblogin);
 
 	return 0;
 }
