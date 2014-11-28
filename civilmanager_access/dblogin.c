@@ -71,7 +71,10 @@ void * pgdbmonitorcallback(void *par, void* par2){
 			}
 			break;
 		case 'D':
-			loginmanager_delete(manager, login);
+			data = loginmanager_delete(manager, login);
+			if(data != NULL){
+				free(data);
+			}
 			break;
 		default:
 			assert(0);

@@ -64,9 +64,9 @@ struct login * _loginmanager_insert(struct loginmanager *manager, struct login *
 		int result = strcmp(data->login, ent->login);
 		parent = *newnode;
 
-		if (result > 0)
+		if (result < 0)
 			newnode = &((*newnode)->rb_left);
-		else if (result < 0)
+		else if (result > 0)
 			newnode = &((*newnode)->rb_right);
 		else
 			return ent;
@@ -87,17 +87,15 @@ struct login * loginmanager_insert(struct loginmanager *manager, struct login *d
 	return ret;
 }
 
-int loginmanager_delete(struct loginmanager *manager, const char *login){
+struct login * loginmanager_delete(struct loginmanager *manager, const char *login){
 	struct login *data= loginmanager_search(manager, login); 
 	if(data != NULL){ 
 		struct rb_root * root = &manager->root;
 		struct rb_node * node = &data->node;
 		rb_erase(node, root);
-
-		return 1;
 	}
 
-	return 0; 
+	return data; 
 }
 
 void loginmanager_print(struct loginmanager *manager){ 

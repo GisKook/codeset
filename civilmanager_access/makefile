@@ -4,7 +4,7 @@ TARGET = test
 SRC = main.c cnconsole.c sockets_buffer.c kfifo.c toolkit.c processappdata.c parseprotocol.c fmtreportsockdata.c cJSON.c cnconfig.c
 
 DBENTERPRISETARGET = dbe
-DBENTERPRISESRC = $(CONFIGSRC) dbenterprise.c enterprisemanager.c fdfifo.c rbtree.c PGDatabase.cpp PGRecordset.cpp toolkit.c
+DBENTERPRISESRC = $(CONFIGSRC) dblogin.c loginmanager.c fdfifo.c rbtree.c PGDatabase.cpp PGRecordset.cpp toolkit.c
 
 TARGET = $(DBENTERPRISETARGET)
 SRC = $(DBENTERPRISESRC)

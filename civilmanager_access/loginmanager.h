@@ -24,7 +24,7 @@ void loginmanager_destroy(struct loginmanager * em);
 
 struct login * loginmanager_insert(struct loginmanager *manager, struct login *data);
 struct login * loginmanager_search(struct loginmanager *manager, const char *login);
-int loginmanager_delete(struct loginmanager *manager, const char *login);
+struct login * loginmanager_delete(struct loginmanager *manager, const char *login);
 
 void loginmanager_print(struct loginmanager *manager); 
 
