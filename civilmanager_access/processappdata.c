@@ -15,6 +15,7 @@
 #include "zmq_buffer.h"
 #include "loginmanager.h"
 #include "loginenterprisemanager.h"
+#include "list.h"
 
 #define MAX_FIFO_LEN 4096
 struct processappdata{
@@ -29,17 +30,18 @@ struct processappdata{
 void * processlogin(void * param){
 	struct processappdata * pad = (struct processappdata*)param; 
 	struct loginmanager * loginmanager = pad->loginmanager;
-	struct login * logindata;
+	struct login * logindatadb;
 	int * fds;
 	int fdscount = 0;
 	struct list_head *loginlist;
 	int i;
 	struct fmtreportsockdata * logindata; 
 	struct parseprotocol_request * request;
-	list_head *pos, *n;
+	list_head * pos, * n;
 	char * login;
 	char * password;
 	int loginresult = -1; // 0 成功 1 密码错误 2 没有此用户 3 该用户已经登录
+	struct loginenterprisemanager * loginenterprisemanager = loginenterprisemanager_create();
 	for(;;){
 		fds = sockets_buffer_getsignalfdfifo(pad->sbuf);
 		fdscount = fds[0]; 
@@ -52,15 +54,24 @@ void * processlogin(void * param){
 					login = request->message.login->account;
 					password = request->message.login->password; 
 					logindata = NULL;
-					logindata = loginmanager_search(loginmanager, login);
+					logindatadb = loginmanager_search(loginmanager, login);
 					if(logindata == NULL){
 						loginresult = 2; 
+						continue;
 					}else{ 
-						 if(strlen(password) == strlen(logindata->password) && strcmp(password, logindata->password)){ 
-							 loginresult = 0;
-						 }else{
-							 loginresult = 1;
-						 }
+						if(1 == loginenterprisemanager_search(loginenterprisemanager, logindatadb->enterpriseid, login)){
+							loginresult = 3;
+							continue;
+						}
+
+						if(strlen(password) == strlen(logindatadb->password) && strcmp(password, logindatadb->password)){ 
+							loginresult = 0;
+							loginenterprisemanager_insert(loginenterprisemanager, logindatadb->enterpriseid, logindatadb->login, fds[i+1]);
+							continue;
+						}else{
+							loginresult = 1;
+							continue;
+						}
 					}
 				}
 			}
@@ -95,7 +106,7 @@ void * processmessage(void * param){
 					break;
 				case REQ_REQ:
 					break;
-				defalut:
+defalut:
 					assert(0);
 			}
 		}
@@ -123,7 +134,7 @@ void * formatmessage(void * p){
 	pthread_t tid_fmt = pad->fd_sigfmt;
 	char * buf = (char*)malloc(MAX_FIFO_LEN);
 	memset(buf, 0, MAX_FIFO_LEN);
-	
+
 	int len;
 	int socketfd;
 	char* tmp = buf;
