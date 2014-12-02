@@ -1,5 +1,6 @@
 #define MAXENTERPRISEIDLEN 32
 #define MAXFDCOUNT 1024
+#define MAXLOGINLEN 32
 
 #include <string.h>
 #include <stdlib.h>
@@ -11,12 +12,16 @@ struct loginenterprisemanager{
 	int loginenterprisefdcount;
 };
 
+struct loginfd{
+	login[MAXLOGINLEN];
+	int fd;
+};
+
 struct loginenterprise{
 	struct rb_node node;
 	char enterpriseid[MAXENTERPRISEIDLEN];
-	int fd[MAXFDCOUNT];
-	int maxfdindex;
-	int fdcount;
+	struct loginfd * loginfd;
+	int loginfdcount;
 };
 
 struct loginenterprisemanager * loginenterprisemanager_create(){
@@ -28,7 +33,6 @@ struct loginenterprisemanager * loginenterprisemanager_create(){
 };
 
 void loginenterprisemanager_destroy(struct loginenterprisemanager *manager){
-
 	struct rb_root *root = &manager->root;
 	struct loginenterprise *le;
 	while( root->rb_node ){ 
@@ -42,7 +46,7 @@ void loginenterprisemanager_destroy(struct loginenterprisemanager *manager){
 	free(manager);
 };
 
-struct loginenterprise * _loginenterprisemanager_insert( struct loginenterprisemanager * manager, char * enterpriseid, int fd){ 
+struct loginenterprise * _loginenterprisemanager_insert( struct loginenterprisemanager * manager, char * enterpriseid, char * login, int fd){ 
 	struct rb_node **newnode = &(manager->root.rb_node), *parent = NULL; 
 	struct loginenterprise * lp;
 	int result = 0;
@@ -54,7 +58,12 @@ struct loginenterprise * _loginenterprisemanager_insert( struct loginenterprisem
 			newnode = &((*newnode)->rb_left);
 		}else if(result > 0){
 			newnode = &((*newnode)->rb_right);
-		}else{
+		}else{ 
+			++manager->loginenterprisefdcount; 
+			lp->loginfd = (struct loginfd*)realloc(lp->loginfd,sizeof(struct loginfd)*(lp->loginfdcount+1)); 
+			memcpy(lp->loginfd[loginfdcount].login, login, MIN(MAXLOGINLEN, strlen(login)));
+			lp->loginfd[loginfdcount].fd = fd;
+			++lp->loginfdcount;
 			return lp;
 		}
 	}
@@ -62,44 +71,20 @@ struct loginenterprise * _loginenterprisemanager_insert( struct loginenterprisem
 	++manager->loginenterprisefdcount;
 	struct loginenterprise * loginenterprise = (struct loginenterprise *)malloc(sizeof(struct loginenterprise));
 	memset(loginenterprise, 0, sizeof(struct loginenterprise));
-	memcpy(loginenterprise->enterpriseid, enterpriseid, strlen(enterpriseid));
-	loginenterprise->fd[0] = fd;
-	++loginenterprise->fdcount;
-	++loginenterprise->maxfdindex;
+	memcpy(loginenterprise->enterpriseid, enterpriseid, MIN(MAXENTERPRISEIDLEN, strlen(enterpriseid)));
+	loginenterprise->loginfd = (struct loginfd *)malloc(sizeof(struct loginfd));
+	memcpy(loginenterprise->loginfd->login, login, MIN(MAXLOGINLEN, strlen(login)));
+	loginenterprise->loginfd->fd = fd;
+	++loginenterprise->fdlogincount;
 
 	rb_link_node(&loginenterprise->node, parent, newnode);
 
 	return NULL;
 };
 
-void loginenterprisemanager_insert( struct loginenterprisemanager * manager, char * enterpriseid, int fd){ 
+void loginenterprisemanager_insert( struct loginenterprisemanager * manager, char * enterpriseid, char * login, int fd){ 
 	struct loginenterprise * le;
-	if(le = _loginenterprisemanager_insert(manager, enterpriseid, fd)){
-		int i;
-		for( i = 0; i < le->maxfdindex; ++i){
-			if(fd == le->fd[i]){
-				goto out;
-			}
-		}
-
-		if(le->fdcount < MAXFDCOUNT){
-			if(le->maxfdindex < MAXFDCOUNT){
-				le->fd[le->maxfdindex] = fd;
-			}else{ 
-				for( i = 0; i < le->maxfdindex; ++i){
-					if(le->fd[i] == 0){
-						le->fd[i] = fd;
-					}
-				}
-			}
-			++le->maxfdindex;
-			++le->fdcount;
-		}else{
-			fprintf(stderr, " %s has %d connections , server refuse connect.\n", enterpriseid, MAXFDCOUNT);
-
-			return;
-		}
-
+	if(le = _loginenterprisemanager_insert(manager, enterpriseid, login, fd)){
 		goto out;
 	}
 	rb_insert_color(&le->node, &manager->root);
@@ -108,7 +93,37 @@ out:
 	return;
 }
 
-struct loginenterprise * loginenterprisemanager_search(struct loginenterprisemanager * manager, char * enterpriseid){ 
+int loginenterprisemanager_search(struct loginenterprisemanager * manager, char * enterpriseid, char * login){ 
+	struct rb_root *root = &manager->root;
+	struct rb_node *node = root->rb_node;
+
+	int result;
+	int i;
+
+	while(node){
+		struct loginenterprise * le;
+		le - rb_entry(node, struct loginenterprise, node); 
+
+		result = strcmp(enterpriseid, le->enterpriseid);
+
+		if(result < 0){
+			node = node->rb_left;
+		}else if(result < 0){
+			node = node->rb_right;
+		}else{ 
+			for( i = 0; i < le->loginfdcount; ++i){
+				if((strlen(le->loginfd[i].login) == strlen(login)) && (0 == strcmp(le->loginfd[i].login, login))){
+					return 1
+				}
+			}
+			return 0;
+		}
+	}
+
+	return 0;
+}
+
+struct loginenterprise * _loginenterprisemanager_search(struct loginenterprisemanager * manager, char * enterpriseid){ 
 	struct rb_root *root = &manager->root;
 	struct rb_node *node = root->rb_node;
 
@@ -118,7 +133,7 @@ struct loginenterprise * loginenterprisemanager_search(struct loginenterpriseman
 		le - rb_entry(node, struct loginenterprise, node); 
 
 		result = strcmp(enterpriseid, le->enterpriseid);
-		
+
 		if(result < 0){
 			node = node->rb_left;
 		}else if(result < 0){
@@ -132,14 +147,12 @@ struct loginenterprise * loginenterprisemanager_search(struct loginenterpriseman
 }
 
 int * loginenterprisemanager_getfds(struct loginenterprisemanager *manager, char * enterpriseid){
-	struct loginenterprise * le = loginenterprisemanager_search(manager, enterpriseid); 
-	int fdcount = le->fdcount;
-	int * result = (int *)malloc(sizeof(int)*(fdcount+1));
-	int i,j;
-	for(i = 0, j= 0; i < le->maxfdindex; ++i){ 
-		if(0 != le->fd[i]){
-			result[j++] = le->fd[i];
-		}
+	struct loginenterprise * le = _loginenterprisemanager_search(manager, enterpriseid); 
+	int fdcount = le->loginfdcount;
+	int * result = (int *)malloc(sizeof(int)*fdcount);
+	int i;
+	for(i = 0; i < le->loginfdcount; ++i){ 
+		result[i] = le->loginfd[i].fd;
 	}
 
 	return result;

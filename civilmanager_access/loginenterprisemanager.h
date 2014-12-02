@@ -9,6 +9,8 @@ void loginenterprisemanager_destroy(struct loginenterprisemanager *manager);
 
 void loginenterprisemanager_insert( struct loginenterprisemanager * manager, char * enterpriseid, int fd); 
 
+int loginenterprisemanager_search(struct loginenterprisemanager * manager, char * enterpriseid, char * login); 
+
 int * loginenterprisemanager_getfds(struct loginenterprisemanager *manager, char * enterpriseid);
 
 #endif
