@@ -14,6 +14,7 @@
 #include "cndef.h"
 #include "zmq_buffer.h"
 #include "loginmanager.h"
+#include "loginenterprisemanager.h"
 
 #define MAX_FIFO_LEN 4096
 struct processappdata{

@@ -19,8 +19,8 @@ struct loginmanager * loginmanager_create(){
 	return manager;
 }
 
-void loginmanager_destroy(struct loginmanager * em){
-	struct rb_root *root = &em->root;
+void loginmanager_destroy(struct loginmanager * lm){
+	struct rb_root *root = &lm->root;
 	struct login * login = NULL;  
 	while( root->rb_node ){ 
 		login = rb_entry(root->rb_node, struct login, node);
@@ -29,6 +29,8 @@ void loginmanager_destroy(struct loginmanager * em){
 
 		rb_erase(root->rb_node, root);
 	}
+
+	free(lm);
 }
 
 struct login * loginmanager_search(struct loginmanager *manager, const char *login){
@@ -61,7 +63,7 @@ struct login * _loginmanager_insert(struct loginmanager *manager, struct login *
 	while (*newnode)
 	{
 		ent = rb_entry(*newnode, struct login, node);
-		int result = strcmp(data->login, ent->login);
+		result = strcmp(data->login, ent->login);
 		parent = *newnode;
 
 		if (result < 0)
