@@ -12,9 +12,9 @@
 #define MAXFIFOLEN 4096
 
 struct write_buffer {
-	struct write_buffer * next;
+	char *buffer;
 	int sz;
-	void *buffer;
+	struct write_buffer * next;
 };
 
 struct fd_buffer{
@@ -24,7 +24,9 @@ struct fd_buffer{
 	struct kfifo * fifo;	
 	struct list_head highprilist;
 	struct list_head normalprilist;
-	struct write_buffer * buffer;
+	pthread_cond_t writeready;
+	pthread_mutex_t writelock;
+	struct write_buffer * writebuffer;
 	struct fd_buffer * next;
 };
 
@@ -85,6 +87,8 @@ int sockets_buffer_add(struct sockets_buffer* sockets_buf, int fd,char *ip, unsi
 		INIT_LIST_HEAD(&sockets_buf->slot[index]->highprilist);
 		INIT_LIST_HEAD(&sockets_buf->slot[index]->normalprilist);
 		memcpy(sockets_buf->slot[index]->ip, ip, strlen(ip));
+		pthread_cond_init(&sockets_buf->slot[index]->writeready, NULL);
+		pthread_mutex_init(&sockets_buf->slot[index]->writelock, NULL);
 		if( unlikely((sockets_buf->slot[index]->fifo = kfifo_init(MAXFIFOLEN)) == NULL)){
 			fprintf(stderr, "fifo init error. %s %s %d\n", __FILE__, __FUNCTION__, __LINE__);
 
@@ -106,6 +110,8 @@ int sockets_buffer_add(struct sockets_buffer* sockets_buf, int fd,char *ip, unsi
 			element->fd = fd;
 			INIT_LIST_HEAD(&element->highprilist);
 			INIT_LIST_HEAD(&element->normalprilist);
+			pthread_cond_init(element->writeready, NULL);
+			pthread_mutex_init(element->writelock, NULL);
 			memcpy(sockets_buf->slot[index]->ip, ip, strlen(ip));
 			if(unlikely((element->fifo = kfifo_init(MAXFIFOLEN)) == NULL)){ 
 				fprintf(stderr, "fifo init error.%s %s %d\n",__FILE__, __FUNCTION__, __LINE__);
@@ -133,6 +139,9 @@ int sockets_buffer_del(struct sockets_buffer* buf, int fd){
 		if(p->fd == fd){
 			kfifo_free(p->fifo);
 			p->fifo = NULL;
+			pthread_mutex_destroy(&p->writelock);
+			pthread_cond_destroy(&p->writeready);
+
 			break;
 		}
 	}
@@ -198,7 +207,7 @@ struct fd_buffer* sockets_buffer_getfdbuffer(struct sockets_buffer* sbuf, int fd
 }
 
 struct kfifo* sockets_buffer_getrawdata(struct sockets_buffer * sbuf, int fd){
-	fd_buffer * fdbuf = sockets_buffer_getfdbuffer(sbuf, fd);
+	struct fd_buffer * fdbuf = sockets_buffer_getfdbuffer(sbuf, fd);
 	if(fdbuf != NULL){
 		return fdbuf->fifo;
 	}
@@ -206,17 +215,17 @@ struct kfifo* sockets_buffer_getrawdata(struct sockets_buffer * sbuf, int fd){
 	return NULL;
 }
 struct list_head* sockets_buffer_gethighlist(struct sockets_buffer * sbuf, int fd){
-	fd_buffer * fdbuf = sockets_buffer_getfdbuffer(sbuf, fd);
+	struct fd_buffer * fdbuf = sockets_buffer_getfdbuffer(sbuf, fd);
 	if(fdbuf != NULL){
-		return fdbuf->highprilist;
+		return &fdbuf->highprilist;
 	}
 
 	return NULL;
 }
 struct list_head* sockets_buffer_getnormallist(struct sockets_buffer * sbuf, int fd){
-	fd_buffer * fdbuf = sockets_buffer_getfdbuffer(sbuf, fd);
+	struct fd_buffer * fdbuf = sockets_buffer_getfdbuffer(sbuf, fd);
 	if(fdbuf != NULL){
-		return fdbuf->normalprilist;
+		return &fdbuf->normalprilist;
 	}
 
 	return NULL;
@@ -229,14 +238,15 @@ void sockets_buffer_signal(struct sockets_buffer * sbuf, int fd){
 	pthread_cond_signal(&sbuf->tasklistready);
 }
 
-struct int* sockets_buffer_getsignalfdfifo(struct sockets_buffer * sbuf){
+int * sockets_buffer_getsignalfdfifo(struct sockets_buffer * sbuf){
 	int * activefds = NULL;
+	int fdfifolen = 0;
 	for(;;){
 		pthread_mutex_lock(&sbuf->tasklistlock);
 		while(fdfifo_len(sbuf->tasklist) == 0){
 			pthread_cond_wait(&sbuf->tasklistready, &sbuf->tasklistlock);
 		} 
-		fdfifolen = fdfifo_len(sbuf_tasklist);
+		fdfifolen = fdfifo_len(sbuf->tasklist);
 		activefds = (int*)malloc((fdfifolen+1)*sizeof(int)); 
 		if(activefds == NULL){
 			fprintf(stderr, "malloc %d bytes error. %s %s %d\n", fdfifolen+1, __FILE__, __FUNCTION__, __LINE__);
@@ -249,4 +259,56 @@ struct int* sockets_buffer_getsignalfdfifo(struct sockets_buffer * sbuf){
 
 		return activefds;
 	}
+}
+
+int sockets_buffer_write(struct sockets_buffer * sbuf, int fd; char * buffer){ 
+	int index = fd % sbuf->slotcount;
+	struct write_buffer * writebuffer = NULL; * prewritebuffer = fdbuffer->writebuffer;
+	struct fd_buffer * fdbuffer  = sbuf->slot[index];
+	pthread_mutex_lock(&fdbuffer->writelock);
+	while(fdbuffer != NULL){
+		if(fdbuffer->fd != fd){
+			fdbuffer = fdbuffer->next;
+		}else{ 
+			writebuffer = fdbuffer->writebuffer;
+			while(writebuffer!=NULL){
+				prewritebuffer = writebuffer;
+				writebuffer = writebuffer->next;
+			}
+			writebuffer = (struct fdbuffer *)malloc(sizeof(struct fdbuffer));
+			memset(writebuffer, 0, sizeof(struct write_buffer)); 
+			writebuffer->buffer = strdup(buffer);
+			writebuffer->sz = strlen(buffer)+1;
+			if(prewritebuffer != NULL){
+				prewritebuffer->next = writebuffer; 
+			}else{
+				fdbuffer->writebuffer = writebuffer;
+			}
+			break;
+		}
+	}
+	pthread_mutex_unlock(&fdbuffer->writelock);
+	pthread_cond_signal(&fdbuffer->writeready);
+}
+
+char * sockets_buffer_getwritebuffer(struct sockets_buffer * sbuf, int fd){
+	int index = fd % sbuf->slotcount;
+	struct fd_buffer * fdbuffer = sbuf->slot[index];
+	struct write_buffer * writebuffer;
+
+	pthread_mutex_lock(&fdbuffer->writelock);
+	
+	while(fdbuffer != NULL){
+		if(fdbuffer->fd != fd){
+			fdbuffer = fdbuffer->next;
+		}else{ 
+			writebuffer = fdbuffer->writebuffer;
+			fdbuffer->writebuffer = writebuffer->next;
+
+			return writebuffer;
+		}
+	}
+	pthread_mutex_unlock(&fdbuffer->writelock);
+
+	return NULL;
 }
