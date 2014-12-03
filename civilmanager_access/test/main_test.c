@@ -7,15 +7,9 @@
 #include <string.h>
 #include <assert.h>
 #include <errno.h>
-#include "cndef.h"
-#include "sockets_buffer.h"
-#include "cnconsole.h"
-#include "processappdata.h"
-#include "dblogin.h"
-#include "loginmanager.h"
 
 #define MAX_EVENT 64 
-#define MAX_ACCEPTSOCKETS 1024
+#define MAX_ACCEPTSOCKETS 10240
 #define MAX_RECVLEN 4096
 
 void setnonblocking(int sock) {
@@ -44,22 +38,9 @@ int main(){
 	//	ev.data.fd = STDIN_FILENO;
 	//	if(-1 == epoll_ctl(efd, EPOLL_CTL_ADD, STDIN_FILENO, &ev)){
 	//		fprintf(stderr, "add to epoll error. %s %d\n", __FILE__,__LINE__);
-int main(){ 
-	int efd = epoll_create1(O_CLOEXEC);
-	if(efd == -1){
-		fprintf(stderr, "create epoll error. %s %d\n", __FILE__,__LINE__);
-
-		return -1;
-	}
-
-	struct epoll_event ev;
-	ev.events = EPOLLIN;
-	ev.data.fd = STDIN_FILENO;
-	if(-1 == epoll_ctl(efd, EPOLL_CTL_ADD, STDIN_FILENO, &ev)){
-		fprintf(stderr, "add to epoll error. %s %d\n", __FILE__,__LINE__);
-
-		return -1;
-	}
+	//
+	//		return -1;
+	//	}
 
 	int listen_fd = socket(AF_INET, SOCK_STREAM, 0);
 	if(listen_fd == -1){
@@ -104,60 +85,33 @@ int main(){
 	unsigned char buf[MAX_RECVLEN];
 	int len;
 
-	int fdsig[2];
-	if(pipe2(fdsig,O_CLOEXEC) == -1){
-		fprintf(stderr,"create pipe error.%s %s %d\n", __FILE__, __FUNCTION__, __LINE__);
-		close(listen_fd);
-		close(efd);
-
-		return -1;
-	}
 	char fdbuf[16]; 
 	int buflen;
-
-	struct sockets_buffer* socket_buf = sockets_buffer_create(MAX_ACCEPTSOCKETS);
-	assert(socket_buf != NULL);
-	struct loginmanager * loginmanager = loginmanager_create();
-	assert(loginmanager != NULL);
-	struct processappdata * pad = processappdata_create(socket_buf, fdsig[0]);
-	assert(pad != NULL);
-	struct dblogin * dblogin = dblogin_start(loginmanager);
-	assert(dblogin != NULL);
+	int retval = 0;
 
 	for(;;){ 
 		nfds = epoll_wait(efd, events, MAX_EVENT, -1);
 
 		for(i = 0; i< nfds; ++i){
 			if( (events[i].events & EPOLLERR) ||
-				(events[i].events & EPOLLHUP) || 
-				(events[i].events & EPOLLIN)){
-					fprintf(stderr, "epoll error.\n");
-					close(events[i].data.fd);
-					continue;
+					(events[i].events & EPOLLHUP)){
+				fprintf(stderr, "epoll error. %d\n", events[i].events);
+				close(events[i].data.fd);
+				continue;
 			}else if(events[i].data.fd == listen_fd){ 
 				conn_fd = accept(listen_fd, NULL, NULL);
-				if(unlikely(conn_fd == -1)){
-					fprintf(stderr, "conn socket error. %s %s %d\n", __FILE__,__FUNCTION__,__LINE__);
+				if((conn_fd == -1)){
+					fprintf(stderr, "conn socket error. %s %s %d %s\n", __FILE__,__FUNCTION__,__LINE__, strerror(errno));
 					continue;
 				}
+				//fcntl(conn_fd, F_SETFD, (fcntl(conn_fd, F_GETFD)|O_NONBLOCK));
 				setnonblocking(conn_fd);
 				ev.events = EPOLLIN | EPOLLET;
 				ev.data.fd = conn_fd;
-				if(unlikely(epoll_ctl(efd, EPOLL_CTL_ADD, conn_fd, &ev) == -1)){
+				if((epoll_ctl(efd, EPOLL_CTL_ADD, conn_fd, &ev) == -1)){
 					fprintf(stderr, "connected socket add to epoll error. %s %s %d\n", __FILE__,__FUNCTION__,__LINE__);
 
 					close(conn_fd);
-				}
-			}else if(events[i].data.fd == STDIN_FILENO){ 
-				len = read(STDIN_FILENO, buf, MAX_RECVLEN);
-				int cmd = console_parsecmd(buf, socket_buf);
-				if(cmd == QUIT){
-					write(fdsig[1], "1*", 2);
-					processappdata_join(pad);
-					close(listen_fd);
-					close(efd);
-
-					goto exit_flag;
 				}
 			}else{ 
 				for(;;){
@@ -170,35 +124,28 @@ int main(){
 							// Closing the descriptor will make epoll remove it
 							// from the set of descriptors which are monitored.
 							close (events[i].data.fd);
+							break;
 						}
 						break;
 					}else if(len == 0){
 						printf ("Closed connection on descriptor %d\n", events[i].data.fd);
 
-					    // Closing the descriptor will make epoll remove it
-					    // from the set of descriptors which are monitored.
-					    close (events[i].data.fd);
+						// Closing the descriptor will make epoll remove it
+						// from the set of descriptors which are monitored.
+						close (events[i].data.fd);
 						break;
 					}
 
 					buf[len] = 0;
+					if(len == 4){
+						fprintf(stdout, "%s\n", buf);
+					}
+				}
 
-					sockets_buffer_add(socket_buf, events[i].data.fd,"192.168.1.1",  buf, len);
-				}
-				
-				memset(fdbuf, 0, 16);
-				buflen = sprintf(fdbuf, "%d*",events[i].data.fd);
-				if(-1 == write(fdsig[1], fdbuf, buflen)){
-					fprintf(stderr, "write pipe error.%s %s %d\n", __FILE__, __FUNCTION__, __LINE__);
-				}
 			}
 		}
 	}
 exit_flag:
-	sockets_buffer_destroy(socket_buf);
-	processappdata_destroy(pad);
-	loginmanager_destroy(loginmanager);
-	dblogin_end(dblogin);
 
 	return 0;
 }
