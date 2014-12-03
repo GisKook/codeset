@@ -104,8 +104,8 @@ int main(){
 					fprintf(stderr, "conn socket error. %s %s %d %s\n", __FILE__,__FUNCTION__,__LINE__, strerror(errno));
 					continue;
 				}
-				//fcntl(conn_fd, F_SETFD, (fcntl(conn_fd, F_GETFD)|O_NONBLOCK));
-				setnonblocking(conn_fd);
+				fcntl(conn_fd, F_SETFL, (fcntl(conn_fd, F_GETFL)|O_NONBLOCK));
+				//setnonblocking(conn_fd);
 				ev.events = EPOLLIN | EPOLLET;
 				ev.data.fd = conn_fd;
 				if((epoll_ctl(efd, EPOLL_CTL_ADD, conn_fd, &ev) == -1)){

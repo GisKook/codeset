@@ -18,19 +18,6 @@
 #define MAX_ACCEPTSOCKETS 1024
 #define MAX_RECVLEN 4096
 
-void setnonblocking(int sock) {
-	int opt;
-
-	opt = fcntl(sock, F_GETFL);
-	if (opt < 0) {
-		printf("fcntl(F_GETFL) fail.");
-	}
-	opt |= O_NONBLOCK;
-	if (fcntl(sock, F_SETFL, opt) < 0) {
-		printf("fcntl(F_SETFL) fail.");
-	}
-}
-
 int main(){ 
 	int efd = epoll_create1(O_CLOEXEC);
 	if(efd == -1){
@@ -140,7 +127,7 @@ int main(){
 					fprintf(stderr, "conn socket error. %s %s %d\n", __FILE__,__FUNCTION__,__LINE__);
 					continue;
 				}
-				setnonblocking(conn_fd);
+				fcntl(conn_fd, F_SETFL, (fcntl(conn_fd, F_GETFL)|O_NONBLOCK));
 				ev.events = EPOLLIN | EPOLLET;
 				ev.data.fd = conn_fd;
 				if(unlikely(epoll_ctl(efd, EPOLL_CTL_ADD, conn_fd, &ev) == -1)){
