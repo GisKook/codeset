@@ -147,6 +147,7 @@ struct dblogin * dblogin_start(struct loginmanager * manager){
 
 		return NULL;
 	}
+	fprintf(stdout, "thread 0x%lx database monitor thread create successfully.\n", dblogin->tidmonitor);
 
 	//loginmanager_print(manager);
 	return dblogin;

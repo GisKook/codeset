@@ -13,12 +13,19 @@
 #include "processappdata.h"
 #include "dblogin.h"
 #include "loginmanager.h"
+#include "cnconfig.h"
 
 #define MAX_EVENT 64 
 #define MAX_ACCEPTSOCKETS 1024
 #define MAX_RECVLEN 4096
 
 int main(){ 
+	if( 0 != cnconfig_loadfile("./conf.json")){
+		fprintf(stderr, "config file is not load well.\n");
+		return -1;
+	}
+
+
 	int efd = epoll_create1(O_CLOEXEC);
 	if(efd == -1){
 		fprintf(stderr, "create epoll error. %s %d\n", __FILE__,__LINE__);
@@ -27,13 +34,13 @@ int main(){
 	}
 
 	struct epoll_event ev;
-	ev.events = EPOLLIN;
-	ev.data.fd = STDIN_FILENO;
-	if(-1 == epoll_ctl(efd, EPOLL_CTL_ADD, STDIN_FILENO, &ev)){
-		fprintf(stderr, "add to epoll error. %s %d\n", __FILE__,__LINE__);
-
-		return -1;
-	}
+//	ev.events = EPOLLIN;
+//	ev.data.fd = STDIN_FILENO;
+//	if(-1 == epoll_ctl(efd, EPOLL_CTL_ADD, STDIN_FILENO, &ev)){
+//		fprintf(stderr, "add to epoll error. %s %d\n", __FILE__,__LINE__);
+//
+//		return -1;
+//	}
 
 	int listen_fd = socket(AF_INET, SOCK_STREAM, 0);
 	if(listen_fd == -1){
@@ -104,7 +111,7 @@ int main(){
 		for(i = 0; i< nfds; ++i){
 			if( (events[i].events & EPOLLERR) ||
 				(events[i].events & EPOLLHUP) || 
-				(events[i].events & EPOLLIN)){
+				!(events[i].events & EPOLLIN)){
 					fprintf(stderr, "epoll error.\n");
 					close(events[i].data.fd);
 					continue;
