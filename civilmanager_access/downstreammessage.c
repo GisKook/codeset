@@ -72,7 +72,7 @@ void * downstream(void *param){
 	}
 }
 
-struct downstreammessage * downstreammessage_create(struct sockets_buffer * sbuffer,int fd){ 
+struct downstreammessage * downstreammessage_create(struct sockets_buffer * sbuffer){ 
 	struct downstreammessage * downstreammessage = (struct downstreammessage *)malloc(sizeof(struct downstreammessage));
 	downstreammessage->sockbuffer = sbuffer; 
 	pthread_t tid;

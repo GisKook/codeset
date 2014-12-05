@@ -17,6 +17,7 @@
 #include "loginenterprisemanager.h"
 #include "list.h"
 #include "encodeprotocol.h"
+#include "downstreammessage.h"
 
 #define MAX_FIFO_LEN 4096
 struct processappdata{
@@ -26,6 +27,7 @@ struct processappdata{
 	int fd_sigfmt;
 	struct sockets_buffer* sbuf;
 	struct loginmanager * loginmanager;
+	struct downstreammessage * dsm;
 };
 
 void * processlogin(void * param){
@@ -205,6 +207,10 @@ struct processappdata * processappdata_create(struct sockets_buffer * sbuf, stru
 		return NULL;
 	}
 	fprintf(stdout, "thread 0x%lx format application data create successfully.\n", pad->threadid_fmt);
+
+
+	struct downstreammessage * dsm = downstreammessage_create(sbuf);
+	pad->dsm = dsm;
 
 	return pad;
 }
