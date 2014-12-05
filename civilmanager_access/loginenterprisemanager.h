@@ -7,7 +7,7 @@ struct loginenterprisemanager * loginenterprisemanager_create();
 
 void loginenterprisemanager_destroy(struct loginenterprisemanager *manager);
 
-void loginenterprisemanager_insert( struct loginenterprisemanager * manager, char * enterpriseid, int fd); 
+void loginenterprisemanager_insert( struct loginenterprisemanager * manager, char * enterpriseid, char * login, int fd); 
 
 int loginenterprisemanager_search(struct loginenterprisemanager * manager, char * enterpriseid, char * login); 
 

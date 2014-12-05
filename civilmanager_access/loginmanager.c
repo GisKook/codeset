@@ -1,3 +1,4 @@
+//管理所有连接
 #include <string.h>
 #include <stdio.h>
 
@@ -5,6 +6,7 @@
 #include "rbtree.h"
 #include "toolkit.h"
 #include "cndef.h"
+#include "toolkit.h"
 
 struct loginmanager{
 	struct rb_root root;

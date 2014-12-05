@@ -1,3 +1,4 @@
+//管理一个公司下的所有连接
 #define MAXENTERPRISEIDLEN 32
 #define MAXFDCOUNT 1024
 #define MAXLOGINLEN 32
@@ -6,6 +7,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include "rbtree.h"
+#include "cndef.h"
+#include "toolkit.h"
 
 struct loginenterprisemanager{
 	struct rb_root root;
@@ -13,7 +16,7 @@ struct loginenterprisemanager{
 };
 
 struct loginfd{
-	login[MAXLOGINLEN];
+	char login[MAXLOGINLEN];
 	int fd;
 };
 
@@ -52,7 +55,7 @@ struct loginenterprise * _loginenterprisemanager_insert( struct loginenterprisem
 	int result = 0;
 
 	while( *newnode ){ 
-		lp = rb_entey( *newnode, struct loginenterprise, node); 
+		lp = rb_entry( *newnode, struct loginenterprise, node); 
 		result = strcmp(enterpriseid, lp->enterpriseid);
 		if(result < 0){
 			newnode = &((*newnode)->rb_left);
@@ -61,8 +64,8 @@ struct loginenterprise * _loginenterprisemanager_insert( struct loginenterprisem
 		}else{ 
 			++manager->loginenterprisefdcount; 
 			lp->loginfd = (struct loginfd*)realloc(lp->loginfd,sizeof(struct loginfd)*(lp->loginfdcount+1)); 
-			memcpy(lp->loginfd[loginfdcount].login, login, MIN(MAXLOGINLEN, strlen(login)));
-			lp->loginfd[loginfdcount].fd = fd;
+			memcpy(lp->loginfd[lp->loginfdcount].login, login, MIN(MAXLOGINLEN, strlen(login)));
+			lp->loginfd[lp->loginfdcount].fd = fd;
 			++lp->loginfdcount;
 			return lp;
 		}
@@ -75,7 +78,7 @@ struct loginenterprise * _loginenterprisemanager_insert( struct loginenterprisem
 	loginenterprise->loginfd = (struct loginfd *)malloc(sizeof(struct loginfd));
 	memcpy(loginenterprise->loginfd->login, login, MIN(MAXLOGINLEN, strlen(login)));
 	loginenterprise->loginfd->fd = fd;
-	++loginenterprise->fdlogincount;
+	++loginenterprise->loginfdcount;
 
 	rb_link_node(&loginenterprise->node, parent, newnode);
 
@@ -113,7 +116,7 @@ int loginenterprisemanager_search(struct loginenterprisemanager * manager, char 
 		}else{ 
 			for( i = 0; i < le->loginfdcount; ++i){
 				if((strlen(le->loginfd[i].login) == strlen(login)) && (0 == strcmp(le->loginfd[i].login, login))){
-					return 1
+					return 1;
 				}
 			}
 			return 0;

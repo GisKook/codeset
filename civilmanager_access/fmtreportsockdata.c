@@ -15,7 +15,7 @@ unsigned char tmp[TMPSIZE];
 unsigned int tmplen = 0;
 
 int fmtreportsockdata_add(struct sockets_buffer * sbuf, int fd){
-	struct kfifo* fifo = sockets_buffer_getfifo(sbuf, fd);
+	struct kfifo* fifo = sockets_buffer_getrawdata(sbuf, fd);
 	struct list_head* highpri_head = sockets_buffer_gethighlist(sbuf, fd);
 	struct list_head* normalpri_head = sockets_buffer_getnormallist(sbuf, fd);
 
@@ -36,9 +36,9 @@ int fmtreportsockdata_add(struct sockets_buffer * sbuf, int fd){
 
 		retcode = parseprotocol_parserequest( rcmsg->message, tmp, parselen);
 		if(retcode == REQ_LOGIN){
-			list_add_tail(rcmsg->list, highpri_head);
-		}else(retcode == REQ_LOGOFF || retcode == REQ_HEARTBEAT || retcode == REQ_REQ){
-			list_add_tail(rcmsg->list, normalpri_head);
+			list_add_tail(&rcmsg->list, highpri_head);
+		}else if(retcode == REQ_LOGOFF || retcode == REQ_HEARTBEAT || retcode == REQ_REQ){
+			list_add_tail(&rcmsg->list, normalpri_head);
 		}
 
 		rcmsg = NULL;

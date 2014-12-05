@@ -16,12 +16,13 @@
 #include "loginmanager.h"
 #include "loginenterprisemanager.h"
 #include "list.h"
+#include "encodeprotocol.h"
 
 #define MAX_FIFO_LEN 4096
 struct processappdata{
 	pthread_t threadid_fmt;
 	pthread_t threadid_upward;
-	pthread_t threadid_downword;
+	pthread_t threadid_downward;
 	int fd_sigfmt;
 	struct sockets_buffer* sbuf;
 	struct loginmanager * loginmanager;
@@ -37,11 +38,14 @@ void * processlogin(void * param){
 	int i;
 	struct fmtreportsockdata * logindata; 
 	struct parseprotocol_request * request;
-	list_head * pos, * n;
+	struct list_head * pos, * n;
 	char * login;
 	char * password;
 	int loginresult = -1; // 0 成功 1 密码错误 2 没有此用户 3 该用户已经登录
 	struct loginenterprisemanager * loginenterprisemanager = loginenterprisemanager_create();
+	struct encodeprotocol_respond epr;
+	struct respondlogin respondlogin = {{0}, -1};
+	int len = 0;
 	for(;;){
 		fds = sockets_buffer_getsignalfdfifo(pad->sbuf);
 		fdscount = fds[0]; 
@@ -55,24 +59,30 @@ void * processlogin(void * param){
 					password = request->message.login->password; 
 					logindata = NULL;
 					logindatadb = loginmanager_search(loginmanager, login);
+
+					memset(respondlogin.account, 0, 12);
+					memcpy(respondlogin.account, login, MIN(12, strlen(login)));
 					if(logindata == NULL){
-						loginresult = 2; 
+						respondlogin.loginresult = 2;
 						continue;
 					}else{ 
 						if(1 == loginenterprisemanager_search(loginenterprisemanager, logindatadb->enterpriseid, login)){
-							loginresult = 3;
+							respondlogin.loginresult = 3;
 							continue;
 						}
 
 						if(strlen(password) == strlen(logindatadb->password) && strcmp(password, logindatadb->password)){ 
-							loginresult = 0;
+							respondlogin.loginresult = 0;
 							loginenterprisemanager_insert(loginenterprisemanager, logindatadb->enterpriseid, logindatadb->login, fds[i+1]);
 							continue;
 						}else{
-							loginresult = 1;
+							respondlogin.loginresult = 1;
 							continue;
 						}
 					}
+					epr.messagetype = RES_LOGIN;
+					epr.message.respondlogin= &respondlogin;
+					sockets_buffer_write(pad->sbuf, fds[i+1], &epr);
 				}
 			}
 		}
@@ -82,52 +92,52 @@ void * processlogin(void * param){
 }
 
 void * processmessage(void * param){ 
-	void* ctx = zmq_ctx_new();
-	assert(ctx != NULL);
-	void* socket = zmq_socket(ctx, ZMQ_PUSH); 
-	assert(socket != NULL);
-	int rc = zmq_bind(socket, "tcp://*:8888");
-	assert(rc == 0);
-
-	struct list_head * head = ((struct processappdata*)param)->head;
-	int fd = ((struct processappdata*)param)->fd_sigprocess;
-	struct fmtreportsockdata* entry;
-	struct list_head *pos, *n;
-	for(;;){
-		read(fd, buf, 1); 
-		list_for_each_safe(pos, n, head){
-			entry = container_of(pos, struct fmtreportsockdata, list); 
-			switch( entry->messagetype ){
-				case REQ_LOGIN:
-					break;
-				case REQ_LOGOFF:
-					break;
-				case REQ_HEARTBEAT:
-					break;
-				case REQ_REQ:
-					break;
-defalut:
-					assert(0);
-			}
-		}
-	}
-	zmq_msg_t msg;
-	rc = zmq_msg_init(&msg);
-	zmq_close(socket);
-	zmq_ctx_destroy(ctx);
+//	void* ctx = zmq_ctx_new();
+//	assert(ctx != NULL);
+//	void* socket = zmq_socket(ctx, ZMQ_PUSH); 
+//	assert(socket != NULL);
+//	int rc = zmq_bind(socket, "tcp://*:8888");
+//	assert(rc == 0);
+//
+//	struct list_head * head = ((struct processappdata*)param)->head;
+//	int fd = ((struct processappdata*)param)->fd_sigprocess;
+//	struct fmtreportsockdata* entry;
+//	struct list_head *pos, *n;
+//	for(;;){
+//		read(fd, buf, 1); 
+//		list_for_each_safe(pos, n, head){
+//			entry = container_of(pos, struct fmtreportsockdata, list); 
+//			switch( entry->messagetype ){
+//				case REQ_LOGIN:
+//					break;
+//				case REQ_LOGOFF:
+//					break;
+//				case REQ_HEARTBEAT:
+//					break;
+//				case REQ_REQ:
+//					break;
+//defalut:
+//					assert(0);
+//			}
+//		}
+//	}
+//	zmq_msg_t msg;
+//	rc = zmq_msg_init(&msg);
+//	zmq_close(socket);
+//	zmq_ctx_destroy(ctx);
 
 	pthread_exit(0);
 }
 
-int exit(struct processappdata* pad, pthread_t tid_db, pthread_t tid_upward){
-	char tipsbuf[64] = {0};
-	sprintf(tipsbuf, "thread 0x%lx prepare to exit.\n", pthread_self()); 
-	fprintf(stdout, tipsbuf);
-	pthread_join(tid_db, NULL);
-	pthread_join(tid_upward, NULL);
-
-	return 0;
-}
+//int proexit(struct processappdata* pad, pthread_t tid_db, pthread_t tid_upward){
+//	char tipsbuf[64] = {0};
+//	sprintf(tipsbuf, "thread 0x%lx prepare to exit.\n", pthread_self()); 
+//	fprintf(stdout, tipsbuf);
+//	pthread_join(tid_db, NULL);
+//	pthread_join(tid_upward, NULL);
+//
+//	return 0;
+//}
 
 void * formatmessage(void * p){
 	struct processappdata * pad = (struct processappdata *)p;
@@ -141,10 +151,10 @@ void * formatmessage(void * p){
 	int leftlength = 0;
 	for(;;){ 
 		len = read(pad->fd_sigfmt, buf+leftlength, MAX_FIFO_LEN);
-		while(toolkit_strsep(buf, '*') != NULL){ 
+		while(toolkit_strsep2(buf, '*') != NULL){ 
 			socketfd=atoi(buf); 
 			if(unlikely(socketfd == 1)){ // magic number 1 means exit.
-				exit(pad, tid_db, tid_upward);
+	//			exit(pad, tid_db, tid_upward);
 				free(buf);
 				buf = NULL;
 				return NULL;
@@ -166,19 +176,11 @@ struct processappdata * processappdata_create(struct sockets_buffer * sbuf, stru
 		fprintf(stderr, "malloc error. %s %s %d\n", __FILE__, __FUNCTION__, __LINE__);
 		return NULL;
 	} 
-	INIT_LIST_HEAD(&pad->head); 
 	pad->fd_sigfmt = fd_sigfmt;
 	pad->sbuf = sbuf;
 	pad->loginmanager = loginmanager;
-	if(0 != pthread_create(&pad->threadid_fmt, NULL, formatmessage, pad)){
-		free(pad);
-		pad = NULL;
-		fprintf(stderr,"thread create error. %s %s %d\n", __FILE__, __FUNCTION__, __LINE__);
-		return NULL;
-	}
-	fprintf(stdout, "thread 0x%lx format application data create successfully.\n", pad->threadid_fmt);
 
-	if(0 != pthread_create(&pad->threadid_upward, NULL, processappdata, pad)){
+	if(0 != pthread_create(&pad->threadid_upward, NULL, processmessage, pad)){
 		free(pad);
 		pad = NULL;
 		fprintf(stderr, "thread upword error. %s %s %d\n",__FILE__, __FUNCTION__, __LINE__);
@@ -187,14 +189,22 @@ struct processappdata * processappdata_create(struct sockets_buffer * sbuf, stru
 	}
 	fprintf(stdout, "thread 0x%lx upword application data create successfully.\n", pad->threadid_upward);
 
-	if(0 != pthread_create(&pad->threadid_downword, NULL, processlogin, pad)){
+	if(0 != pthread_create(&pad->threadid_downward, NULL, processlogin, pad)){
 		free(pad);
 		pad = NULL;
 		fprintf(stderr, "thread processlogin error. %s %s %d\n",__FILE__, __FUNCTION__, __LINE__);
 
 		return NULL;
 	}
-	fprintf(stdout, "thread 0x%lx processlogin create successfully.\n", pad->threadid_downword);
+	fprintf(stdout, "thread 0x%lx processlogin create successfully.\n", pad->threadid_downward);
+
+	if(0 != pthread_create(&pad->threadid_fmt, NULL, formatmessage, pad)){
+		free(pad);
+		pad = NULL;
+		fprintf(stderr,"thread create error. %s %s %d\n", __FILE__, __FUNCTION__, __LINE__);
+		return NULL;
+	}
+	fprintf(stdout, "thread 0x%lx format application data create successfully.\n", pad->threadid_fmt);
 
 	return pad;
 }

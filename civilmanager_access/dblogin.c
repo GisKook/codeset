@@ -1,3 +1,4 @@
+//监听数据库的变化,动态的修改内存，服务loginmanager模块
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>

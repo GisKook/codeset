@@ -4,6 +4,9 @@
 struct sockets_buffer;
 struct kfifo;
 struct list_head;
+struct mqueue;
+struct encodeprotocol_respond;
+
 struct sockets_buffer* sockets_buffer_create(unsigned int slotcount);
 struct sockets_buffer* sockets_buffer_add(struct sockets_buffer* sockets_buf, int fd, char* ip, unsigned char* buf, int len);
 
@@ -17,10 +20,12 @@ int sockets_buffer_destroy(struct sockets_buffer* buf);
 int sockets_buffer_print(struct sockets_buffer* buf);
 
 void sockets_buffer_signal(struct sockets_buffer * sbuf, int fd);
-struct int* sockets_buffer_getsignalfdfifo(struct sockets_buffer * sbuf);
+int* sockets_buffer_getsignalfdfifo(struct sockets_buffer * sbuf);
 
+int sockets_buffer_write(struct sockets_buffer * sbuf, int fd, struct encodeprotocol_respond * epr);
 
-int sockets_buffer_write(struct sockets_buffer * sbuf, int fd; char * buffer); 
-char * sockets_buffer_getwritebuffer(struct sockets_buffer * sbuf, int fd);
+int * sockets_buffer_getdownstreamsignal(struct sockets_buffer * sbuf);
+
+struct mqueue * sockets_buffer_getwritequeue(struct sockets_buffer * sbuf, int fd);
 
 #endif

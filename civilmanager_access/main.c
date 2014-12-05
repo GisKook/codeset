@@ -27,19 +27,6 @@ int main(){
 	}
 
 	struct epoll_event ev;
-	//	ev.events = EPOLLIN;
-	//	ev.data.fd = STDIN_FILENO;
-	//	if(-1 == epoll_ctl(efd, EPOLL_CTL_ADD, STDIN_FILENO, &ev)){
-	//		fprintf(stderr, "add to epoll error. %s %d\n", __FILE__,__LINE__);
-int main(){ 
-	int efd = epoll_create1(O_CLOEXEC);
-	if(efd == -1){
-		fprintf(stderr, "create epoll error. %s %d\n", __FILE__,__LINE__);
-
-		return -1;
-	}
-
-	struct epoll_event ev;
 	ev.events = EPOLLIN;
 	ev.data.fd = STDIN_FILENO;
 	if(-1 == epoll_ctl(efd, EPOLL_CTL_ADD, STDIN_FILENO, &ev)){
@@ -106,7 +93,7 @@ int main(){
 	assert(socket_buf != NULL);
 	struct loginmanager * loginmanager = loginmanager_create();
 	assert(loginmanager != NULL);
-	struct processappdata * pad = processappdata_create(socket_buf, fdsig[0]);
+	struct processappdata * pad = processappdata_create(socket_buf, loginmanager, fdsig[0]);
 	assert(pad != NULL);
 	struct dblogin * dblogin = dblogin_start(loginmanager);
 	assert(dblogin != NULL);

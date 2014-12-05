@@ -23,7 +23,7 @@ static union{
 #define ENDIANNESS ((char)endian_test.l)
 #define ISBIGENDIAN (ENDIANNESS=='b')
 
-#define swab16(x) \
+#define swap16(x) \
 	({\
 	 unsigned short _x=(x);\
 	 ((unsigned short)(\
@@ -31,7 +31,7 @@ static union{
 		 (((unsigned short)(_x)&(unsigned short)0xff00U)>>8) ));\
 	 })
 
-#define swab32(x) \
+#define swap32(x) \
 	({\
 	 unsigned int _x=(x);\
 	 ((unsigned int)(\
