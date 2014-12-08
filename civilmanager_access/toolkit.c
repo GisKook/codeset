@@ -19,19 +19,37 @@ void hex2char(char* charbuf, unsigned char* hexbuf, unsigned int len){
 	}
 }
 
-unsigned char * toolkit_cmdsep(unsigned char * cmd, unsigned int &len, unsigned char delim){ 
-	unsigned char * s, *e;
-	s = cmd;
-	e = cmd + len;
-	for(;s++ != e;){
-		if( *s == delim ){
-			len -= s - cmd;
-			cmd = s;
-			return s;
+unsigned char * toolkit_cmdsep(unsigned char **cmdp, unsigned int *totallen, unsigned int * len, unsigned char delim){ 
+	unsigned char * s, *tok;
+	if(*totallen == 0)
+		return NULL;
+
+	s = *cmdp;
+	while(*s++ != delim){
+		(*totallen)--;
+		if((*totallen) == 0){
+			return NULL;
 		}
 	}
+	*cmdp = --s;
 
-	return NULL;
+	for( tok = s;;){
+		if(*s++ == delim){
+			for( ; *totallen>0;){
+				(*len)++;
+				(*totallen)--;
+				if(*s++ == delim){ 
+					*cmdp = --s;
+					break;
+				}
+			}
+			return tok; 
+		}
+
+		*len = 0;
+
+		return NULL;
+	}
 }
 
 char* toolkit_strsep(char** stringp, char delim){
@@ -48,16 +66,21 @@ char* toolkit_strsep(char** stringp, char delim){
 	}
 }
 
-char* toolkit_strsep2(char* stringp, char delim){
-	char*s,*tok;
-	if(((s=stringp)==NULL))
-		return NULL;
-	for (tok=s;;){
-		if (*s++==delim ) {
-			s[-1]=0;
-			stringp = s;
-			return tok;
-		}
-		if(*s==0){stringp=tok; return NULL;}
-	}
-}
+//int main(){
+//	unsigned char * tmp = (unsigned char*)malloc(512);
+//	unsigned int totallen = 100;
+//	unsigned int len = 0;
+//
+//	tmp[3] = '$';
+//	tmp[25] = '$';
+//	tmp[50] = '$';
+//	tmp[60] = '$';
+//	unsigned char * res ;
+//	while( totallen != 0){
+//		res = toolkit_cmdsep(&tmp, &totallen, &len, '$');
+//		debug_printbytes(res, len);
+//		len = 0;
+//	}
+//	
+//	return 0; 
+//}
