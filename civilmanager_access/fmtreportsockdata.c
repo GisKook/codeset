@@ -35,7 +35,6 @@ int fmtreportsockdata_add(struct sockets_buffer * sbuf, int fd){
 	unsigned int cmdlen = 0;
 	struct fmtreportsockdata* rcmsg = NULL;
 	int retcode = 0;
-	int signal = 0;
 	
 	while( len != 0){
 		cmd = toolkit_cmdsep( &buffer, &len,&cmdlen, '$');
@@ -53,10 +52,10 @@ int fmtreportsockdata_add(struct sockets_buffer * sbuf, int fd){
 		fprintf(stdout, " 1 ");
 		if(retcode == REQ_LOGIN){
 			list_add_tail(&(rcmsg->list), highpri_head);
-			signal = 1;
+			sockets_buffer_signal(sbuf, fd);
 		}else if(retcode == REQ_LOGOFF || retcode == REQ_HEARTBEAT || retcode == REQ_REQ){
 			list_add_tail(&rcmsg->list, normalpri_head);
-			signal = 1;
+			sockets_buffer_normaltasksignal(sbuf, fd);
 		}else{
 			free(rcmsg->message);
 			rcmsg->message = NULL;
@@ -67,9 +66,6 @@ int fmtreportsockdata_add(struct sockets_buffer * sbuf, int fd){
 		rcmsg = NULL;
 	}
 
-	if(signal == 1){
-		sockets_buffer_signal(sbuf, fd);
-	}
 
 	return 0;
 }

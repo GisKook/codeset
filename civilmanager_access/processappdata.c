@@ -52,7 +52,6 @@ void * processlogin(void * param){
 	for(;;){
 		fds = sockets_buffer_getsignalfdfifo(pad->sbuf);
 
-		fprintf(stdout, " 2 ");
 		fdscount = fds[0]; 
 		for(i = 0; i < fdscount; ++i){ 
 			loginlist = sockets_buffer_gethighlist(pad->sbuf, fds[i+1]); 
@@ -101,39 +100,70 @@ void * processlogin(void * param){
 }
 
 void * processmessage(void * param){ 
-//	void* ctx = zmq_ctx_new();
-//	assert(ctx != NULL);
-//	void* socket = zmq_socket(ctx, ZMQ_PUSH); 
-//	assert(socket != NULL);
-//	int rc = zmq_bind(socket, "tcp://*:8888");
-//	assert(rc == 0);
-//
-//	struct list_head * head = ((struct processappdata*)param)->head;
-//	int fd = ((struct processappdata*)param)->fd_sigprocess;
-//	struct fmtreportsockdata* entry;
-//	struct list_head *pos, *n;
-//	for(;;){
-//		read(fd, buf, 1); 
-//		list_for_each_safe(pos, n, head){
-//			entry = container_of(pos, struct fmtreportsockdata, list); 
-//			switch( entry->messagetype ){
-//				case REQ_LOGIN:
-//					break;
-//				case REQ_LOGOFF:
-//					break;
-//				case REQ_HEARTBEAT:
-//					break;
-//				case REQ_REQ:
-//					break;
-//defalut:
-//					assert(0);
-//			}
-//		}
-//	}
-//	zmq_msg_t msg;
-//	rc = zmq_msg_init(&msg);
-//	zmq_close(socket);
-//	zmq_ctx_destroy(ctx);
+	void* ctx = zmq_ctx_new();
+	assert(ctx != NULL);
+	void* socket = zmq_socket(ctx, ZMQ_PUSH); 
+	assert(socket != NULL);
+	int rc = zmq_bind(socket, "tcp://*:8888");
+	assert(rc == 0);
+
+	struct processappdata * pad = (struct processappdata*)param; 
+	int * fds;
+	int fdscount = 0;
+	struct list_head *tasklist;
+	int i;
+	struct fmtreportsockdata * fmtrepdata = NULL; 
+	struct parseprotocol_request * request;
+	struct list_head * pos, * n;
+	struct encodeprotocol_respond epr;
+	struct respondheartbeat respondheartbeat;
+	memset(&respondheartbeat, 0, sizeof(struct respondheartbeat));
+	struct positioninfo positioninfo;
+	memset(&positioninfo, 0, sizeof(struct positioninfo));
+	struct communicationinfo communicationinfo;
+	memset(&communicationinfo, 0, sizeof(struct communicationinfo));
+	struct communicationreceipt communicationreceipt;
+	memset(&communicationreceipt, 0, sizeof(struct communicationreceipt));
+	struct sendfeedback sendfeedback;
+	memset(&sendfeedback, 0, sizeof(struct sendfeedback));
+	int len = 0;
+	for(;;){
+		fds = sockets_buffer_getnormaltasklist(pad->sbuf);
+		fdscount = fds[0];
+		for( i = 0; i < fdscount; ++i){
+			tasklist = sockets_buffer_getnormallist(pad->sbuf, fds[i+1]);
+			list_for_each_safe(pos, n, tasklist){
+				fmtrepdata = list_entry(pos, struct fmtreportsockdata, list);
+				assert(fmtrepdata != NULL); 
+				request = fmtrepdata->message;
+				switch(request->messagetype){
+					case REQ_HEARTBEAT:
+						epr.messagetype = RES_HEARTBEAT;
+						memset(&respondheartbeat, 0, sizeof(struct respondheartbeat));
+						memcpy(respondheartbeat.account, request->message.heartbeat->account, MIN(12, strlen(request->message.heartbeat->account)));
+						epr.message.respondheartbeat = &respondheartbeat;
+						sockets_buffer_write(pad->sbuf, fds[i+1], &epr);
+						break;
+					case REQ_LOGOFF:
+						break;
+					case REQ_REQ:
+						break;
+					default:
+						break;
+				}
+				if(fmtrepdata != NULL){
+					list_del(pos);
+					free(fmtrepdata);
+					fmtrepdata = NULL;
+				}
+			}
+		}
+
+	}
+	zmq_msg_t msg;
+	rc = zmq_msg_init(&msg);
+	zmq_close(socket);
+	zmq_ctx_destroy(ctx);
 
 	pthread_exit(0);
 }
@@ -163,7 +193,7 @@ void * formatmessage(void * p){
 		while((tok = toolkit_strsep(&buf, '*')) != NULL){ 
 			socketfd=atoi(tok); 
 			if(unlikely(socketfd == 1)){ // magic number 1 means exit.
-	//			exit(pad, tid_db, tid_upward);
+				//			exit(pad, tid_db, tid_upward);
 				free(buf);
 				return NULL;
 			}

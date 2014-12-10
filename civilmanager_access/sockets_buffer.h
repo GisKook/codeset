@@ -22,6 +22,9 @@ int sockets_buffer_print(struct sockets_buffer* buf);
 void sockets_buffer_signal(struct sockets_buffer * sbuf, int fd);
 int* sockets_buffer_getsignalfdfifo(struct sockets_buffer * sbuf);
 
+void sockets_buffer_normaltasksignal(struct sockets_buffer * sbuf, int fd);
+int * sockets_buffer_getnormaltasklist(struct sockets_buffer * sbuf);
+
 int sockets_buffer_write(struct sockets_buffer * sbuf, int fd, struct encodeprotocol_respond * epr);
 
 int * sockets_buffer_getdownstreamsignal(struct sockets_buffer * sbuf);

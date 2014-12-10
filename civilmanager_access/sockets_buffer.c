@@ -32,6 +32,10 @@ struct sockets_buffer{
 	pthread_mutex_t tasklistlock;
 	struct fdfifo * tasklist;
 
+	pthread_cond_t normaltasklistready;
+	pthread_mutex_t normaltasklistlock;
+	struct fdfifo * normaltasklist;
+
 	pthread_cond_t taskdownstreamready;
 	pthread_mutex_t taskdownstreamlock;
 	struct fdfifo * taskdownstream;
@@ -48,15 +52,19 @@ struct sockets_buffer* sockets_buffer_create(unsigned int slotcount){
 	}
 	memset(sockets_buf, 0, sizeof(struct sockets_buffer));
 	sockets_buf->slotcount = slotcount;
+
 	pthread_cond_init(&sockets_buf->tasklistready, NULL);
 	pthread_mutex_init(&sockets_buf->tasklistlock, NULL);
-
 	sockets_buf->tasklist =(struct fdfifo*)malloc(sizeof(struct fdfifo));
 	fdfifo_init(sockets_buf->tasklist, 1024);
 
+	pthread_cond_init(&sockets_buf->normaltasklistready, NULL);
+	pthread_mutex_init(&sockets_buf->normaltasklistlock, NULL);
+	sockets_buf->normaltasklist =(struct fdfifo*)malloc(sizeof(struct fdfifo));
+	fdfifo_init(sockets_buf->normaltasklist, 1024);
+
 	pthread_cond_init(&sockets_buf->taskdownstreamready, NULL);
 	pthread_mutex_init(&sockets_buf->taskdownstreamlock, NULL);
-	
 	sockets_buf->taskdownstream = (struct fdfifo *)malloc(sizeof(struct fdfifo));
 	fdfifo_init(sockets_buf->taskdownstream, 1024);
 
@@ -249,8 +257,8 @@ struct list_head* sockets_buffer_getnormallist(struct sockets_buffer * sbuf, int
 void sockets_buffer_signal(struct sockets_buffer * sbuf, int fd){
 	pthread_mutex_lock(&sbuf->tasklistlock);
 	fdfifo_put(sbuf->tasklist, fd);
-	pthread_cond_signal(&sbuf->tasklistready);
 	pthread_mutex_unlock(&sbuf->tasklistlock);
+	pthread_cond_signal(&sbuf->tasklistready);
 }
 
 int * sockets_buffer_getsignalfdfifo(struct sockets_buffer * sbuf){
@@ -271,6 +279,36 @@ int * sockets_buffer_getsignalfdfifo(struct sockets_buffer * sbuf){
 		*activefds = fdfifolen;
 		fdfifo_getall(sbuf->tasklist, activefds+1);
 		pthread_mutex_unlock(&sbuf->tasklistlock);
+
+		return activefds;
+	}
+}
+
+void sockets_buffer_normaltasksignal(struct sockets_buffer * sbuf, int fd){
+	pthread_mutex_lock(&sbuf->normaltasklistlock);
+	fdfifo_put(sbuf->normaltasklist, fd);
+	pthread_mutex_unlock(&sbuf->normaltasklistlock);
+	pthread_cond_signal(&sbuf->normaltasklistready);
+}
+
+int * sockets_buffer_getnormaltasklist(struct sockets_buffer * sbuf){
+	int * activefds = NULL;
+	int fdfifolen = 0;
+	for(;;){
+		pthread_mutex_lock(&sbuf->normaltasklistlock);
+		while(fdfifo_len(sbuf->normaltasklist) == 0){
+			pthread_cond_wait(&sbuf->normaltasklistready, &sbuf->normaltasklistlock);
+		} 
+		fdfifolen = fdfifo_len(sbuf->normaltasklist);
+		activefds = (int*)malloc((fdfifolen+1)*sizeof(int)); 
+		if(activefds == NULL){
+			fprintf(stderr, "malloc %d bytes error. %s %s %d\n", fdfifolen+1, __FILE__, __FUNCTION__, __LINE__);
+			
+			return NULL;
+		}
+		*activefds = fdfifolen;
+		fdfifo_getall(sbuf->normaltasklist, activefds+1);
+		pthread_mutex_unlock(&sbuf->normaltasklistlock);
 
 		return activefds;
 	}
