@@ -59,5 +59,6 @@ my_free_hook (void *ptr, const void *caller)
 
 int main(){
 	int *a = (int*)malloc(sizeof(int));
+	
 	return 0;
 }

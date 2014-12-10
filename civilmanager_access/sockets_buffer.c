@@ -249,8 +249,8 @@ struct list_head* sockets_buffer_getnormallist(struct sockets_buffer * sbuf, int
 void sockets_buffer_signal(struct sockets_buffer * sbuf, int fd){
 	pthread_mutex_lock(&sbuf->tasklistlock);
 	fdfifo_put(sbuf->tasklist, fd);
-	pthread_mutex_unlock(&sbuf->tasklistlock);
 	pthread_cond_signal(&sbuf->tasklistready);
+	pthread_mutex_unlock(&sbuf->tasklistlock);
 }
 
 int * sockets_buffer_getsignalfdfifo(struct sockets_buffer * sbuf){

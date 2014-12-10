@@ -9,7 +9,7 @@ DBENTERPRISESRC = $(CONFIGSRC) dblogin.c loginmanager.c fdfifo.c rbtree.c PGData
 
 $(TARGET):$(SRC)
 	- rm $(TARGET)
-	g++ -Wall -g -I /usr/pgsql-9.3/include -L /usr/pgsql-9.3/lib -o $@ $^ -pthread -lpq -Wno-strict-aliasing
+	g++ -Wall -g -rdynamic  -I /usr/pgsql-9.3/include -L /usr/pgsql-9.3/lib -o $@ $^ -pthread -lpq -Wno-strict-aliasing
 
 clean:
 	rm $(TARGET)

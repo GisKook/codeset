@@ -35,7 +35,7 @@ void fdfifo_put(struct fdfifo * fifo, int fd){
 				return;
 			}
 		}
-	}else if(fifo->in <= fifo->out){ 
+	}else if(fifo->in < fifo->out){ 
 		for( i = 0; i<fifo->in; ++i){
 			if(fifo->entry[i] == fd){
 				return;
@@ -53,10 +53,6 @@ void fdfifo_put(struct fdfifo * fifo, int fd){
 	if(fifo->in >= fifo->capacity){
 		fifo->in = 0;
 	}
-
-	if(fifo->in > fifo->out){
-		fifo->out++;
-	}
 }
 
 unsigned int fdfifo_get(struct fdfifo * fifo){
@@ -70,7 +66,7 @@ unsigned int fdfifo_get(struct fdfifo * fifo){
 
 void fdfifo_getall(struct fdfifo * fifo, int * buf){
 	if(fifo->in > fifo->out){
-		memcpy(buf, &fifo->entry[fifo->in], (fifo->in - fifo->out)*sizeof(int));
+		memcpy(buf, &fifo->entry[fifo->out], (fifo->in - fifo->out)*sizeof(int));
 	}
 
 	if(fifo->in <= fifo->out){ 

@@ -10,22 +10,39 @@
 #include "toolkit.h"
 #include "sockets_buffer.h"
 
-#define TMPSIZE 1024
-unsigned char tmp[TMPSIZE];
-unsigned int tmplen = 0;
+unsigned char *buffer = NULL;
+int bufferlen = 0; 
 
 int fmtreportsockdata_add(struct sockets_buffer * sbuf, int fd){
 	struct kfifo* fifo = sockets_buffer_getrawdata(sbuf, fd);
 	struct list_head* highpri_head = sockets_buffer_gethighlist(sbuf, fd);
 	struct list_head* normalpri_head = sockets_buffer_getnormallist(sbuf, fd);
 
-	memset(tmp+tmplen, 0, TMPSIZE - tmplen);
-	unsigned int len = kfifo_get(fifo, tmp+tmplen, TMPSIZE - tmplen); 
-	unsigned int parselen = len+tmplen;
-	struct fmtreportsockdata* rcmsg;
+	int fifolen = kfifo_len(fifo);
+	if(bufferlen < fifolen){
+		buffer = (unsigned char *)malloc(sizeof(char)*fifolen);
+		bufferlen = fifolen;
+		if(buffer == NULL){
+			fprintf(stderr, "malloc %d bytes erro. %s %s %d\n", fifolen, __FILE__, __FUNCTION__, __LINE__);
+
+			return 0;
+		}
+	}
+	memset(buffer, 0, fifolen); 
+
+	unsigned int len = kfifo_get(fifo, buffer, fifolen);
+	unsigned char * cmd = NULL;
+	unsigned int cmdlen = 0;
+	struct fmtreportsockdata* rcmsg = NULL;
 	int retcode = 0;
-	while( toolkit_cmdsep( tmp, parselen, '$') != NULL){
+	int signal = 0;
+	
+	while( len != 0){
+		cmd = toolkit_cmdsep( &buffer, &len,&cmdlen, '$');
 		rcmsg = (struct fmtreportsockdata*)malloc(sizeof(struct fmtreportsockdata));
+		fprintf(stdout, "++++++++++++++++++++++++%lu\n",((unsigned long long*)rcmsg)[-1]);
+		memset(rcmsg, 0, sizeof(struct fmtreportsockdata));
+		fprintf( stdout, "+%lx ", rcmsg);
 		if(unlikely( rcmsg == NULL )){
 			fprintf(stderr, "malloc error. %s %s %d\n", __FILE__, __FUNCTION__, __LINE__);
 		}
@@ -34,17 +51,27 @@ int fmtreportsockdata_add(struct sockets_buffer * sbuf, int fd){
 			fprintf(stderr, "malloc error. %s %s %d\n", __FILE__, __FUNCTION__, __LINE__);
 		}
 
-		retcode = parseprotocol_parserequest( rcmsg->message, tmp, parselen);
+		retcode = parseprotocol_parserequest( rcmsg->message, cmd, cmdlen);
+		fprintf(stdout, " 1 ");
 		if(retcode == REQ_LOGIN){
-			list_add_tail(&rcmsg->list, highpri_head);
+			list_add_tail(&(rcmsg->list), highpri_head);
+			signal = 1;
 		}else if(retcode == REQ_LOGOFF || retcode == REQ_HEARTBEAT || retcode == REQ_REQ){
 			list_add_tail(&rcmsg->list, normalpri_head);
+			signal = 1;
+		}else{
+			free(rcmsg->message);
+			rcmsg->message = NULL;
+			free(rcmsg);
+			rcmsg = NULL;
 		}
 
 		rcmsg = NULL;
 	}
 
-	sockets_buffer_signal(sbuf, fd);
+	if(signal == 1){
+		sockets_buffer_signal(sbuf, fd);
+	}
 
 	return 0;
 }

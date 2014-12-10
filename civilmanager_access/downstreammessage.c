@@ -56,6 +56,7 @@ void * downstream(void *param){
 								break;
 						}
 						int ret;
+						writelen = 0;
 						while(writelen < contentlen){ 
 							ret = write(fd, content, contentlen);
 							if(ret < 0 && errno != EAGAIN){
@@ -64,6 +65,8 @@ void * downstream(void *param){
 							}
 							writelen += ret;
 						}
+						free(content);
+						content = NULL;
 					}
 				}
 				mqueue_reader_commit(mqueue, &res);

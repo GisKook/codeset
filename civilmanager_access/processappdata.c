@@ -31,6 +31,7 @@ struct processappdata{
 };
 
 void * processlogin(void * param){
+	printf("----------------%d\n",sizeof(struct fmtreportsockdata));
 	struct processappdata * pad = (struct processappdata*)param; 
 	struct loginmanager * loginmanager = pad->loginmanager;
 	struct login * logindatadb;
@@ -46,45 +47,54 @@ void * processlogin(void * param){
 	int loginresult = -1; // 0 成功 1 密码错误 2 没有此用户 3 该用户已经登录
 	struct loginenterprisemanager * loginenterprisemanager = loginenterprisemanager_create();
 	struct encodeprotocol_respond epr;
-	struct respondlogin respondlogin = {{0}, -1};
+	struct respondlogin respondlogin;
+	memset(&respondlogin, 0, sizeof(struct respondlogin));
 	int len = 0;
 	for(;;){
 		fds = sockets_buffer_getsignalfdfifo(pad->sbuf);
+
+		fprintf(stdout, " 2 ");
 		fdscount = fds[0]; 
 		for(i = 0; i < fdscount; ++i){ 
 			loginlist = sockets_buffer_gethighlist(pad->sbuf, fds[i+1]); 
 			list_for_each_safe(pos,n,loginlist){ 
 				logindata = list_entry(pos, struct fmtreportsockdata, list);
+				assert(logindata != NULL);
+
 				request = logindata->message;
 				if(request->messagetype == REQ_LOGIN){ 
 					login = request->message.login->account;
 					password = request->message.login->password; 
-					logindata = NULL;
 					logindatadb = loginmanager_search(loginmanager, login);
 
 					memset(respondlogin.account, 0, 12);
 					memcpy(respondlogin.account, login, MIN(12, strlen(login)));
-					if(logindata == NULL){
+					if(logindatadb == NULL){
 						respondlogin.loginresult = 2;
-						continue;
 					}else{ 
 						if(1 == loginenterprisemanager_search(loginenterprisemanager, logindatadb->enterpriseid, login)){
 							respondlogin.loginresult = 3;
-							continue;
 						}
 
 						if(strlen(password) == strlen(logindatadb->password) && strcmp(password, logindatadb->password)){ 
 							respondlogin.loginresult = 0;
 							loginenterprisemanager_insert(loginenterprisemanager, logindatadb->enterpriseid, logindatadb->login, fds[i+1]);
-							continue;
 						}else{
 							respondlogin.loginresult = 1;
-							continue;
 						}
 					}
 					epr.messagetype = RES_LOGIN;
 					epr.message.respondlogin= &respondlogin;
 					sockets_buffer_write(pad->sbuf, fds[i+1], &epr);
+					fprintf( stdout, "%lx \n", logindata);
+					if(logindata != NULL){
+						list_del(&logindata->list);
+						fprintf( stdout, "here call free ++++++++++%lu\n", ((unsigned long long *)logindata)[-1]);
+						free(logindata);
+						logindata = NULL;
+					}
+				} else{
+					assert(0);
 				}
 			}
 		}
@@ -144,29 +154,24 @@ void * processmessage(void * param){
 void * formatmessage(void * p){
 	struct processappdata * pad = (struct processappdata *)p;
 	pthread_t tid_fmt = pad->fd_sigfmt;
-	char * buf = (char*)malloc(MAX_FIFO_LEN);
-	memset(buf, 0, MAX_FIFO_LEN);
+	char * buf = (char *)malloc(MAX_FIFO_LEN);
+	char * primerbuffer = buf;
+	char * tok = NULL;
 
 	int len;
 	int socketfd;
-	char* tmp = buf;
-	int leftlength = 0;
 	for(;;){ 
-		len = read(pad->fd_sigfmt, buf+leftlength, MAX_FIFO_LEN);
-		while(toolkit_strsep2(buf, '*') != NULL){ 
-			socketfd=atoi(buf); 
+		memset(primerbuffer, 0, MAX_FIFO_LEN);
+		len = read(pad->fd_sigfmt, buf, MAX_FIFO_LEN);
+		while((tok = toolkit_strsep(&buf, '*')) != NULL){ 
+			socketfd=atoi(tok); 
 			if(unlikely(socketfd == 1)){ // magic number 1 means exit.
 	//			exit(pad, tid_db, tid_upward);
 				free(buf);
-				buf = NULL;
 				return NULL;
 			}
 			fmtreportsockdata_add(pad->sbuf, socketfd);
 		}
-		leftlength = strlen(buf);
-		memmove(tmp, buf, leftlength);
-		memset(tmp+leftlength, 0 , len - leftlength); 
-		buf = tmp; 
 	}
 }
 
