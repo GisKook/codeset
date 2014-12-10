@@ -40,9 +40,7 @@ int fmtreportsockdata_add(struct sockets_buffer * sbuf, int fd){
 	while( len != 0){
 		cmd = toolkit_cmdsep( &buffer, &len,&cmdlen, '$');
 		rcmsg = (struct fmtreportsockdata*)malloc(sizeof(struct fmtreportsockdata));
-		fprintf(stdout, "++++++++++++++++++++++++%lu\n",((unsigned long long*)rcmsg)[-1]);
 		memset(rcmsg, 0, sizeof(struct fmtreportsockdata));
-		fprintf( stdout, "+%lx ", rcmsg);
 		if(unlikely( rcmsg == NULL )){
 			fprintf(stderr, "malloc error. %s %s %d\n", __FILE__, __FUNCTION__, __LINE__);
 		}

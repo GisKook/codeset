@@ -31,7 +31,6 @@ struct processappdata{
 };
 
 void * processlogin(void * param){
-	printf("----------------%d\n",sizeof(struct fmtreportsockdata));
 	struct processappdata * pad = (struct processappdata*)param; 
 	struct loginmanager * loginmanager = pad->loginmanager;
 	struct login * logindatadb;
@@ -86,10 +85,8 @@ void * processlogin(void * param){
 					epr.messagetype = RES_LOGIN;
 					epr.message.respondlogin= &respondlogin;
 					sockets_buffer_write(pad->sbuf, fds[i+1], &epr);
-					fprintf( stdout, "%lx \n", logindata);
 					if(logindata != NULL){
 						list_del(&logindata->list);
-						fprintf( stdout, "here call free ++++++++++%lu\n", ((unsigned long long *)logindata)[-1]);
 						free(logindata);
 						logindata = NULL;
 					}
