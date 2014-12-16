@@ -12,5 +12,6 @@ void loginenterprisemanager_insert( struct loginenterprisemanager * manager, cha
 int loginenterprisemanager_search(struct loginenterprisemanager * manager, char * enterpriseid, char * login); 
 
 int * loginenterprisemanager_getfds(struct loginenterprisemanager *manager, char * enterpriseid);
+void loginenterprisemanager_delete(struct loginenterprisemanager *manager, char * enterpriseid, int fd); 
 
 #endif

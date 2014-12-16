@@ -6,6 +6,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <pthread.h>
 #include "rbtree.h"
 #include "cndef.h"
 #include "toolkit.h"
@@ -13,6 +14,7 @@
 struct loginenterprisemanager{
 	struct rb_root root;
 	int loginenterprisefdcount;
+	pthread_mutex_t mutex;
 };
 
 struct loginfd{
@@ -31,6 +33,7 @@ struct loginenterprisemanager * loginenterprisemanager_create(){
 	struct loginenterprisemanager * manager = (struct loginenterprisemanager *)malloc(sizeof(struct loginenterprisemanager));
 	manager->root = RB_ROOT;
 	manager->loginenterprisefdcount = 0;
+	pthread_mutex_init(&manager->mutex, NULL);
 
 	return manager;
 };
@@ -86,6 +89,7 @@ struct loginenterprise * _loginenterprisemanager_insert( struct loginenterprisem
 };
 
 void loginenterprisemanager_insert( struct loginenterprisemanager * manager, char * enterpriseid, char * login, int fd){ 
+	pthread_mutex_lock(&manager->mutex);
 	struct loginenterprise * le;
 	if(le = _loginenterprisemanager_insert(manager, enterpriseid, login, fd)){
 		goto out;
@@ -93,6 +97,7 @@ void loginenterprisemanager_insert( struct loginenterprisemanager * manager, cha
 	rb_insert_color(&le->node, &manager->root);
 
 out:
+	pthread_mutex_unlock(&manager->mutex);
 	return;
 }
 
@@ -159,4 +164,29 @@ int * loginenterprisemanager_getfds(struct loginenterprisemanager *manager, char
 	}
 
 	return result;
+}
+
+void loginenterprisemanager_delete(struct loginenterprisemanager *manager, char * enterpriseid, int fd){ 
+	pthread_mutex_lock(&manager->mutex); 
+	struct loginenterprise *le = _loginenterprisemanager_search(manager, enterpriseid);
+	if(le == NULL){
+		pthread_mutex_unlock(&manager->mutex);
+		return;
+	}
+	int i;
+	for(i = 0; i < le->loginfdcount; ++i){ 
+		if(le->loginfd[i].fd == fd){ 
+			le->loginfd[i].fd = 0;
+			break;
+		}
+	}
+	--le->loginfdcount;
+	if(le->loginfdcount <= 0){ 
+		rb_erase(&le->node,&manager->root); 
+		free(le);
+	}else{
+		memmove((le->loginfd+i-1), le->loginfd+i, sizeof(struct loginfd)*(le->loginfdcount-i));
+		le->loginfd = (struct loginfd*)realloc(le->loginfd, sizeof(struct loginfd)*le->loginfdcount);
+	}
+	pthread_mutex_unlock(&manager->mutex);
 }

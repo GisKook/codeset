@@ -28,11 +28,13 @@ struct processappdata{
 	struct sockets_buffer* sbuf;
 	struct loginmanager * loginmanager;
 	struct downstreammessage * dsm;
+	struct loginenterprisemanager * loginenterprisemanager;
 };
 
 void * processlogin(void * param){
 	struct processappdata * pad = (struct processappdata*)param; 
 	struct loginmanager * loginmanager = pad->loginmanager;
+	struct loginenterprisemanager * loginenterprisemanager = pad->loginenterprisemanager;
 	struct login * logindatadb;
 	int * fds;
 	int fdscount = 0;
@@ -44,7 +46,6 @@ void * processlogin(void * param){
 	char * login;
 	char * password;
 	int loginresult = -1; // 0 成功 1 密码错误 2 没有此用户 3 该用户已经登录
-	struct loginenterprisemanager * loginenterprisemanager = loginenterprisemanager_create();
 	struct encodeprotocol_respond epr;
 	struct respondlogin respondlogin;
 	memset(&respondlogin, 0, sizeof(struct respondlogin));
@@ -108,6 +109,7 @@ void * processmessage(void * param){
 	assert(rc == 0);
 
 	struct processappdata * pad = (struct processappdata*)param; 
+	struct loginenterprisemanager * loginenterprisemanager = pad->loginenterprisemanager;
 	int * fds;
 	int fdscount = 0;
 	struct list_head *tasklist;
@@ -145,6 +147,8 @@ void * processmessage(void * param){
 						sockets_buffer_write(pad->sbuf, fds[i+1], &epr);
 						break;
 					case REQ_LOGOFF:
+						loginenterprisemanager_delete(loginenterprisemanager, request->message.logoff->account, fds[i+1]);
+						close(fds[i+1]);
 						break;
 					case REQ_REQ:
 						break;
@@ -203,6 +207,8 @@ void * formatmessage(void * p){
 }
 
 struct processappdata * processappdata_create(struct sockets_buffer * sbuf, struct loginmanager * loginmanager, int fd_sigfmt){
+	
+	struct loginenterprisemanager * loginenterprisemanager = loginenterprisemanager_create();
 	struct processappdata * pad = (struct processappdata*)malloc(sizeof(struct processappdata));
 	memset(pad, 0, sizeof(struct processappdata));
 	assert(pad != NULL);
@@ -213,6 +219,7 @@ struct processappdata * processappdata_create(struct sockets_buffer * sbuf, stru
 	pad->fd_sigfmt = fd_sigfmt;
 	pad->sbuf = sbuf;
 	pad->loginmanager = loginmanager;
+	pad->loginenterprisemanager = loginenterprisemanager;
 
 	if(0 != pthread_create(&pad->threadid_upward, NULL, processmessage, pad)){
 		free(pad);
