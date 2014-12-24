@@ -23,6 +23,10 @@ static union{
 #define ENDIANNESS ((char)endian_test.l)
 #define ISBIGENDIAN (ENDIANNESS=='b')
 
+#undef MIN
+#define MIN(a,b) a>b?b:a
+#endif
+
 #if defined(__linux__)
 #define swap16(x) \
 	({\

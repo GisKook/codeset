@@ -19,6 +19,5 @@ char * toolkit_strsep(char** stringp, char delim);
 #define TOOLKIT_BYTE2INT(x) ((*x*256*256*256)+(*(x+1)*256*256)+(*(x+2)*256)+(*(x+3)))
 #define TOOLKIT_BYTE2SHORT(x) ((*x*256)+(*(x+1)))
 
-#define MIN(a,b) a>b?b:a
 
 #endif
