@@ -142,7 +142,7 @@ struct dblogin * dblogin_start(struct loginmanager * manager){
 	if( 0 != pthread_create(&dblogin->tidmonitor, NULL, dblogin_monitor,dblogin)){
 		fprintf(stderr, "create dblogin monitor error. %s %s %d.\n", __FILE__, __FUNCTION__, __LINE__); 
 		db->DisConnect();
-		free(db);
+		delete db;
 		free(dblogin);
 
 		return NULL;

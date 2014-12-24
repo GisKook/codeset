@@ -26,10 +26,10 @@ void loginmanager_destroy(struct loginmanager * lm){
 	struct login * login = NULL;  
 	while( root->rb_node ){ 
 		login = rb_entry(root->rb_node, struct login, node);
-		free(login);
-		login = NULL;
 
 		rb_erase(root->rb_node, root);
+		free(login);
+		login = NULL;
 	}
 
 	free(lm);

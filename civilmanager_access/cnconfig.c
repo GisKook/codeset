@@ -34,7 +34,7 @@ int cnconfig_loadfile( const char* filename ){
 	if (!json) {
 		fprintf(stderr,"Error before: [%s]\n",cJSON_GetErrorPtr());
 	}else{ 
-		int count = cJSON_GetArraySize(json);
+	//	int count = cJSON_GetArraySize(json);
 		if( 0 != cnconfig_setconfig(json, DBHOST, "please check config file: dbHost is not set!\n")||
 			0 != cnconfig_setconfig(json, DBPORT, "please check config file: dbPort is not set!\n")||
 			0 != cnconfig_setconfig(json, DBNAME, "please check config file: dbName is not set!\n")||
