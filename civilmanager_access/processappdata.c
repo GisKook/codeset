@@ -18,8 +18,16 @@
 #include "list.h"
 #include "encodeprotocol.h"
 #include "downstreammessage.h"
+#include "cardmanager.h"
+#include "dbcardinfo.h"
+#include "connectionmanager.h"
 
 #define MAX_FIFO_LEN 4096
+#define LOGINSUCCESS 0
+#define LOGINPASSWORDERROR 1
+#define LOGINILLEGALUSER 2
+#define LOGINREPEAT 3
+
 struct processappdata{
 	pthread_t threadid_fmt;
 	pthread_t threadid_upward;
@@ -29,12 +37,16 @@ struct processappdata{
 	struct loginmanager * loginmanager;
 	struct downstreammessage * dsm;
 	struct loginenterprisemanager * loginenterprisemanager;
+	struct cardmanager * cardmanager;
+	struct zmq_buffer * zmq_buffer;
+	struct connectionmanager * connectionmanager;
 };
 
 void * processlogin(void * param){
 	struct processappdata * pad = (struct processappdata*)param; 
 	struct loginmanager * loginmanager = pad->loginmanager;
 	struct loginenterprisemanager * loginenterprisemanager = pad->loginenterprisemanager;
+	struct connectionmanager * connectionmanager = pad->connectionmanager;
 	struct login * logindatadb;
 	int * fds;
 	int fdscount = 0;
@@ -67,17 +79,20 @@ void * processlogin(void * param){
 					memset(respondlogin.account, 0, 12);
 					memcpy(respondlogin.account, login, MIN(12, strlen(login)));
 					if(logindatadb == NULL){
-						respondlogin.loginresult = 2;
+						respondlogin.loginresult = LOGINILLEGALUSER;
 					}else{ 
 						if(1 == loginenterprisemanager_search(loginenterprisemanager, logindatadb->enterpriseid, login)){
-							respondlogin.loginresult = 3;
+							respondlogin.loginresult = LOGINREPEAT;
 						}
 
 						if(strlen(password) == strlen(logindatadb->password) && strcmp(password, logindatadb->password)){ 
-							respondlogin.loginresult = 0;
+							respondlogin.loginresult = LOGINSUCCESS;
 							loginenterprisemanager_insert(loginenterprisemanager, logindatadb->enterpriseid, logindatadb->login, fds[i+1]);
+
+							struct connection * connection = connection_create(fds[i+1], logindatadb->login, logindatadb->loginname, logindatadb->enterpriseid);
+							connectionmanager_insert(connectionmanager, connection);
 						}else{
-							respondlogin.loginresult = 1;
+							respondlogin.loginresult = LOGINPASSWORDERROR;
 						}
 					}
 					epr.messagetype = RES_LOGIN;
@@ -99,13 +114,6 @@ void * processlogin(void * param){
 }
 
 void * processmessage(void * param){ 
-	void* ctx = zmq_ctx_new();
-	assert(ctx != NULL);
-	void* socket = zmq_socket(ctx, ZMQ_PUSH); 
-	assert(socket != NULL);
-	int rc = zmq_bind(socket, "tcp://*:8888");
-	assert(rc == 0);
-
 	struct processappdata * pad = (struct processappdata*)param; 
 	struct loginenterprisemanager * loginenterprisemanager = pad->loginenterprisemanager;
 	int * fds;
@@ -126,6 +134,8 @@ void * processmessage(void * param){
 	memset(&communicationreceipt, 0, sizeof(struct communicationreceipt));
 	struct sendfeedback sendfeedback;
 	memset(&sendfeedback, 0, sizeof(struct sendfeedback));
+	struct zmq_buffer * zmq_buffer = pad->zmq_buffer;
+	struct connectionmanager * connectionmanager = pad->connectionmanager;
 	for(;;){
 		fds = sockets_buffer_getnormaltasklist(pad->sbuf);
 		fdscount = fds[0];
@@ -144,10 +154,22 @@ void * processmessage(void * param){
 						sockets_buffer_write(pad->sbuf, fds[i+1], &epr);
 						break;
 					case REQ_LOGOFF:
-						loginenterprisemanager_delete(loginenterprisemanager, request->message.logoff->account, fds[i+1]);
-						close(fds[i+1]);
+						{
+							loginenterprisemanager_delete(loginenterprisemanager, request->message.logoff->account, fds[i+1]);
+							struct connection * connection = connectionmanager_delete(connectionmanager, fds[i+1]); 
+							connection_destroy(connection);
+
+							close(fds[i+1]);
+						}
 						break;
 					case REQ_REQ: 
+						{ 
+							struct connection * connection = connectionmanager_search(connectionmanager, fds[i+1]);
+							if(connection != NULL){
+								char * enterpriseid = connection_getenterpriseid(connection);
+								zmq_buffer_upstream_add(zmq_buffer, fmtrepdata, 1, enterpriseid, fds[i+1],request->message.request->requestid);
+							}
+						}
 						break;
 					default:
 						break;
@@ -161,10 +183,6 @@ void * processmessage(void * param){
 		}
 
 	}
-	zmq_msg_t msg;
-	rc = zmq_msg_init(&msg);
-	zmq_close(socket);
-	zmq_ctx_destroy(ctx);
 
 	pthread_exit(0);
 }
@@ -202,7 +220,6 @@ void * formatmessage(void * p){
 }
 
 struct processappdata * processappdata_create(struct sockets_buffer * sbuf, struct loginmanager * loginmanager, int fd_sigfmt){
-	
 	struct loginenterprisemanager * loginenterprisemanager = loginenterprisemanager_create();
 	struct processappdata * pad = (struct processappdata*)malloc(sizeof(struct processappdata));
 	memset(pad, 0, sizeof(struct processappdata));
@@ -211,6 +228,18 @@ struct processappdata * processappdata_create(struct sockets_buffer * sbuf, stru
 		fprintf(stderr, "malloc error. %s %s %d\n", __FILE__, __FUNCTION__, __LINE__);
 		return NULL;
 	} 
+	struct cardmanager * cardmanager = cardmanager_create();
+	assert(cardmanager != NULL);
+	struct dbcardinfo * dbcardinfo = dbcardinfo_start(cardmanager);
+	assert(dbcardinfo != NULL); 
+
+	struct zmq_buffer * zmq_buffer = zmq_buffer_create(sbuf, cardmanager, loginenterprisemanager, MAX_FIFO_LEN); 
+	assert(zmq_buffer); 
+	pad->zmq_buffer = zmq_buffer;
+
+	struct connectionmanager * connectionmanager = connectionmanager_create();
+	pad->connectionmanager = connectionmanager;
+
 	pad->fd_sigfmt = fd_sigfmt;
 	pad->sbuf = sbuf;
 	pad->loginmanager = loginmanager;

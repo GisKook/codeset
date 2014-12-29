@@ -15,14 +15,10 @@
 #include "loginmanager.h"
 #include "cnconfig.h"
 #include "dbcardinfo.h"
-#include "cardmanager.h"
-#include "zmq_buffer.h"
-#include "loginenterprisemanager.h"
 
 #define MAX_EVENT 64 
 #define MAX_ACCEPTSOCKETS 1024
 #define MAX_RECVLEN 4096
-#define MAX_FIFOSIZE 4096
 
 int main(){ 
 	if( 0 != cnconfig_loadfile("./conf.json")){
@@ -39,13 +35,13 @@ int main(){
 	}
 
 	struct epoll_event ev;
-//	ev.events = EPOLLIN;
-//	ev.data.fd = STDIN_FILENO;
-//	if(-1 == epoll_ctl(efd, EPOLL_CTL_ADD, STDIN_FILENO, &ev)){
-//		fprintf(stderr, "add to epoll error. %s %d\n", __FILE__,__LINE__);
-//
-//		return -1;
-//	}
+	ev.events = EPOLLIN;
+	ev.data.fd = STDIN_FILENO;
+	if(-1 == epoll_ctl(efd, EPOLL_CTL_ADD, STDIN_FILENO, &ev)){
+		fprintf(stderr, "add to epoll error. %s %d\n", __FILE__,__LINE__);
+
+		return -1;
+	}
 
 	int listen_fd = socket(AF_INET, SOCK_STREAM, 0);
 	if(listen_fd == -1){
@@ -110,16 +106,6 @@ int main(){
 	struct dblogin * dblogin = dblogin_start(loginmanager);
 	assert(dblogin != NULL);
 	
-	struct loginenterprisemanager * loginenterprisemanager = loginenterprisemanager_create();
-	assert(loginenterprisemanager != NULL);
-	struct cardmanager * cardmanager = cardmanager_create();
-	assert(cardmanager != NULL);
-	struct dbcardinfo * dbcardinfo = dbcardinfo_start(cardmanager);
-	assert(dbcardinfo != NULL); 
-
-	struct zmq_buffer * zmq_buffer = zmq_buffer_create(socket_buf, cardmanager, loginenterprisemanager, MAX_FIFOSIZE); 
-	assert(zmq_buffer); 
-
 	for(;;){ 
 		nfds = epoll_wait(efd, events, MAX_EVENT, -1);
 
