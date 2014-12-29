@@ -221,6 +221,7 @@ struct zmq_buffer * zmq_buffer_create(struct sockets_buffer * sockets_buffer, st
 
 		return NULL;
 	}
+	fprintf(stdout, "thread 0x%lx upward message through zmq create successfully, \n", tid);
 	zmq_buffer->sockets_buffer = sockets_buffer;
 	zmq_buffer->cardmanager = cardmanager;
 	zmq_buffer->loginenterprisemanager = loginenterprisemanager;

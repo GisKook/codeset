@@ -135,7 +135,7 @@ struct dblogin * dblogin_start(struct loginmanager * manager){
 		loginmanager_insert(manager, logindata);
 	}
 	
-	fprintf(stdout, "table %s load ok.\n", tablenameaccount); 
+	fprintf(stdout, "****table %s load ok.\n", tablenameaccount); 
 	res->Destroy();
 
 	struct dblogin * dblogin = (struct dblogin*)malloc(sizeof(struct dblogin));

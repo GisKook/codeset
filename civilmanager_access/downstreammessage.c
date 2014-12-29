@@ -6,6 +6,7 @@
 #include <errno.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <stdio.h>
 
 struct downstreammessage{
 	struct sockets_buffer * sockbuffer;
@@ -81,7 +82,14 @@ struct downstreammessage * downstreammessage_create(struct sockets_buffer * sbuf
 	struct downstreammessage * downstreammessage = (struct downstreammessage *)malloc(sizeof(struct downstreammessage));
 	downstreammessage->sockbuffer = sbuffer; 
 	pthread_t tid;
-	pthread_create(&tid, NULL, downstream, sbuffer);
+	if(0 != pthread_create(&tid, NULL, downstream, sbuffer)){
+		fprintf(stderr, "create downstream message thread error.\n");
+		free(downstreammessage);
+
+		return NULL;
+	}
+	fprintf(stdout, "thread 0x%lx downstreammessage create successfully.\n", tid); 
+
 	downstreammessage->tid = tid;
 
 	return downstreammessage;

@@ -232,6 +232,7 @@ struct processappdata * processappdata_create(struct sockets_buffer * sbuf, stru
 	assert(cardmanager != NULL);
 	struct dbcardinfo * dbcardinfo = dbcardinfo_start(cardmanager);
 	assert(dbcardinfo != NULL); 
+	pad->cardmanager = cardmanager;
 
 	struct zmq_buffer * zmq_buffer = zmq_buffer_create(sbuf, cardmanager, loginenterprisemanager, MAX_FIFO_LEN); 
 	assert(zmq_buffer); 

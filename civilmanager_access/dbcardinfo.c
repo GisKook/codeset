@@ -1,5 +1,4 @@
 // 监听数据库的变化，动态修改内存，服务cardmanager模块
-
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -100,7 +99,7 @@ struct dbcardinfo * dbcardinfo_start(struct cardmanager * cardmanager){
 		cardmanager_insert(cardmanager, cardid, enterpriseid);
 	}
 
-	fprintf(stdout, "table %s load ok.\n", tablename);
+	fprintf(stdout, "****table %s load ok.\n", tablename);
 	res->Destroy();
 
 	struct dbcardinfo * dbcardinfo = (struct dbcardinfo *)malloc(sizeof(struct dbcardinfo));
