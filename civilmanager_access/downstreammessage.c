@@ -73,6 +73,8 @@ void * downstream(void *param){
 			}
 		}
 	}
+
+	return NULL;
 }
 
 struct downstreammessage * downstreammessage_create(struct sockets_buffer * sbuffer){ 

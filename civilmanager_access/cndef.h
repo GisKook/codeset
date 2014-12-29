@@ -16,44 +16,11 @@
 #define unlikely(x)
 #endif
 
-static union{
-	char c[4];
-	unsigned long l;
-}endian_test={{'l','?','?','b'}};
-#define ENDIANNESS ((char)endian_test.l)
-#define ISBIGENDIAN (ENDIANNESS=='b')
-
 #define MIN(a,b) a>b?b:a
 
-#if defined(__linux__)
-#define swap16(x) \
-	({\
-	 unsigned short _x=(x);\
-	 ((unsigned short)(\
-		 (((unsigned short)(_x)&(unsigned short)0x00ffU)<<8)|\
-		 (((unsigned short)(_x)&(unsigned short)0xff00U)>>8) ));\
-	 })
 
-#define swap32(x) \
-	({\
-	 unsigned int _x=(x);\
-	 ((unsigned int)(\
-		 (((unsigned int)(_x)&(unsigned int)0x000000ffUL)<<24)|\
-		 (((unsigned int)(_x)&(unsigned int)0x0000ff00UL)<<8)|\
-		 (((unsigned int)(_x)&(unsigned int)0x00ff0000UL)>>8)|\
-		 (((unsigned int)(_x)&(unsigned int)0xff000000UL)>>24)));\
-	 })
-#elif defined(_WIN32)
-#define swap16(x) \
-	((unsigned short)(\
-	(((unsigned short)(x)&(unsigned short)0x00ffU)<<8)|\
-	(((unsigned short)(x)&(unsigned short)0xff00U)>>8)));
-#define swap32(x) \
-	((unsigned int)(\
-	(((unsigned int)(x)&(unsigned int)0x000000ffUL)<<24)|\
-	(((unsigned int)(x)&(unsigned int)0x0000ff00UL)<<8)|\
-	(((unsigned int)(x)&(unsigned int)0x00ff0000UL)>>8)|\
-	(((unsigned int)(x)&(unsigned int)0xff000000UL)>>24)));
-
-#endif
+#define BUSINESSSOFTWARE "业务服务器"
+#define RECVSOFTWARE "接收软件"
+#define SENDSOFTWARE "发送软件"
+#define BILLINGSOFTWARE "计费服务器"
 #endif

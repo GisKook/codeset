@@ -5,6 +5,7 @@ struct cardmanager;
 struct card;
 
 void card_setenterpriseid(struct card * card, char * enterpriseid);
+char * card_getenterpriseid(struct card * card);
 
 struct cardmanager * cardmanager_create();
 void cardmanager_destroy(struct cardmanager *cardmanager);

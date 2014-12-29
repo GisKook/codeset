@@ -45,11 +45,9 @@ void * processlogin(void * param){
 	struct list_head * pos, * n;
 	char * login;
 	char * password;
-	int loginresult = -1; // 0 成功 1 密码错误 2 没有此用户 3 该用户已经登录
 	struct encodeprotocol_respond epr;
 	struct respondlogin respondlogin;
 	memset(&respondlogin, 0, sizeof(struct respondlogin));
-	int len = 0;
 	for(;;){
 		fds = sockets_buffer_getsignalfdfifo(pad->sbuf);
 
@@ -128,7 +126,6 @@ void * processmessage(void * param){
 	memset(&communicationreceipt, 0, sizeof(struct communicationreceipt));
 	struct sendfeedback sendfeedback;
 	memset(&sendfeedback, 0, sizeof(struct sendfeedback));
-	int len = 0;
 	for(;;){
 		fds = sockets_buffer_getnormaltasklist(pad->sbuf);
 		fdscount = fds[0];
@@ -150,7 +147,7 @@ void * processmessage(void * param){
 						loginenterprisemanager_delete(loginenterprisemanager, request->message.logoff->account, fds[i+1]);
 						close(fds[i+1]);
 						break;
-					case REQ_REQ:
+					case REQ_REQ: 
 						break;
 					default:
 						break;
@@ -184,16 +181,14 @@ void * processmessage(void * param){
 
 void * formatmessage(void * p){
 	struct processappdata * pad = (struct processappdata *)p;
-	pthread_t tid_fmt = pad->fd_sigfmt;
 	char * buf = (char *)malloc(MAX_FIFO_LEN);
 	char * primerbuffer = buf;
 	char * tok = NULL;
 
-	int len;
 	int socketfd;
 	for(;;){ 
 		memset(primerbuffer, 0, MAX_FIFO_LEN);
-		len = read(pad->fd_sigfmt, buf, MAX_FIFO_LEN);
+		read(pad->fd_sigfmt, buf, MAX_FIFO_LEN);
 		while((tok = toolkit_strsep(&buf, '*')) != NULL){ 
 			socketfd=atoi(tok); 
 			if(unlikely(socketfd == 1)){ // magic number 1 means exit.

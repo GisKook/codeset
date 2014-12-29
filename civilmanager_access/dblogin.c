@@ -10,8 +10,8 @@
 #include "cnconfig.h"
 #include "PGDatabase.h"
 
-char tablename[] = "qhsrvaccount";
-char sqltable[] = "select qtsserverid, qtsentId, qtsloginname, qtspassword, qtssendfreq from qhsrvaccount order by qtsentId";
+char tablenameaccount[] = "qhsrvaccount";
+char sqltableaccount[] = "select qtsserverid, qtsentId, qtsloginname, qtspassword, qtssendfreq from qhsrvaccount order by qtsentId";
 #define INITLOGINCOUNT 5
 #define MAXATTRCOUNT 128
 
@@ -56,7 +56,7 @@ void * pgdbmonitorcallback(void *par, void* par2){
 			break;
 		case 'U':
 			data = loginmanager_search(manager, login); 
-			if(data = NULL){
+			if(data == NULL){
 				data = (struct login*)malloc(sizeof(struct login));
 				memcpy(data->login, login, MIN(MAXLOGINLEN, strlen(login)));
 				memcpy(data->enterpriseid, enterpriseid, MIN(MAXENTERPRISEIDLEN, strlen(enterpriseid)));
@@ -83,14 +83,17 @@ void * pgdbmonitorcallback(void *par, void* par2){
 	}
 
 	//loginmanager_print(manager);
+	return NULL;
 }
 
 void * dblogin_monitor(void * dblogin){ 
 	struct dblogin * dbe = (struct dblogin*)dblogin;
 	PGDatabase *db = dbe->db;
 	struct loginmanager *manager = dbe->manager;
-	db->AddListener(tablename);
+	db->AddListener(tablenameaccount);
 	db->GetNotify((pgdb_monitor_callback)pgdbmonitorcallback, manager);
+
+	return NULL;
 };
 
 struct dblogin * dblogin_start(struct loginmanager * manager){ 
@@ -108,10 +111,9 @@ struct dblogin * dblogin_start(struct loginmanager * manager){
 		return NULL;
 	}
 
-	PGRecordset *res = db->Query(sqltable); 
+	PGRecordset *res = db->Query(sqltableaccount); 
 	int tuplecount = res->GetTupleCount();
 	int i;
-	char preenterpriseid[MAXENTERPRISEIDLEN] ={0};
 	char * login = NULL;
 	char * enterpriseid = NULL;
 	char * loginname = NULL;
@@ -133,7 +135,7 @@ struct dblogin * dblogin_start(struct loginmanager * manager){
 		loginmanager_insert(manager, logindata);
 	}
 	
-	fprintf(stdout, "table %s load ok.\n", tablename); 
+	fprintf(stdout, "table %s load ok.\n", tablenameaccount); 
 	res->Destroy();
 
 	struct dblogin * dblogin = (struct dblogin*)malloc(sizeof(struct dblogin));

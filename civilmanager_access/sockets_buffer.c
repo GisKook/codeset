@@ -209,6 +209,8 @@ int sockets_buffer_print(struct sockets_buffer* buf){
 			}
 		}
 	}
+
+	return 0;
 }
 
 struct fd_buffer* sockets_buffer_getfdbuffer(struct sockets_buffer* sbuf, int fd){
@@ -335,6 +337,8 @@ int sockets_buffer_write(struct sockets_buffer * sbuf, int fd, struct encodeprot
 			break;
 		}
 	}
+
+	return 0;
 }
 
 struct mqueue * sockets_buffer_getwritequeue(struct sockets_buffer * sbuf, int fd){

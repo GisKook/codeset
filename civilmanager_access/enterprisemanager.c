@@ -79,7 +79,6 @@ struct enterprise * enterprisemanager_search(struct enterprisemanager *manager, 
 struct enterprise * _enterprisemanager_insert(struct enterprisemanager *manager, struct enterprise *data){
 	struct rb_node **newnode = &(manager->root.rb_node), *parent = NULL;
 	struct enterprise *ent;
-	int result = 0;
 
 	while (*newnode)
 	{
@@ -169,7 +168,7 @@ int enterprise_addaccount(struct enterprise *enterprise, const char *login, cons
 		int newcapacity = enterprise->accountcapacity * 2;
 		ea = (struct enterpriseaccount*)realloc(enterprise->enterpriseaccount,sizeof(struct enterpriseaccount)*newcapacity);
 		if(ea == NULL){
-			fprintf(stderr, "enterprise account malloc %d bytes error. %s %s %d.\n", sizeof(struct enterpriseaccount)*newcapacity,__FILE__, __FUNCTION__, __LINE__);
+			fprintf(stderr, "enterprise account malloc %li bytes error. %s %s %d.\n", sizeof(struct enterpriseaccount)*newcapacity,__FILE__, __FUNCTION__, __LINE__);
 			newcapacity = enterprise->accountcount + 1;
 			ea = (struct enterpriseaccount*)malloc(sizeof(struct enterpriseaccount)*newcapacity);
 			if(ea == NULL){
@@ -229,7 +228,6 @@ void _enterprise_print(struct enterprise *enterprise){
 
 void enterprisemanager_print(struct enterprisemanager *manager){ 
 	struct rb_root root = manager->root;
-	struct rb_node *parent;
 	struct rb_node *node = rb_first(&root);
 	while (node != NULL){
 		_enterprise_print(rb_entry(node,struct enterprise, node));

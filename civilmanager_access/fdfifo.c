@@ -4,7 +4,7 @@
 #include "fdfifo.h"
 
 void fdfifo_init(struct fdfifo * fifo, int capacity){
-	fifo->entry = (unsigned int *)malloc(capacity);
+	fifo->entry = (int *)malloc(capacity);
 	if(fifo->entry == NULL){
 		fprintf(stderr, "fdfifo create error %s %s %d\n", __FUNCTION__, __FILE__, __LINE__);
 		return;

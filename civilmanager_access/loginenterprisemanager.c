@@ -91,7 +91,7 @@ struct loginenterprise * _loginenterprisemanager_insert( struct loginenterprisem
 void loginenterprisemanager_insert( struct loginenterprisemanager * manager, char * enterpriseid, char * login, int fd){ 
 	pthread_mutex_lock(&manager->mutex);
 	struct loginenterprise * le;
-	if(le = _loginenterprisemanager_insert(manager, enterpriseid, login, fd)){
+	if((le = _loginenterprisemanager_insert(manager, enterpriseid, login, fd))){
 		goto out;
 	}
 	rb_insert_color(&le->node, &manager->root);
@@ -110,7 +110,7 @@ int loginenterprisemanager_search(struct loginenterprisemanager * manager, char 
 
 	while(node){
 		struct loginenterprise * le;
-		le - rb_entry(node, struct loginenterprise, node); 
+		le = rb_entry(node, struct loginenterprise, node); 
 
 		result = strcmp(enterpriseid, le->enterpriseid);
 
@@ -138,7 +138,7 @@ struct loginenterprise * _loginenterprisemanager_search(struct loginenterprisema
 	int result;
 	while(node){
 		struct loginenterprise * le;
-		le - rb_entry(node, struct loginenterprise, node); 
+		le = rb_entry(node, struct loginenterprise, node); 
 
 		result = strcmp(enterpriseid, le->enterpriseid);
 
@@ -154,10 +154,17 @@ struct loginenterprise * _loginenterprisemanager_search(struct loginenterprisema
 	return NULL;
 }
 
-int * loginenterprisemanager_getfds(struct loginenterprisemanager *manager, char * enterpriseid){
+int * loginenterprisemanager_getfds(struct loginenterprisemanager *manager, char * enterpriseid, int * loginfdcount){
 	struct loginenterprise * le = _loginenterprisemanager_search(manager, enterpriseid); 
 	int fdcount = le->loginfdcount;
+	*loginfdcount = fdcount;
 	int * result = (int *)malloc(sizeof(int)*fdcount);
+	if(result == NULL){
+		fprintf(stderr, "malloc %d bytes error.%s %s %d\n", fdcount, __FILE__, __FUNCTION__, __LINE__);
+		*loginfdcount = 0;
+
+		return NULL;
+	}
 	int i;
 	for(i = 0; i < le->loginfdcount; ++i){ 
 		result[i] = le->loginfd[i].fd;

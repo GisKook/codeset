@@ -23,6 +23,14 @@ void card_setenterpriseid(struct card * card, char * enterpriseid){
 	memcpy(card->enterpriseid, enterpriseid, MIN(MAXENTERPRISEID, strlen(enterpriseid)));
 }
 
+char * card_getenterpriseid(struct card * card){
+	if(card != NULL){
+		return card->enterpriseid;
+	}
+
+	return NULL;
+}
+
 struct cardmanager * cardmanager_create(){
 	struct cardmanager * cardmanager = (struct cardmanager *)malloc(sizeof(struct cardmanager));
 	memset(cardmanager, 0, sizeof(struct cardmanager));

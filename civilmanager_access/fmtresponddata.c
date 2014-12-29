@@ -1,17 +1,21 @@
 #include <assert.h>
+#include <stdlib.h>
+#include <string.h>
+#include <stdio.h>
 #include "encodeprotocol.h"
 #include "list.h"
+#include "cndef.h"
 
 struct fmtresponddata{
 	unsigned char* buf;
 	unsigned char len; // the max length is 232
 	int fd;
 	struct list_head list;
-}
+};
 
 int fmtresponddata_add(struct list_head * head, unsigned char * buf, int len, int fd){
-	assert( buf != NULL && fd > 0 && len <= MAX_RESPOND_LEN); 
-	struct fmtresponddata * fmtresponddata = (struct fmtresponddata*)malloc(struct fmtresponddata);
+	assert( buf != NULL && fd > 0 && len <= MAX_RESPOND_LEN ); 
+	struct fmtresponddata * fmtresponddata = (struct fmtresponddata *)malloc(sizeof(struct fmtresponddata));
 	if(unlikely(fmtresponddata == NULL)){
 		fprintf(stderr, "malloc error. %s %s %d\n", __FILE__, __FUNCTION__, __LINE__);
 

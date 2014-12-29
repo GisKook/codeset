@@ -1,7 +1,8 @@
 CONFIGSRC = cJSON.c cnconfig.c
+PBSRC = ./pb/beidoumessage.pb.cc ./pb/smsTx.pb.cc ./pb/bcTx.pb.cc
 
 TARGET = ca
-SRC = main.c cnconsole.c sockets_buffer.c kfifo.c toolkit.c processappdata.c parseprotocol.c fmtreportsockdata.c cJSON.c cnconfig.c dblogin.c rbtree.c PGDatabase.cpp PGRecordset.cpp downstreammessage.c encodeprotocol.c fdfifo.c loginenterprisemanager.c loginmanager.c parseprotocol.c mqueue.c 
+SRC = cardmanager.c cJSON.c cnconfig.c cnconsole.c dbcardinfo.c dblogin.c downstreammessage.c encodeprotocol.c encodeprotocolupstream.c enterprisemanager.c fdfifo.c fmtreportsockdata.c fmtresponddata.c kfifo.c loginenterprisemanager.c loginmanager.c main.c mqueue.c parseprotocol.c PGDatabase.cpp PGRecordset.cpp processappdata.c rbtree.c sockets_buffer.c toolkit.c zmq_buffer.c $(PBSRC)
 
 DBENTERPRISETARGET = dbe
 DBENTERPRISESRC = $(CONFIGSRC) dblogin.c loginmanager.c fdfifo.c rbtree.c PGDatabase.cpp PGRecordset.cpp toolkit.c
@@ -10,12 +11,10 @@ DBENTERPRISESRC = $(CONFIGSRC) dblogin.c loginmanager.c fdfifo.c rbtree.c PGData
 DBMONITORCARDTARGET = dbmonitorcard
 DBMONITORCARDSRC = $(CONFIGSRC) dbcardinfo.c cardmanager.c rbtree.c PGDatabase.cpp PGRecordset.cpp toolkit.c
 
-TARGET = $(DBMONITORCARDTARGET)
-SRC = $(DBMONITORCARDSRC)
 
 $(TARGET):$(SRC)
 	- rm $(TARGET)
-	g++ -Wall -g -rdynamic  -I /usr/pgsql-9.3/include -L /usr/pgsql-9.3/lib -o $@ $^ -pthread -lpq -Wno-strict-aliasing -lzmq
+	g++ -Wall -g -rdynamic -I /usr/pgsql-9.3/include -L /usr/pgsql-9.3/lib -o $@ $^ -pthread -lpq -Wno-strict-aliasing -lzmq -lprotobuf
 
 qhsrvaccount_monitor : qhsrvaccount_monitor.c
 	gcc -fpic -I /usr/pgsql-9.3/include/server -c qhsrvaccount_monitor.c

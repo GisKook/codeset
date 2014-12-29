@@ -104,7 +104,7 @@ struct login * loginmanager_delete(struct loginmanager *manager, const char *log
 
 void loginmanager_print(struct loginmanager *manager){ 
 	struct rb_root root = manager->root;
-	struct rb_node *parent;
+
 	struct rb_node *node = rb_first(&root);
 	struct login *login;
 	while (node != NULL){

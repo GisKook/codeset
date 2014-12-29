@@ -3,7 +3,7 @@
 
 struct fdfifo
 {
-	unsigned int * entry;
+	int * entry;
 	unsigned int capacity;
 	unsigned int in;
 	unsigned int out;
