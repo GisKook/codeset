@@ -16,6 +16,7 @@
 #include "cardmanager.h"
 #include "cndef.h"
 #include "parseprotocol.h" 
+#include "cnconfig.h"
 
 using namespace std;
 #define MAXFIFOLEN 1024
@@ -183,12 +184,14 @@ struct zmq_buffer * zmq_buffer_create(struct sockets_buffer * sockets_buffer, st
 	assert( zmq_buffer->recvsocket );
 	int rc = zmq_setsockopt(zmq_buffer->recvsocket, ZMQ_SUBSCRIBE, "", 0);
 	assert(rc == 0);
-	rc = zmq_connect(zmq_buffer->recvsocket, "tcp://192.168.1.155:5555");
+	const char * zmqrecvaddr = cnconfig_getvalue(ZMQRECVADDR);
+	rc = zmq_connect(zmq_buffer->recvsocket, zmqrecvaddr);
 	assert(rc == 0);
 
 	zmq_buffer->sendsocket = zmq_socket(zmq_buffer->zmq_ctx, ZMQ_PUSH); 
 	assert(zmq_buffer->sendsocket != NULL);
-	rc = zmq_bind(zmq_buffer->sendsocket, "tcp://*:18888");
+	const char * zmqsendaddr = cnconfig_getvalue(ZMQBINDADDR);
+	rc = zmq_bind(zmq_buffer->sendsocket, zmqsendaddr);
 	if(rc != 0){
 		fprintf(stderr, "errno is %d error message: %s\n", errno, strerror(errno));
 		zmq_close(zmq_buffer->recvsocket);

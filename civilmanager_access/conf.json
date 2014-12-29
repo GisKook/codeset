@@ -3,5 +3,7 @@
 	"dbPort":"5432",
 	"dbName":"beidou",
 	"dbUser":"postgres",
-	"dbPassword":"cetc"
+	"dbPassword":"cetc",
+	"zmqRecvaddr":"tcp://192.168.1.155:5555",
+	"zmqBindaddr":"tcp://*:18888"
 }

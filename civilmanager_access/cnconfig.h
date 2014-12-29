@@ -7,6 +7,8 @@
 #define DBNAME "dbName"
 #define DBUSER "dbUser"
 #define DBPWD "dbPassword"
+#define ZMQRECVADDR "zmqRecvaddr"
+#define ZMQBINDADDR "zmqBindaddr"
 
 int cnconfig_loadfile( const char* filename ); 
 const char* cnconfig_getvalue( const char * key );
