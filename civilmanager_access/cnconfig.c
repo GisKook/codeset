@@ -41,9 +41,9 @@ int cnconfig_loadfile( const char* filename ){
 			0 != cnconfig_setconfig(json, DBUSER, "please check config file: dbUser is not set!\n")||
 			0 != cnconfig_setconfig(json, DBPWD, "please check config file: dbPassword is not set!\n")||
 			0 != cnconfig_setconfig(json, ZMQRECVADDR, "please check config file: zmqRecvaddr is not set!\n")||
-			0 != cnconfig_setconfig(json, ZMQBINDADDR, "please check config file: zmqBindAddr is not set!\n")){
-			
-		return -1;;
+			0 != cnconfig_setconfig(json, ZMQBINDADDR, "please check config file: zmqBindAddr is not set!\n")||
+			0 != cnconfig_setconfig(json, BINDPORT, "please check config file: bindPort is not set!\n")){
+			return -1;
 		}
 
 	}

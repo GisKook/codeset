@@ -54,7 +54,9 @@ int main(){
 	memset((void*)&listen_addr, 0, sizeof(listen_addr));
 	listen_addr.sin_family = AF_INET;
 	listen_addr.sin_addr.s_addr = htonl(INADDR_ANY);
-	listen_addr.sin_port = htons(40000);
+	const char * szport = cnconfig_getvalue(BINDPORT);
+	int port = atoi(szport);
+	listen_addr.sin_port = htons(port);
 	if(bind(listen_fd, (struct sockaddr*)&listen_addr, sizeof(struct sockaddr_in)) == -1){
 		fprintf(stderr, "bind listen socket error. %s %d\n", __FILE__,__LINE__);
 		close(listen_fd);

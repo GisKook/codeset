@@ -9,6 +9,7 @@
 #define DBPWD "dbPassword"
 #define ZMQRECVADDR "zmqRecvaddr"
 #define ZMQBINDADDR "zmqBindaddr"
+#define BINDPORT "bindPort"
 
 int cnconfig_loadfile( const char* filename ); 
 const char* cnconfig_getvalue( const char * key );
