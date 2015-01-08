@@ -15,17 +15,17 @@
 #include "loginmanager.h"
 #include "cnconfig.h"
 #include "dbcardinfo.h"
+#include "toolkit.h"
 
 #define MAX_EVENT 64 
 #define MAX_ACCEPTSOCKETS 1024
 #define MAX_RECVLEN 4096
 
-int main(){ 
+int main(){
 	if( 0 != cnconfig_loadfile("./conf.json")){
 		fprintf(stderr, "config file is not load well.\n");
 		return -1;
 	}
-
 
 	int efd = epoll_create1(O_CLOEXEC);
 	if(efd == -1){
@@ -107,17 +107,17 @@ int main(){
 	assert(pad != NULL);
 	struct dblogin * dblogin = dblogin_start(loginmanager);
 	assert(dblogin != NULL);
-	
+
 	for(;;){ 
 		nfds = epoll_wait(efd, events, MAX_EVENT, -1);
 
 		for(i = 0; i< nfds; ++i){
 			if( (events[i].events & EPOLLERR) ||
-				(events[i].events & EPOLLHUP) || 
-				!(events[i].events & EPOLLIN)){
-					fprintf(stderr, "epoll error.\n");
-					close(events[i].data.fd);
-					continue;
+					(events[i].events & EPOLLHUP) || 
+					!(events[i].events & EPOLLIN)){
+				fprintf(stderr, "epoll error.\n");
+				close(events[i].data.fd);
+				continue;
 			}else if(events[i].data.fd == listen_fd){ 
 				conn_fd = accept(listen_fd, NULL, NULL);
 				if(unlikely(conn_fd == -1)){
@@ -144,6 +144,8 @@ int main(){
 					goto exit_flag;
 				}
 			}else{ 
+				int signal = 0;
+				int tempfd = 0;
 				for(;;){
 					len = read(events[i].data.fd, buf, MAX_RECVLEN);
 					if(len == -1){ 
@@ -153,27 +155,35 @@ int main(){
 
 							// Closing the descriptor will make epoll remove it
 							// from the set of descriptors which are monitored.
-							close (events[i].data.fd);
+							tempfd = events[i].data.fd;
+							close(events[i].data.fd); 
+							signal = 1;
 						}
 						break;
 					}else if(len == 0){
-						printf ("Closed connection on descriptor %d\n", events[i].data.fd);
+						fprintf (stderr,"Closed connection on descriptor %d\n", events[i].data.fd);
 
-					    // Closing the descriptor will make epoll remove it
-					    // from the set of descriptors which are monitored.
-					    close (events[i].data.fd);
+						// Closing the descriptor will make epoll remove it
+						// from the set of descriptors which are monitored.
+						tempfd = events[i].data.fd;
+						close (events[i].data.fd);
+						signal = 1;
 						break;
 					}
 
 					buf[len] = 0;
 
 					sockets_buffer_add(socket_buf, events[i].data.fd,(char*)"192.168.1.1",  buf, len);
+					signal = 0;
 				}
-				
-				memset(fdbuf, 0, 16);
-				buflen = sprintf(fdbuf, "%d*",events[i].data.fd);
-				if(-1 == write(fdsig[1], fdbuf, buflen)){
-					fprintf(stderr, "write pipe error.%s %s %d\n", __FILE__, __FUNCTION__, __LINE__);
+				if(signal == 0){
+					memset(fdbuf, 0, 16);
+					buflen = sprintf(fdbuf, "%d*",events[i].data.fd);
+					if(-1 == write(fdsig[1], fdbuf, buflen)){
+						fprintf(stderr, "write pipe error.%s %s %d\n", __FILE__, __FUNCTION__, __LINE__);
+					}
+				}else if(signal == 1){ 
+					sockets_buffer_del(socket_buf, tempfd);
 				}
 			}
 		}

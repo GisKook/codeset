@@ -149,7 +149,6 @@ int sockets_buffer_del(struct sockets_buffer* buf, int fd){
 	struct fd_buffer* p = buf->slot[index];
 	struct fd_buffer* prev = NULL;
 	struct fd_buffer* next = NULL;
-	assert(p != NULL);
 
 	for(;p!=NULL;prev = p,p=p->next, next = p->next){
 		if(p->fd == fd){
@@ -162,7 +161,9 @@ int sockets_buffer_del(struct sockets_buffer* buf, int fd){
 			break;
 		}
 	}
-	prev->next = next;
+	if(prev != NULL){
+		prev->next = next;
+	}
 
 	return 0;
 }
@@ -205,7 +206,7 @@ int sockets_buffer_print(struct sockets_buffer* buf){
 			p = fdbuf[i];
 			for(;p!=NULL;p=p->next){
 				fprintf(stdout, "received message from %s  :", p->ip);
-				debug_printbytes(p->fifo->buffer+p->fifo->out, kfifo_len(p->fifo));
+				toolkit_printbytes(p->fifo->buffer+p->fifo->out, kfifo_len(p->fifo));
 			}
 		}
 	}
