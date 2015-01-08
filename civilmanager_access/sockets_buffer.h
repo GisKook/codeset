@@ -30,5 +30,6 @@ int sockets_buffer_write(struct sockets_buffer * sbuf, int fd, struct encodeprot
 int * sockets_buffer_getdownstreamsignal(struct sockets_buffer * sbuf);
 
 struct mqueue * sockets_buffer_getwritequeue(struct sockets_buffer * sbuf, int fd);
+int sockets_buffer_clear(struct sockets_buffer * buf, int fd);
 
 #endif

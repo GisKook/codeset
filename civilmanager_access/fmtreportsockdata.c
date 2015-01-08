@@ -31,13 +31,9 @@ int fmtreportsockdata_add(struct sockets_buffer * sbuf, int fd){
 	unsigned int cmdlen = 0;
 	struct fmtreportsockdata* rcmsg = NULL;
 	int retcode = 0;
-	printf("in ..");
-	toolkit_printbytes(buffer, len);
 	while(len != 0){
 		cmd = parseprotocol_pickcmd(&buffer, &len, &cmdlen);
 		if(cmd != NULL){
-			printf("out ..");
-			toolkit_printbytes(cmd, cmdlen);
 			rcmsg = (struct fmtreportsockdata*)malloc(sizeof(struct fmtreportsockdata));
 			memset(rcmsg, 0, sizeof(struct fmtreportsockdata));
 			if(unlikely( rcmsg == NULL )){

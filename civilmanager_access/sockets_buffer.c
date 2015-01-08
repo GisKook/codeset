@@ -168,6 +168,25 @@ int sockets_buffer_del(struct sockets_buffer* buf, int fd){
 	return 0;
 }
 
+int sockets_buffer_clear(struct sockets_buffer * buf, int fd){
+	assert(buf != NULL);
+	if(unlikely(buf == NULL)){
+		return -1;
+	}
+	int index = fd % MAXFIFOLEN;
+	struct fd_buffer* p = buf->slot[index];
+
+	for(;p!=NULL;p=p->next){
+		if(p->fd == fd){
+			kfifo_reset(p->fifo);
+			break;
+		}
+	}
+
+	return 0;
+
+}
+
 int sockets_buffer_destroy(struct sockets_buffer* buf){
 	assert(buf != NULL);
 	if(unlikely(buf == NULL)){
