@@ -6,8 +6,6 @@
 #include <assert.h>
 #include <math.h>
 #include <zmq.h>
-#include <sys/socket.h>
-#include <arpa/inet.h>
 #include "fmtreportsockdata.h"
 #include "parseprotocol.h"
 #include "list.h"
@@ -216,25 +214,7 @@ void * formatmessage(void * p){
 				free(buf);
 				return NULL;
 			}
-			if(connectionmanager_search(pad->connectionmanager, socketfd) != NULL){
-				fmtreportsockdata_add(pad->sbuf, socketfd);
-			}else{
-				sockets_buffer_clear(pad->sbuf, socketfd);
-				struct sockaddr addr;
-				socklen_t addrlen;
-				char ipstr[256] = {0};
-				int port = 0;
-				if(0 == getpeername(socketfd, &addr, &addrlen)){
-					struct sockaddr_in *s = (struct sockaddr_in *)&addr;
-					if (s->sin_family == AF_INET) {
-						port = ntohs(s->sin_port);
-						inet_ntop(AF_INET, &s->sin_addr, ipstr, sizeof(ipstr));
-					}
-				}else{
-					fprintf(stderr, "error occure. error message : %s %s %s %d\n", strerror(errno), __FILE__, __FUNCTION__, __LINE__);
-				}
-				fprintf(stdout, "find a unlogin connection %s %d\n", ipstr, port);
-			}
+			fmtreportsockdata_add(pad->sbuf, socketfd, pad->cardmanager);
 		}
 	}
 }

@@ -2,6 +2,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <sys/socket.h>
+#include <arpa/inet.h>
 #include "parseprotocol.h"
 #include "kfifo.h"
 #include "list.h"
@@ -9,8 +11,9 @@
 #include "fmtreportsockdata.h"
 #include "toolkit.h"
 #include "sockets_buffer.h"
+#include "cardmanager.h"
 
-int fmtreportsockdata_add(struct sockets_buffer * sbuf, int fd){
+int fmtreportsockdata_add(struct sockets_buffer * sbuf, int fd, struct cardmanager * cardmanager){
 	struct kfifo* fifo = sockets_buffer_getrawdata(sbuf, fd);
 	assert(fifo != NULL);
 	struct list_head* highpri_head = sockets_buffer_gethighlist(sbuf, fd);
@@ -49,9 +52,25 @@ int fmtreportsockdata_add(struct sockets_buffer * sbuf, int fd){
 				list_add_tail(&(rcmsg->list), highpri_head);
 				sockets_buffer_signal(sbuf, fd);
 			}else if(retcode == REQ_LOGOFF || retcode == REQ_HEARTBEAT || retcode == REQ_REQ){
-				list_add_tail(&rcmsg->list, normalpri_head);
-				sockets_buffer_normaltasksignal(sbuf, fd);
+				if( cardmanager_search(cardmanager, fd) != NULL){
+					list_add_tail(&rcmsg->list, normalpri_head);
+					sockets_buffer_normaltasksignal(sbuf, fd);
+				}else{
+					struct sockaddr addr;
+					socklen_t addrlen;
+					char ipstr[256] = {0};
+					int port = 0;
+					if(0 == getpeername(fd, &addr, &addrlen)){
+						struct sockaddr_in *s = (struct sockaddr_in *)&addr;
+						if (s->sin_family == AF_INET) {
+							port = ntohs(s->sin_port);
+							inet_ntop(AF_INET, &s->sin_addr, ipstr, sizeof(ipstr));
+						}
+					}
+					fprintf(stdout, "unlogin connection find %s %d\n", ipstr, port);
+				}
 			}else if(retcode == -2){ 
+
 			}else{
 				free(rcmsg->message);
 				rcmsg->message = NULL;

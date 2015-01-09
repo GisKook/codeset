@@ -10,6 +10,7 @@
 #include "fdfifo.h"
 #include "mqueue.h"
 #include "encodeprotocol.h"
+#include "fmtreportsockdata.h"
 
 #define MAXFIFOLEN 4096
 #define MAXWRITEQUEUELEN 4096
@@ -23,6 +24,7 @@ struct fd_buffer{
 	struct list_head normalprilist;
 	struct mqueue * writebuffer;
 	struct fd_buffer * next;
+	struct fd_buffer * prev;
 };
 
 struct sockets_buffer{
@@ -103,7 +105,7 @@ int sockets_buffer_add(struct sockets_buffer* sockets_buf, int fd,char *ip, unsi
 		INIT_LIST_HEAD(&sockets_buf->slot[index]->highprilist);
 		INIT_LIST_HEAD(&sockets_buf->slot[index]->normalprilist);
 		memcpy(sockets_buf->slot[index]->ip, ip, strlen(ip));
-		if( unlikely((sockets_buf->slot[index]->fifo = kfifo_init(MAXFIFOLEN)) == NULL)){
+		if( (sockets_buf->slot[index]->fifo = kfifo_init(MAXFIFOLEN)) == NULL){
 			fprintf(stderr, "fifo init error. %s %s %d\n", __FILE__, __FUNCTION__, __LINE__);
 
 			return -1;
@@ -120,7 +122,7 @@ int sockets_buffer_add(struct sockets_buffer* sockets_buf, int fd,char *ip, unsi
 				break;
 			}
 		}
-		if(p == NULL){ 
+		if(p == NULL){
 			struct fd_buffer* element = (struct fd_buffer*)malloc(sizeof(struct fd_buffer));
 			memset(element, 0, sizeof(struct fd_buffer));
 			element->fd = fd;
@@ -134,35 +136,58 @@ int sockets_buffer_add(struct sockets_buffer* sockets_buf, int fd,char *ip, unsi
 			}
 			kfifo_put(element->fifo, buf, len);
 			prev->next = element;
+			element->prev = prev;
 			element->writebuffer = mqueue_create(MAXWRITEQUEUELEN, sizeof(struct encodeprotocol_respond));
 		}
 	}
 	return 0;
 }
 
-int sockets_buffer_del(struct sockets_buffer* buf, int fd){ 
+int sockets_buffer_del(struct sockets_buffer* buf, int fd){
 	assert(buf != NULL);
 	if(unlikely(buf == NULL)){
 		return -1;
 	}
 	int index = fd % MAXFIFOLEN;
 	struct fd_buffer* p = buf->slot[index];
-	struct fd_buffer* prev = NULL;
 	struct fd_buffer* next = NULL;
 
-	for(;p!=NULL;prev = p,p=p->next, next = p->next){
+	while(p!=NULL){
+		next = p->next;
 		if(p->fd == fd){
-			kfifo_free(p->fifo);
-			p->fifo = NULL; 
+			if(p->fifo != NULL) 
+			{
+				kfifo_free(p->fifo);
+				p->fifo = NULL; 
+			}
 
 			mqueue_destroy(p->writebuffer);
 			p->writebuffer = NULL;
 
 			break;
 		}
+		p = p->next;
 	}
-	if(prev != NULL){
-		prev->next = next;
+
+	if(p != NULL && p->prev != NULL){
+		p->prev->next = next;
+	}else if(p != NULL && p->prev == NULL){ // the first node 
+		buf->slot[fd] = p->next;
+	}
+
+	if(p != NULL){
+		struct list_head * pos, *n;
+		list_for_each_safe(pos, n, &p->normalprilist){
+			struct fmtreportsockdata *fmtreportsockdata = list_entry(pos, struct fmtreportsockdata, list);
+			fmtreportsockdata_clear(fmtreportsockdata);
+			list_del(pos);
+		}
+		list_for_each_safe(pos, n, &p->highprilist){
+			struct fmtreportsockdata *fmtreportsockdata = list_entry(pos, struct fmtreportsockdata, list);
+			fmtreportsockdata_clear(fmtreportsockdata);
+			list_del(pos);
+		}
+		free(p);
 	}
 
 	return 0;
@@ -178,7 +203,10 @@ int sockets_buffer_clear(struct sockets_buffer * buf, int fd){
 
 	for(;p!=NULL;p=p->next){
 		if(p->fd == fd){
-			kfifo_reset(p->fifo);
+			if(p->fifo != NULL){
+				kfifo_reset(p->fifo);
+			}
+			p->fd = 0;
 			break;
 		}
 	}
@@ -295,7 +323,7 @@ int * sockets_buffer_getsignalfdfifo(struct sockets_buffer * sbuf){
 		activefds = (int*)malloc((fdfifolen+1)*sizeof(int)); 
 		if(activefds == NULL){
 			fprintf(stderr, "malloc %d bytes error. %s %s %d\n", fdfifolen+1, __FILE__, __FUNCTION__, __LINE__);
-			
+
 			return NULL;
 		}
 		*activefds = fdfifolen;
@@ -325,7 +353,7 @@ int * sockets_buffer_getnormaltasklist(struct sockets_buffer * sbuf){
 		activefds = (int*)malloc((fdfifolen+1)*sizeof(int)); 
 		if(activefds == NULL){
 			fprintf(stderr, "malloc %d bytes error. %s %s %d\n", fdfifolen+1, __FILE__, __FUNCTION__, __LINE__);
-			
+
 			return NULL;
 		}
 		*activefds = fdfifolen;
@@ -379,7 +407,7 @@ int * sockets_buffer_getdownstreamsignal(struct sockets_buffer * sbuf){
 		activefds = (int*)malloc((fdfifolen+1)*sizeof(int)); 
 		if(activefds == NULL){
 			fprintf(stderr, "malloc %d bytes error. %s %s %d\n", fdfifolen+1, __FILE__, __FUNCTION__, __LINE__);
-			
+
 			return NULL;
 		}
 		*activefds = fdfifolen;

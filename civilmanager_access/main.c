@@ -108,6 +108,8 @@ int main(){
 	struct dblogin * dblogin = dblogin_start(loginmanager);
 	assert(dblogin != NULL);
 
+	char printrecvmessage = 0;
+
 	for(;;){ 
 		nfds = epoll_wait(efd, events, MAX_EVENT, -1);
 
@@ -135,13 +137,25 @@ int main(){
 			}else if(events[i].data.fd == STDIN_FILENO){ 
 				len = read(STDIN_FILENO, buf, MAX_RECVLEN);
 				int cmd = console_parsecmd(buf, socket_buf);
-				if(cmd == QUIT){
-					write(fdsig[1], "1*", 2);
-					processappdata_join(pad);
-					close(listen_fd);
-					close(efd);
+				switch(cmd){
+					case QUIT:
+						{
+							write(fdsig[1], "1*", 2);
+							processappdata_join(pad);
+							close(listen_fd);
+							close(efd);
 
-					goto exit_flag;
+							goto exit_flag;
+						}
+						break;
+					case PRM:
+						printrecvmessage = 1;
+						break;
+					case UNPRM:
+						printrecvmessage = 0;
+						break;
+					default:
+						break;
 				}
 			}else{ 
 				int signal = 0;
@@ -173,6 +187,9 @@ int main(){
 
 					buf[len] = 0;
 
+					if(printrecvmessage == 1){
+						toolkit_printbytes(buf, len);
+					}
 					sockets_buffer_add(socket_buf, events[i].data.fd,(char*)"192.168.1.1",  buf, len);
 					signal = 0;
 				}
