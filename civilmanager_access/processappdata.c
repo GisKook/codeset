@@ -85,7 +85,7 @@ void * processlogin(void * param){
 							respondlogin.loginresult = LOGINREPEAT;
 						}
 
-						if(strlen(password) == strlen(logindatadb->password) && strcmp(password, logindatadb->password)){ 
+						if(strlen(password) == strlen(logindatadb->password) && strcmp(password, logindatadb->password) == 0){ 
 							respondlogin.loginresult = LOGINSUCCESS;
 							loginenterprisemanager_insert(loginenterprisemanager, logindatadb->enterpriseid, logindatadb->login, fds[i+1]);
 

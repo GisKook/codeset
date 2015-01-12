@@ -97,7 +97,7 @@ struct connection * _conntionmanger_insert(struct connectionmanager * manager, s
 	}
 
 	++manager->connectioncount;
-	rb_link_node(&conn->node, parent, newnode);
+	rb_link_node(&connection->node, parent, newnode);
 
 	return NULL;
 }
@@ -106,7 +106,7 @@ struct connection * connectionmanager_insert(struct connectionmanager * manager,
 	struct connection * conn;
 	if((conn = _conntionmanger_insert(manager, connection)))
 		goto out;
-	rb_insert_color(&conn->node, &manager->root);
+	rb_insert_color(&connection->node, &manager->root);
 out:
 	return conn; 
 }

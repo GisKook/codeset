@@ -52,7 +52,7 @@ void loginenterprisemanager_destroy(struct loginenterprisemanager *manager){
 	free(manager);
 };
 
-struct loginenterprise * _loginenterprisemanager_insert( struct loginenterprisemanager * manager, char * enterpriseid, char * login, int fd){ 
+struct loginenterprise * _loginenterprisemanager_insert( struct loginenterprisemanager * manager, char * enterpriseid, char * login, int fd, struct loginenterprise * newloginenterprise){ 
 	struct rb_node **newnode = &(manager->root.rb_node), *parent = NULL; 
 	struct loginenterprise * lp;
 	int result = 0;
@@ -84,6 +84,7 @@ struct loginenterprise * _loginenterprisemanager_insert( struct loginenterprisem
 	++loginenterprise->loginfdcount;
 
 	rb_link_node(&loginenterprise->node, parent, newnode);
+	newloginenterprise = loginenterprise;
 
 	return NULL;
 };
@@ -91,10 +92,13 @@ struct loginenterprise * _loginenterprisemanager_insert( struct loginenterprisem
 void loginenterprisemanager_insert( struct loginenterprisemanager * manager, char * enterpriseid, char * login, int fd){ 
 	pthread_mutex_lock(&manager->mutex);
 	struct loginenterprise * le;
-	if((le = _loginenterprisemanager_insert(manager, enterpriseid, login, fd))){
+	struct loginenterprise * newloginenterprise = NULL;
+	if((le = _loginenterprisemanager_insert(manager, enterpriseid, login, fd, newloginenterprise))){
 		goto out;
 	}
-	rb_insert_color(&le->node, &manager->root);
+	if(le == NULL && newloginenterprise != NULL){
+		rb_insert_color(&newloginenterprise->node, &manager->root);
+	}
 
 out:
 	pthread_mutex_unlock(&manager->mutex);
