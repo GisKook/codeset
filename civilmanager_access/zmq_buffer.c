@@ -207,12 +207,16 @@ struct zmq_buffer * zmq_buffer_create(struct sockets_buffer * sockets_buffer, st
 	memset(zmq_buffer->slot, 0, sizeof(struct zmq_buffer_authentication *)*capacity);
 
 	if(zmq_buffer->slot == NULL){
+		zmq_close(zmq_buffer->recvsocket);
+		zmq_close(zmq_buffer->sendsocket);
 		free(zmq_buffer);
 		fprintf(stderr, "malloc %li bytes error.%s %s %d\n", sizeof(struct zmq_buffer_authentication)*capacity, __FILE__, __FUNCTION__, __LINE__);
 		return NULL;
 	}
 	pthread_t tid;
 	if( 0 != pthread_create(&tid, NULL, recv_downstream, (void*)zmq_buffer)){
+		zmq_close(zmq_buffer->recvsocket);
+		zmq_close(zmq_buffer->sendsocket);
 		free(zmq_buffer->slot);
 		zmq_buffer->slot = NULL;
 		free(zmq_buffer);
@@ -229,13 +233,15 @@ struct zmq_buffer * zmq_buffer_create(struct sockets_buffer * sockets_buffer, st
 	return zmq_buffer; 
 }
 
-int zmq_buffer_push(struct zmq_buffer * zb, unsigned char * buf, int len){ 
+int zmq_buffer_push(struct zmq_buffer * zb, unsigned char * buf, int len){
 	zmq_msg_t msg;
 	int rc = zmq_msg_init_size(&msg, len);
 	assert(rc == 0);
 	memcpy(zmq_msg_data(&msg), buf, len);
 	rc = zmq_msg_send(&msg, zb->sendsocket, 0);
-	assert(rc == len);
+	static int times = 0;
+	//assert(rc == len); 
+	zmq_msg_close(&msg);
 
 	return 0;
 }

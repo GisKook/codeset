@@ -11,9 +11,9 @@
 #include "fmtreportsockdata.h"
 #include "toolkit.h"
 #include "sockets_buffer.h"
-#include "cardmanager.h"
+#include "connectionmanager.h"
 
-int fmtreportsockdata_add(struct sockets_buffer * sbuf, int fd, struct cardmanager * cardmanager){
+int fmtreportsockdata_add(struct sockets_buffer * sbuf, int fd, struct connectionmanager * connectionmanager){
 	struct kfifo* fifo = sockets_buffer_getrawdata(sbuf, fd);
 	assert(fifo != NULL);
 	struct list_head* highpri_head = sockets_buffer_gethighlist(sbuf, fd);
@@ -52,7 +52,7 @@ int fmtreportsockdata_add(struct sockets_buffer * sbuf, int fd, struct cardmanag
 				list_add_tail(&(rcmsg->list), highpri_head);
 				sockets_buffer_signal(sbuf, fd);
 			}else if(retcode == REQ_LOGOFF || retcode == REQ_HEARTBEAT || retcode == REQ_REQ){
-				if( cardmanager_search(cardmanager, fd) != NULL){
+				if( connectionmanager_search(connectionmanager, fd) != NULL){
 					list_add_tail(&rcmsg->list, normalpri_head);
 					sockets_buffer_normaltasksignal(sbuf, fd);
 				}else{

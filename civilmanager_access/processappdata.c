@@ -214,7 +214,7 @@ void * formatmessage(void * p){
 				free(buf);
 				return NULL;
 			}
-			fmtreportsockdata_add(pad->sbuf, socketfd, pad->cardmanager);
+			fmtreportsockdata_add(pad->sbuf, socketfd, pad->connectionmanager);
 		}
 	}
 }
