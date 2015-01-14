@@ -77,7 +77,7 @@ void * recv_downstream(void* p){
 		if(rc > 0){
 			parseprotocoldownstream = parseprotocoldownstream_parse((char *)zmq_msg_data(&msg), zmq_msg_size(&msg));
 			messagetype = parseprotocoldownstream_getmessagetype(parseprotocoldownstream);
-	//		parseprotocoldownstream_getsendaddr(parseprotocoldownstream);
+			//		parseprotocoldownstream_getsendaddr(parseprotocoldownstream);
 			struct encodeprotocol_respond epr;
 			struct sendfeedback sendfeedback;
 			epr.messagetype = RES_SENDFEEDBACK;
@@ -238,9 +238,8 @@ int zmq_buffer_push(struct zmq_buffer * zb, unsigned char * buf, int len){
 	int rc = zmq_msg_init_size(&msg, len);
 	assert(rc == 0);
 	memcpy(zmq_msg_data(&msg), buf, len);
-	rc = zmq_msg_send(&msg, zb->sendsocket, 0);
-	static int times = 0;
-	//assert(rc == len); 
+	rc = zmq_msg_send(&msg, zb->sendsocket, ZMQ_DONTWAIT);
+	assert(rc == len); 
 	zmq_msg_close(&msg);
 
 	return 0;
@@ -253,7 +252,7 @@ unsigned char * zmq_buffer_generateauthentication(unsigned int sendindex, char *
 	authenticationmessage.set_sqtsentid(enterpriseid);
 	authenticationmessage.set_ncategory(messagetype); // 1 for 北斗发送 2 for 短信发送
 	authenticationmessage.SerializeToString(&authenticationstring);
-	struct encodeprotocolupstream * encodeprotocolupstream = encodeprotocolupstream_create(BUSINESSSOFTWARE, 2, SENDSOFTWARE, (unsigned char *)authenticationstring.data(), authenticationstring.size()); 
+	struct encodeprotocolupstream * encodeprotocolupstream = encodeprotocolupstream_create(BUSINESSSOFTWARE, 2, SENDSOFTWARE, (unsigned char *)authenticationstring.c_str(), authenticationstring.length());
 	if(encodeprotocolupstream == NULL){
 		*len = 0;
 		return NULL;
@@ -264,6 +263,26 @@ unsigned char * zmq_buffer_generateauthentication(unsigned int sendindex, char *
 	*len = sizeof(unsigned char)*authenticationlen;
 
 	return authenticationbuffer;
+}
+
+unsigned char * zmq_buffer_generatebeidoumessage(unsigned int internalsendindex, struct request * request, unsigned int * len){
+	BdfsMsg beidousendmessage;
+	beidousendmessage.set_nserialid(internalsendindex);
+	beidousendmessage.set_nsourceaddress(request->sendaddr);
+	beidousendmessage.set_ndestaddress(request->recvaddr);
+	beidousendmessage.set_nmsgtype(request->encodingtype);
+	beidousendmessage.set_ninfolen(request->messagelength);
+	beidousendmessage.set_sinfobuff((const char *)request->message); 
+	string beidoumessagestring;
+	beidousendmessage.SerializeToString(&beidoumessagestring);
+	struct encodeprotocolupstream * epumessage = encodeprotocolupstream_create(BUSINESSSOFTWARE, 2, SENDSOFTWARE, (unsigned char *)beidoumessagestring.c_str(), beidoumessagestring.length());
+	unsigned int epumessagelen = encodeprotocolupstream_getmessagelen(epumessage);
+	*len = epumessagelen;
+	unsigned char * beidoumessage = (unsigned char *)malloc(epumessagelen);
+	memcpy(beidoumessage, encodeprotocolupstream_getmessage(epumessage), epumessagelen);
+	encodeprotocolupstream_destroy(epumessage);
+
+	return beidoumessage; 
 }
 
 int zmq_buffer_upstream_add(struct zmq_buffer * zmq_buffer, struct fmtreportsockdata * fmtreportsockdata,  unsigned int messagetype, char * enterpriseid, int fd, unsigned int usersendindex){
@@ -280,7 +299,7 @@ int zmq_buffer_upstream_add(struct zmq_buffer * zmq_buffer, struct fmtreportsock
 	struct encodeprotocol_respond epr;
 	struct sendfeedback sendfeedback;
 
-	if(entry == NULL){ 
+	if(entry == NULL){
 		entry = (struct zmq_buffer_authentication *)malloc(sizeof(struct zmq_buffer_authentication));
 	}else{
 		sendfeedback.sendindex = entry->usersendindex;
@@ -293,37 +312,33 @@ int zmq_buffer_upstream_add(struct zmq_buffer * zmq_buffer, struct fmtreportsock
 		free(entry->messagebuf);
 		entry->messagebuf = NULL;
 	}
-	unsigned int authenticationlen= 0;
+	unsigned int authenticationlen = 0;
 	unsigned char * authenticationbuffer = zmq_buffer_generateauthentication(internalsendindex, enterpriseid, messagetype, &authenticationlen);
-	//struct fmtreportsockdata fmtreportsockdata;
-	struct request * request = fmtreportsockdata->message->message.request;
-	BdfsMsg beidousendmessage;
-	beidousendmessage.set_nserialid(internalsendindex);
-	beidousendmessage.set_nsourceaddress(request->sendaddr);
-	beidousendmessage.set_ndestaddress(request->recvaddr);
-	beidousendmessage.set_nmsgtype(request->encodingtype);
-	beidousendmessage.set_ninfolen(request->messagelength);
-	beidousendmessage.set_sinfobuff((const char *)request->message); 
-	string beidoumessagestring;
-	beidousendmessage.SerializeToString(&beidoumessagestring);
-	struct encodeprotocolupstream * epumessage = encodeprotocolupstream_create(BUSINESSSOFTWARE, 2, SENDSOFTWARE, (unsigned char *)beidoumessagestring.data(), beidoumessagestring.size());
-	unsigned int epumessagelen = encodeprotocolupstream_getmessagelen(epumessage);
-
 	entry->authenticationbuf = authenticationbuffer;
 	entry->authenticationlen = authenticationlen;
-	entry->messagebuf = (unsigned char *)malloc(sizeof(unsigned char)*epumessagelen);
-	memcpy(entry->messagebuf, encodeprotocolupstream_getmessage(epumessage), sizeof(unsigned char)*epumessagelen);
-	entry->messagelen = epumessagelen;
+//	unsigned int beidoumessagelen = 0;
+//	unsigned char * beidoumessage = zmq_buffer_generatebeidoumessage(internalsendindex, fmtreportsockdata->message->message.request, &beidoumessagelen); 
+//	entry->messagebuf = beidoumessage;
+//	entry->messagelen = beidoumessagelen;
 
 	entry->fd = fd;
 	entry->usersendindex = usersendindex; 
 	entry->internalsendindex = internalsendindex;
 	entry->stream = UPSTREAM;
 
-	encodeprotocolupstream_destroy(epumessage);
-
-	zmq_buffer_push(zmq_buffer, entry->authenticationbuf, entry->authenticationlen);
-
+	unsigned char *test_zmq = (unsigned char *)malloc(50);
+	memset(test_zmq, 'a', 49);
+	test_zmq[49] = 0;
+	printf("_______________%s\n", test_zmq);
+	zmq_buffer_push(zmq_buffer, test_zmq, 50);
+	//free(test_zmq);
+	//zmq_buffer_push(zmq_buffer, entry->authenticationbuf, entry->authenticationlen);
+//	zmq_msg_t msg;
+//	int rc = zmq_msg_init_size(&msg, entry->authenticationlen);
+//	memcpy(zmq_msg_data(&msg), entry->authenticationbuf, entry->authenticationlen);
+//	rc = zmq_msg_send(&msg, zmq_buffer->sendsocket, 0);
+//	zmq_msg_close(&msg);
+	
 	return 0;
 }
 
