@@ -18,9 +18,8 @@
 
 #define MIN(a,b) a>b?b:a
 
-
-#define BUSINESSSOFTWARE "业务服务器"
-#define RECVSOFTWARE "接收软件"
-#define SENDSOFTWARE "发送软件"
-#define BILLINGSOFTWARE "计费服务器"
+#define BUSINESSSOFTWARE "business"
+#define RECVSOFTWARE "recv"
+#define SENDSOFTWARE "send"
+#define BILLINGSOFTWARE "bill"
 #endif

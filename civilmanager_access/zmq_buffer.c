@@ -17,6 +17,7 @@
 #include "cndef.h"
 #include "parseprotocol.h" 
 #include "cnconfig.h"
+#include "toolkit.h"
 
 using namespace std;
 #define MAXFIFOLEN 1024
@@ -57,6 +58,12 @@ struct zmq_buffer{
 	struct loginenterprisemanager * loginenterprisemanager;
 };
 
+static inline void zmq_buffer_clear(struct zmq_buffer * zmq_buffer, unsigned int authenticationid){
+	if(zmq_buffer != NULL){
+		zmq_buffer->slot[authenticationid % zmq_buffer->slotcount] = NULL;
+	}
+}
+
 void * recv_downstream(void* p){
 	GOOGLE_PROTOBUF_VERIFY_VERSION;
 
@@ -77,11 +84,6 @@ void * recv_downstream(void* p){
 		if(rc > 0){
 			parseprotocoldownstream = parseprotocoldownstream_parse((char *)zmq_msg_data(&msg), zmq_msg_size(&msg));
 			messagetype = parseprotocoldownstream_getmessagetype(parseprotocoldownstream);
-			//		parseprotocoldownstream_getsendaddr(parseprotocoldownstream);
-			struct encodeprotocol_respond epr;
-			struct sendfeedback sendfeedback;
-			epr.messagetype = RES_SENDFEEDBACK;
-			epr.message.sendfeedback = &sendfeedback;
 
 			switch(messagetype){
 				case downstream_beidoumessage:
@@ -100,8 +102,9 @@ void * recv_downstream(void* p){
 									zba->authenticationbuf = NULL;
 									free(zba->messagebuf);
 									zba->messagebuf = NULL;
-									free(zba);
-									zba = NULL;
+//									free(zba);
+//									zba = NULL;
+
 								}else if(zba->stream == DOWNSTREAM){ 
 									int * fds = NULL;
 									int fdscount = 0;
@@ -117,6 +120,7 @@ void * recv_downstream(void* p){
 									free(zba->encodeprotocol_respond->message.respondlogin);
 									free(zba->encodeprotocol_respond);
 									zba->encodeprotocol_respond = NULL;
+									zmq_buffer_clear(zb, authentication->nauthenticationid());
 								}else{
 									fprintf(stderr, "recved message has no sense.  %s %s %d", __FILE__, __FUNCTION__, __LINE__);
 								}
@@ -125,6 +129,10 @@ void * recv_downstream(void* p){
 							}
 						}else if(authentication != NULL && authentication->nres() != 0 && zba != NULL){
 							//0:ok,1:state error,2:no money,3:teach date,4:no register,5 no category
+							struct encodeprotocol_respond epr;
+							struct sendfeedback sendfeedback;
+							epr.messagetype = RES_SENDFEEDBACK;
+							epr.message.sendfeedback = &sendfeedback;
 							sendfeedback.sendindex = zba->usersendindex;
 							sendfeedback.feedback = FEEDBACK_NOMONEY;
 							sockets_buffer_write(zb->sockets_buffer, zba->fd, &epr);
@@ -135,6 +143,7 @@ void * recv_downstream(void* p){
 							zba->messagebuf = NULL;
 							free(zba);
 							zba = NULL;
+							zmq_buffer_clear(zb, authentication->nauthenticationid());
 						}else{
 							fprintf(stderr, "recv a unknow autentication message. %s %s %d\n", __FILE__, __FUNCTION__, __LINE__);
 						}
@@ -147,15 +156,20 @@ void * recv_downstream(void* p){
 						int result = sendfeedbackmessage->nres();
 						struct zmq_buffer_authentication * zba = zmq_buffer_get(zb, sendindex);
 						if(zba != NULL && sendindex == zba->internalsendindex){
+							struct encodeprotocol_respond epr;
+							struct sendfeedback sendfeedback;
+							epr.messagetype = RES_SENDFEEDBACK;
+							epr.message.sendfeedback = &sendfeedback;
 							sendfeedback.sendindex = sendindex;
 							sendfeedback.feedback = result;
 							sockets_buffer_write(zb->sockets_buffer,zba->fd, &epr); 
-							free(zba->authenticationbuf);
 
+							free(zba->authenticationbuf);
 							zba->authenticationbuf = NULL;
 							free(zba->messagebuf);
 							zba->messagebuf = NULL;
 							free(zba);
+							zmq_buffer_clear(zb, sendindex);
 						}else{ 
 							fprintf(stderr, "recv a error feedback. index %u %s %s %d\n", sendindex, __FILE__, __FUNCTION__, __LINE__);
 						}
@@ -164,14 +178,15 @@ void * recv_downstream(void* p){
 					break;
 				case downstream_unknown:
 					fprintf(stderr, "recv a unknow message from 中转软件.%s %s %d\n", __FILE__, __FUNCTION__, __LINE__);
+					toolkit_printbytes((unsigned char *)zmq_msg_data(&msg), zmq_msg_size(&msg));
 					break;
 			}
 
 			zmq_msg_close(&msg);
+			parseprotocoldownstream_clear(parseprotocoldownstream);
 		}
-
-		pthread_exit(0);
 	}
+	pthread_exit(0);
 }
 
 struct zmq_buffer * zmq_buffer_create(struct sockets_buffer * sockets_buffer, struct cardmanager * cardmanager,  struct loginenterprisemanager * loginenterprisemanager, int capacity){
@@ -252,7 +267,7 @@ unsigned char * zmq_buffer_generateauthentication(unsigned int sendindex, char *
 	authenticationmessage.set_sqtsentid(enterpriseid);
 	authenticationmessage.set_ncategory(messagetype); // 1 for 北斗发送 2 for 短信发送
 	authenticationmessage.SerializeToString(&authenticationstring);
-	struct encodeprotocolupstream * encodeprotocolupstream = encodeprotocolupstream_create(BUSINESSSOFTWARE, 2, SENDSOFTWARE, (unsigned char *)authenticationstring.c_str(), authenticationstring.length());
+	struct encodeprotocolupstream * encodeprotocolupstream = encodeprotocolupstream_create(BUSINESSSOFTWARE, 1, SENDSOFTWARE, (unsigned char *)authenticationstring.c_str(), authenticationstring.length()); // 1 means charge software
 	if(encodeprotocolupstream == NULL){
 		*len = 0;
 		return NULL;
@@ -275,7 +290,7 @@ unsigned char * zmq_buffer_generatebeidoumessage(unsigned int internalsendindex,
 	beidousendmessage.set_sinfobuff((const char *)request->message); 
 	string beidoumessagestring;
 	beidousendmessage.SerializeToString(&beidoumessagestring);
-	struct encodeprotocolupstream * epumessage = encodeprotocolupstream_create(BUSINESSSOFTWARE, 2, SENDSOFTWARE, (unsigned char *)beidoumessagestring.c_str(), beidoumessagestring.length());
+	struct encodeprotocolupstream * epumessage = encodeprotocolupstream_create(BUSINESSSOFTWARE, 2, SENDSOFTWARE, (unsigned char *)beidoumessagestring.c_str(), beidoumessagestring.length()); // 2 means beidou send software
 	unsigned int epumessagelen = encodeprotocolupstream_getmessagelen(epumessage);
 	*len = epumessagelen;
 	unsigned char * beidoumessage = (unsigned char *)malloc(epumessagelen);
@@ -301,6 +316,7 @@ int zmq_buffer_upstream_add(struct zmq_buffer * zmq_buffer, struct fmtreportsock
 
 	if(entry == NULL){
 		entry = (struct zmq_buffer_authentication *)malloc(sizeof(struct zmq_buffer_authentication));
+		zmq_buffer->slot[index] = entry;
 	}else{
 		sendfeedback.sendindex = entry->usersendindex;
 		sendfeedback.feedback = FEEDBACK_FULL; // 发送队列已满
@@ -316,28 +332,17 @@ int zmq_buffer_upstream_add(struct zmq_buffer * zmq_buffer, struct fmtreportsock
 	unsigned char * authenticationbuffer = zmq_buffer_generateauthentication(internalsendindex, enterpriseid, messagetype, &authenticationlen);
 	entry->authenticationbuf = authenticationbuffer;
 	entry->authenticationlen = authenticationlen;
-//	unsigned int beidoumessagelen = 0;
-//	unsigned char * beidoumessage = zmq_buffer_generatebeidoumessage(internalsendindex, fmtreportsockdata->message->message.request, &beidoumessagelen); 
-//	entry->messagebuf = beidoumessage;
-//	entry->messagelen = beidoumessagelen;
+	unsigned int beidoumessagelen = 0;
+	unsigned char * beidoumessage = zmq_buffer_generatebeidoumessage(internalsendindex, fmtreportsockdata->message->message.request, &beidoumessagelen); 
+	entry->messagebuf = beidoumessage;
+	entry->messagelen = beidoumessagelen;
 
 	entry->fd = fd;
 	entry->usersendindex = usersendindex; 
 	entry->internalsendindex = internalsendindex;
 	entry->stream = UPSTREAM;
 
-	unsigned char *test_zmq = (unsigned char *)malloc(50);
-	memset(test_zmq, 'a', 49);
-	test_zmq[49] = 0;
-	printf("_______________%s\n", test_zmq);
-	zmq_buffer_push(zmq_buffer, test_zmq, 50);
-	//free(test_zmq);
-	//zmq_buffer_push(zmq_buffer, entry->authenticationbuf, entry->authenticationlen);
-//	zmq_msg_t msg;
-//	int rc = zmq_msg_init_size(&msg, entry->authenticationlen);
-//	memcpy(zmq_msg_data(&msg), entry->authenticationbuf, entry->authenticationlen);
-//	rc = zmq_msg_send(&msg, zmq_buffer->sendsocket, 0);
-//	zmq_msg_close(&msg);
+	zmq_buffer_push(zmq_buffer, entry->authenticationbuf, entry->authenticationlen);
 	
 	return 0;
 }
