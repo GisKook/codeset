@@ -61,6 +61,8 @@ void * downstream(void *param){
 						while(writelen < contentlen){ 
 							ret = write(fd, content, contentlen);
 							if(ret < 0 && errno != EAGAIN){
+								sockets_buffer_del(sockbuffer, fd);
+
 								close(fd);
 								break;
 							}

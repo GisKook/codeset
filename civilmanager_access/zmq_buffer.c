@@ -96,15 +96,14 @@ void * recv_downstream(void* p){
 						struct zmq_buffer_authentication * zba = zmq_buffer_get(zb, authentication->nauthenticationid());
 						if(authentication != NULL && authentication->nres() == 0 && zba != NULL){
 							if(zba->internalsendindex == authentication->nauthenticationid()){
-								if(zba->stream == UPSTREAM){
+								if(zba->stream == UPSTREAM){  // 收到反馈才算是成功
 									zmq_buffer_push(zb, zba->messagebuf, zba->messagelen); 
-									free(zba->authenticationbuf);
-									zba->authenticationbuf = NULL;
-									free(zba->messagebuf);
-									zba->messagebuf = NULL;
-//									free(zba);
-//									zba = NULL;
-
+									//									free(zba->authenticationbuf);
+									//									zba->authenticationbuf = NULL;
+									//									free(zba->messagebuf);
+									//									zba->messagebuf = NULL;
+									//									free(zba);
+									//									zba = NULL;
 								}else if(zba->stream == DOWNSTREAM){ 
 									int * fds = NULL;
 									int fdscount = 0;
@@ -120,6 +119,8 @@ void * recv_downstream(void* p){
 									free(zba->encodeprotocol_respond->message.respondlogin);
 									free(zba->encodeprotocol_respond);
 									zba->encodeprotocol_respond = NULL;
+									free(zba);
+									zba = NULL;
 									zmq_buffer_clear(zb, authentication->nauthenticationid());
 								}else{
 									fprintf(stderr, "recved message has no sense.  %s %s %d", __FILE__, __FUNCTION__, __LINE__);
@@ -127,7 +128,7 @@ void * recv_downstream(void* p){
 							}else{
 								fprintf(stderr, "recved message has no sense.  %s %s %d", __FILE__, __FUNCTION__, __LINE__);
 							}
-						}else if(authentication != NULL && authentication->nres() != 0 && zba != NULL){
+						}else if(authentication != NULL && authentication->nres() != 0 && zba != NULL){ // 没有发送
 							//0:ok,1:state error,2:no money,3:teach date,4:no register,5 no category
 							struct encodeprotocol_respond epr;
 							struct sendfeedback sendfeedback;
@@ -173,7 +174,6 @@ void * recv_downstream(void* p){
 						}else{ 
 							fprintf(stderr, "recv a error feedback. index %u %s %s %d\n", sendindex, __FILE__, __FUNCTION__, __LINE__);
 						}
-
 					}
 					break;
 				case downstream_unknown:
@@ -318,15 +318,16 @@ int zmq_buffer_upstream_add(struct zmq_buffer * zmq_buffer, struct fmtreportsock
 		entry = (struct zmq_buffer_authentication *)malloc(sizeof(struct zmq_buffer_authentication));
 		zmq_buffer->slot[index] = entry;
 	}else{
+		free(entry->authenticationbuf);
+		entry->authenticationbuf = NULL;
+		free(entry->messagebuf);
+		entry->messagebuf = NULL;
+
 		sendfeedback.sendindex = entry->usersendindex;
 		sendfeedback.feedback = FEEDBACK_FULL; // 发送队列已满
 		epr.messagetype = RES_SENDFEEDBACK;
 		epr.message.sendfeedback = &sendfeedback;
 		sockets_buffer_write(zmq_buffer->sockets_buffer, entry->fd, &epr);
-		free(entry->authenticationbuf);
-		entry->authenticationbuf = NULL;
-		free(entry->messagebuf);
-		entry->messagebuf = NULL;
 	}
 	unsigned int authenticationlen = 0;
 	unsigned char * authenticationbuffer = zmq_buffer_generateauthentication(internalsendindex, enterpriseid, messagetype, &authenticationlen);
@@ -343,7 +344,7 @@ int zmq_buffer_upstream_add(struct zmq_buffer * zmq_buffer, struct fmtreportsock
 	entry->stream = UPSTREAM;
 
 	zmq_buffer_push(zmq_buffer, entry->authenticationbuf, entry->authenticationlen);
-	
+
 	return 0;
 }
 
@@ -358,10 +359,10 @@ struct encodeprotocol_respond * zmq_buffer_downstream_beidoumessage(struct zmq_b
 		positioninfo.accuracy = bdmsg->mutable_positioninfo()->accuracy();
 		positioninfo.urgentposition = bdmsg->mutable_positioninfo()->emergencypostion();
 		positioninfo.multivaluesolution = bdmsg->mutable_positioninfo()->multivaluesolution();
-		positioninfo.positiontime.hour = bdmsg->mutable_positioninfo()->applaytime_hour();
-		positioninfo.positiontime.minutes = bdmsg->mutable_positioninfo()->applaytime_minute();
-		positioninfo.positiontime.seconds = bdmsg->mutable_positioninfo()->applaytime_second();
-		positioninfo.positiontime.tenms = bdmsg->mutable_positioninfo()->applaytime_tenths();
+		positioninfo.positiontime.hour = bdmsg->mutable_positioninfo()->applytime_hour();
+		positioninfo.positiontime.minutes = bdmsg->mutable_positioninfo()->applytime_minute();
+		positioninfo.positiontime.seconds = bdmsg->mutable_positioninfo()->applytime_second();
+		positioninfo.positiontime.tenms = bdmsg->mutable_positioninfo()->applytime_tenths();
 		positioninfo.longitude = bdmsg->mutable_positioninfo()->longitude_degree()*1000000+bdmsg->mutable_positioninfo()->longitude_minute()*1000000/60 + bdmsg->mutable_positioninfo()->longitude_second()*1000000/3600 + bdmsg->mutable_positioninfo()->longitude_tenths()*1000000/36000;
 		positioninfo.latitude= bdmsg->mutable_positioninfo()->latitude_degree()*1000000+bdmsg->mutable_positioninfo()->latitude_minute()*1000000/60 + bdmsg->mutable_positioninfo()->latitude_second()*1000000/3600 + bdmsg->mutable_positioninfo()->latitude_tenths()*1000000/36000;
 		positioninfo.geodeticheight = bdmsg->mutable_positioninfo()->geodeticheight();
@@ -415,7 +416,7 @@ void zmq_buffer_downstream_push(struct zmq_buffer * zmq_buffer, char * enterpris
 	unsigned int internalsendindex = __sync_fetch_and_add(&(zmq_buffer->internalsendindex), 1);
 	unsigned int index = internalsendindex % (zmq_buffer->slotcount);
 	struct zmq_buffer_authentication * entry = zmq_buffer->slot[index]; 
-	if(entry == NULL){ 
+	if(entry == NULL){
 		entry = (struct zmq_buffer_authentication *)malloc(sizeof(struct zmq_buffer_authentication));
 	}else{
 		fprintf(stderr, "should not here. the list size is too small %s %s %d\n", __FILE__, __FUNCTION__, __LINE__);
