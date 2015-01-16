@@ -1,6 +1,7 @@
 //将经过程序处理后的数据或者反馈发送给client.
 #include "sockets_buffer.h"
 #include "encodeprotocol.h"
+#include "processappdata.h"
 #include "mqueue.h"
 #include <pthread.h>
 #include <errno.h>
@@ -9,12 +10,14 @@
 #include <stdio.h>
 
 struct downstreammessage{
-	struct sockets_buffer * sockbuffer;
+	struct processappdata * processappdata;
 	pthread_t tid;
 };
 
 void * downstream(void *param){ 
-	struct sockets_buffer * sockbuffer = (struct sockets_buffer *)param;
+	struct processappdata * pad = (struct processappdata *)param;
+	 
+	struct sockets_buffer * sockbuffer = processappadata_getsocketbuffer(pad);
 	int * activefds = NULL;
 	struct mqueue * mqueue = NULL;
 	int len = 0;
@@ -62,6 +65,7 @@ void * downstream(void *param){
 							ret = write(fd, content, contentlen);
 							if(ret < 0 && errno != EAGAIN){
 								sockets_buffer_del(sockbuffer, fd);
+								processappdata_delete(pad, fd);
 
 								close(fd);
 								break;
@@ -80,11 +84,11 @@ void * downstream(void *param){
 	return NULL;
 }
 
-struct downstreammessage * downstreammessage_create(struct sockets_buffer * sbuffer){ 
+struct downstreammessage * downstreammessage_create(struct processappdata * pad){ 
 	struct downstreammessage * downstreammessage = (struct downstreammessage *)malloc(sizeof(struct downstreammessage));
-	downstreammessage->sockbuffer = sbuffer; 
+	downstreammessage->processappdata= pad; 
 	pthread_t tid;
-	if(0 != pthread_create(&tid, NULL, downstream, sbuffer)){
+	if(0 != pthread_create(&tid, NULL, downstream, pad)){
 		fprintf(stderr, "create downstream message thread error.\n");
 		free(downstreammessage);
 
@@ -97,6 +101,6 @@ struct downstreammessage * downstreammessage_create(struct sockets_buffer * sbuf
 	return downstreammessage;
 }
 
-void downstreammessage_destroy(struct sockets_buffer * sbuffer){
-	free(sbuffer);
+void downstreammessage_destroy(struct downstreammessage * downstreammessage){
+	free(downstreammessage);
 }

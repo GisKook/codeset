@@ -110,15 +110,18 @@ int main(){
 
 	char printrecvmessage = 0;
 
-	for(;;){ 
+	for(;;){
 		nfds = epoll_wait(efd, events, MAX_EVENT, -1);
 
 		for(i = 0; i< nfds; ++i){
 			if( (events[i].events & EPOLLERR) ||
 					(events[i].events & EPOLLHUP) || 
 					!(events[i].events & EPOLLIN)){
-				fprintf(stderr, "epoll error.\n");
+				fprintf(stderr, "epoll error. error messsage: %s events[i].events :%d\n", strerror(errno),events[i].events);
 				close(events[i].data.fd);
+				sockets_buffer_del(socket_buf, events[i].data.fd);
+				processappdata_delete(pad, events[i].data.fd);
+
 				continue;
 			}else if(events[i].data.fd == listen_fd){ 
 				conn_fd = accept(listen_fd, NULL, NULL);
@@ -201,6 +204,7 @@ int main(){
 					}
 				}else if(signal == 1){ 
 					sockets_buffer_del(socket_buf, tempfd);
+					processappdata_delete(pad, tempfd);
 				}
 			}
 		}

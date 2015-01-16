@@ -160,21 +160,25 @@ struct loginenterprise * _loginenterprisemanager_search(struct loginenterprisema
 
 int * loginenterprisemanager_getfds(struct loginenterprisemanager *manager, char * enterpriseid, int * loginfdcount){
 	struct loginenterprise * le = _loginenterprisemanager_search(manager, enterpriseid); 
-	int fdcount = le->loginfdcount;
-	*loginfdcount = fdcount;
-	int * result = (int *)malloc(sizeof(int)*fdcount);
-	if(result == NULL){
-		fprintf(stderr, "malloc %d bytes error.%s %s %d\n", fdcount, __FILE__, __FUNCTION__, __LINE__);
-		*loginfdcount = 0;
+	if(le != NULL){
+		int fdcount = le->loginfdcount;
+		*loginfdcount = fdcount;
+		int * result = (int *)malloc(sizeof(int)*fdcount);
+		if(result == NULL){
+			fprintf(stderr, "malloc %d bytes error.%s %s %d\n", fdcount, __FILE__, __FUNCTION__, __LINE__);
+			*loginfdcount = 0;
 
-		return NULL;
-	}
-	int i;
-	for(i = 0; i < le->loginfdcount; ++i){ 
-		result[i] = le->loginfd[i].fd;
+			return NULL;
+		}
+		int i;
+		for(i = 0; i < le->loginfdcount; ++i){ 
+			result[i] = le->loginfd[i].fd;
+		}
+
+		return result;
 	}
 
-	return result;
+	return NULL;
 }
 
 void loginenterprisemanager_delete(struct loginenterprisemanager *manager, char * enterpriseid, int fd){ 
@@ -200,4 +204,8 @@ void loginenterprisemanager_delete(struct loginenterprisemanager *manager, char 
 		le->loginfd = (struct loginfd*)realloc(le->loginfd, sizeof(struct loginfd)*le->loginfdcount);
 	}
 	pthread_mutex_unlock(&manager->mutex);
+}
+
+int loginenterprisemanager_check(struct loginenterprisemanager * loginenterprisemanager, char * enterpriseid){
+	return _loginenterprisemanager_search(loginenterprisemanager, enterpriseid) != NULL;
 }

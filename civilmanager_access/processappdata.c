@@ -271,7 +271,7 @@ struct processappdata * processappdata_create(struct sockets_buffer * sbuf, stru
 	fprintf(stdout, "thread 0x%lx format application data create successfully.\n", pad->threadid_fmt);
 
 
-	struct downstreammessage * dsm = downstreammessage_create(sbuf);
+	struct downstreammessage * dsm = downstreammessage_create(pad);
 	pad->dsm = dsm;
 
 	return pad;
@@ -279,6 +279,16 @@ struct processappdata * processappdata_create(struct sockets_buffer * sbuf, stru
 
 int processappdata_join(struct processappdata* pad){
 	return pthread_join(pad->threadid_fmt, NULL);
+}
+
+void processappdata_delete(struct processappdata * pad, int fd){ 
+	struct connection * connection = connectionmanager_delete(pad->connectionmanager, fd);
+	loginenterprisemanager_delete(pad->loginenterprisemanager, connection_getenterpriseid(connection), fd);
+	free(connection);
+}
+
+struct sockets_buffer * processappadata_getsocketbuffer(struct processappdata * pad){
+	return pad->sbuf;
 }
 
 int processappdata_destroy(struct processappdata* pad){

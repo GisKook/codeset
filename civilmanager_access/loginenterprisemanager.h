@@ -15,4 +15,6 @@ int * loginenterprisemanager_getfds(struct loginenterprisemanager *manager, char
 
 void loginenterprisemanager_delete(struct loginenterprisemanager *manager, char * enterpriseid, int fd); 
 
+int loginenterprisemanager_check(struct loginenterprisemanager * loginenterprisemanager, char * enterpriseid);
+
 #endif

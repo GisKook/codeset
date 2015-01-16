@@ -254,7 +254,6 @@ int zmq_buffer_push(struct zmq_buffer * zb, unsigned char * buf, int len){
 	assert(rc == 0);
 	memcpy(zmq_msg_data(&msg), buf, len);
 	rc = zmq_msg_send(&msg, zb->sendsocket, ZMQ_DONTWAIT);
-	assert(rc == len); 
 	zmq_msg_close(&msg);
 
 	return 0;
@@ -413,33 +412,37 @@ void zmq_buffer_downstream_getcardid(Beidoumessage * beidoumessage, int * sendad
 }
 
 void zmq_buffer_downstream_push(struct zmq_buffer * zmq_buffer, char * enterpriseid, struct encodeprotocol_respond * encodeprotocol_respond){
-	unsigned int internalsendindex = __sync_fetch_and_add(&(zmq_buffer->internalsendindex), 1);
-	unsigned int index = internalsendindex % (zmq_buffer->slotcount);
-	struct zmq_buffer_authentication * entry = zmq_buffer->slot[index]; 
-	if(entry == NULL){
-		entry = (struct zmq_buffer_authentication *)malloc(sizeof(struct zmq_buffer_authentication));
-	}else{
-		fprintf(stderr, "should not here. the list size is too small %s %s %d\n", __FILE__, __FUNCTION__, __LINE__);
-		struct sendfeedback sendfeedback;
-		struct encodeprotocol_respond epr;
-		sendfeedback.sendindex = entry->usersendindex;
-		sendfeedback.feedback = FEEDBACK_FULL; // 发送队列已满
-		epr.messagetype = RES_SENDFEEDBACK;
-		epr.message.sendfeedback = &sendfeedback;
-		sockets_buffer_write(zmq_buffer->sockets_buffer, entry->fd, &epr);
-		free(entry->authenticationbuf);
-		free(entry->messagebuf);
-	}
-	unsigned int authlen = 0;
-	unsigned char * authbuffer = zmq_buffer_generateauthentication(internalsendindex, enterpriseid, 1, &authlen); 
-	memset(entry, 0, sizeof(struct zmq_buffer_authentication));
-	entry->internalsendindex = internalsendindex;
-	entry->authenticationbuf = authbuffer;
-	entry->authenticationlen = authlen;
-	entry->encodeprotocol_respond = encodeprotocol_respond;
-	memcpy(entry->enterpriseid, enterpriseid, MIN(MAXENTERPRISEIDLEN, strlen(enterpriseid)));
+	if(loginenterprisemanager_check(zmq_buffer->loginenterprisemanager, enterpriseid) != 0){
+		unsigned int internalsendindex = __sync_fetch_and_add(&(zmq_buffer->internalsendindex), 1);
+		unsigned int index = internalsendindex % (zmq_buffer->slotcount);
+		struct zmq_buffer_authentication * entry = zmq_buffer->slot[index]; 
+		if(entry == NULL){
+			entry = (struct zmq_buffer_authentication *)malloc(sizeof(struct zmq_buffer_authentication));
+			zmq_buffer->slot[index] = entry;
+		}else{
+			fprintf(stderr, "should not here. the list size is too small %s %s %d\n", __FILE__, __FUNCTION__, __LINE__);
+			struct sendfeedback sendfeedback;
+			struct encodeprotocol_respond epr;
+			sendfeedback.sendindex = entry->usersendindex;
+			sendfeedback.feedback = FEEDBACK_FULL; // 发送队列已满
+			epr.messagetype = RES_SENDFEEDBACK;
+			epr.message.sendfeedback = &sendfeedback;
+			sockets_buffer_write(zmq_buffer->sockets_buffer, entry->fd, &epr);
+			free(entry->authenticationbuf);
+			free(entry->messagebuf);
+		}
+		unsigned int authlen = 0;
+		unsigned char * authbuffer = zmq_buffer_generateauthentication(internalsendindex, enterpriseid, 1, &authlen); 
+		memset(entry, 0, sizeof(struct zmq_buffer_authentication));
+		entry->internalsendindex = internalsendindex;
+		entry->authenticationbuf = authbuffer;
+		entry->authenticationlen = authlen;
+		entry->encodeprotocol_respond = encodeprotocol_respond;
+		memcpy(entry->enterpriseid, enterpriseid, MIN(MAXENTERPRISEIDLEN, strlen(enterpriseid)));
 
-	entry->stream = DOWNSTREAM;
+		entry->stream = DOWNSTREAM;
+		zmq_buffer_push(zmq_buffer, entry->authenticationbuf, entry->authenticationlen);
+	}
 }
 
 int zmq_buffer_downstream_add(struct zmq_buffer * zmq_buffer, Beidoumessage * beidoumessage){
@@ -456,6 +459,10 @@ int zmq_buffer_downstream_add(struct zmq_buffer * zmq_buffer, Beidoumessage * be
 	if(recvaddr != -1){
 		card = cardmanager_search(cardmanager, recvaddr);
 		enterpriseid2 = card_getenterpriseid(card); 
+	}
+	if(enterpriseid1 == NULL && enterpriseid2 == NULL){
+		fprintf(stderr, "got a unknow card the first addr %d second addr %d. %s %s %d\n",sendaddr, recvaddr, __FILE__, __FUNCTION__, __LINE__);
+		return -1;
 	}
 
 	struct encodeprotocol_respond * encodeprotocol_respond1; 
