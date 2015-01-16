@@ -24,6 +24,8 @@ using namespace std;
 #define MAXENTERPRISEIDLEN 32
 #define UPSTREAM 0
 #define DOWNSTREAM 1
+#define MESSAGETYPE_BEIDOU 0
+#define MESSAGETYPE_MSM 1
 
 int zmq_buffer_push(struct zmq_buffer *, unsigned char * buf, int len);
 int zmq_buffer_downstream_add(struct zmq_buffer * zmq_buffer, Beidoumessage * beidoumessage);
@@ -31,9 +33,11 @@ void zmq_buffer_downstream_push(struct zmq_buffer * zmq_buffer, char * enterpris
 unsigned char * zmq_buffer_generateauthentication(unsigned int sendindex, char * enterpriseid, unsigned int messagetype, unsigned int * len);
 int zmq_buffer_upstream_add(struct zmq_buffer * zmq_buffer, struct fmtreportsockdata * fmtreportsockdata,  unsigned int messagetype, char * enterpriseid, int fd, unsigned int usersendindex);
 struct zmq_buffer_authentication * zmq_buffer_get(struct zmq_buffer * zmq_buffer, unsigned int authenticationid); 
+void zmq_buffer_charge(struct zmq_buffer * zmq_buffer, char * enterpriseid, unsigned char messagetype, unsigned long long recvid );
 
 // 这里设置一个hash表，这个hash表可能被覆盖。也就是发送了验证消息后一直收不到回执，这应该被作为一个错误回馈给用户。 这里的sendindex是内部使用的，和用户传过来的sendindex是不一样的。
 struct zmq_buffer_authentication{
+	unsigned long long recvid; // 
 	unsigned int internalsendindex;
 	unsigned char * authenticationbuf;
 	unsigned int authenticationlen;
@@ -43,6 +47,7 @@ struct zmq_buffer_authentication{
 	char enterpriseid[MAXENTERPRISEIDLEN];
 	int fd;
 	unsigned int usersendindex; // 用户提交上来的sendindex
+	unsigned char messagetype; 
 	unsigned char stream; 
 };
 
@@ -156,6 +161,9 @@ void * recv_downstream(void* p){
 						unsigned int sendindex = sendfeedbackmessage->nserialid();
 						int result = sendfeedbackmessage->nres();
 						struct zmq_buffer_authentication * zba = zmq_buffer_get(zb, sendindex);
+						if(result == 0){ 
+							zmq_buffer_charge(zb, zba->enterpriseid, zba->messagetype, zba->recvid);
+						}
 						if(zba != NULL && sendindex == zba->internalsendindex){
 							struct encodeprotocol_respond epr;
 							struct sendfeedback sendfeedback;
@@ -260,12 +268,16 @@ int zmq_buffer_push(struct zmq_buffer * zb, unsigned char * buf, int len){
 }
 
 unsigned char * zmq_buffer_generateauthentication(unsigned int sendindex, char * enterpriseid, unsigned int messagetype, unsigned int * len){
+	BsTxMsg message;
+	message.set_nrecvtype(BsTxMsg_recvtype_FWJQ);
+	BsTxMsg_FwjqMsg *authenticationmessage = message.mutable_fwjqmsg();
 	string authenticationstring;
-	BsTxMsg_FwjqMsg authenticationmessage;
-	authenticationmessage.set_nauthenticationid(sendindex);
-	authenticationmessage.set_sqtsentid(enterpriseid);
-	authenticationmessage.set_ncategory(messagetype); // 1 for 北斗发送 2 for 短信发送
-	authenticationmessage.SerializeToString(&authenticationstring);
+	authenticationmessage->set_nauthenticationid(sendindex);
+	authenticationmessage->set_sqtsentid(enterpriseid);
+	authenticationmessage->set_ncategory(messagetype); // 1 for 北斗发送 2 for 短信发送
+	message.SerializeToString(&authenticationstring);
+	message.release_fwjqmsg();
+	message.Clear();
 	struct encodeprotocolupstream * encodeprotocolupstream = encodeprotocolupstream_create(BUSINESSSOFTWARE, 1, SENDSOFTWARE, (unsigned char *)authenticationstring.c_str(), authenticationstring.length()); // 1 means charge software
 	if(encodeprotocolupstream == NULL){
 		*len = 0;
@@ -275,6 +287,7 @@ unsigned char * zmq_buffer_generateauthentication(unsigned int sendindex, char *
 	unsigned char * authenticationbuffer = (unsigned char *)malloc(sizeof(unsigned char)*authenticationlen);
 	memcpy(authenticationbuffer, encodeprotocolupstream_getmessage(encodeprotocolupstream), sizeof(unsigned char)*authenticationlen);
 	*len = sizeof(unsigned char)*authenticationlen;
+	encodeprotocolupstream_destroy(encodeprotocolupstream);
 
 	return authenticationbuffer;
 }
@@ -495,6 +508,27 @@ struct zmq_buffer_authentication * zmq_buffer_get(struct zmq_buffer * zmq_buffer
 	}
 
 	return NULL;
+}
+
+void zmq_buffer_charge(struct zmq_buffer * zmq_buffer, char * enterpriseid, unsigned char messagetype, unsigned long long recvid ){
+	BsTxMsg message;
+	message.set_nrecvtype(BsTxMsg_recvtype_KFQQ);
+	BsTxMsg_KfqqMsg * chargemessage = message.mutable_kfqqmsg();
+	chargemessage->set_sqtsentid(enterpriseid);
+	chargemessage->set_ncategory(messagetype); // 1 for 北斗发送 2 for 短信发送
+	chargemessage->set_nrecvid(recvid);
+	string chargestring;
+	message.SerializeToString(&chargestring);
+	message.release_kfqqmsg();
+	message.Clear();
+
+	struct encodeprotocolupstream * encodeprotocolupstream = encodeprotocolupstream_create(BUSINESSSOFTWARE, 1, SENDSOFTWARE, (unsigned char *)chargestring.c_str(), chargestring.length()); // 1 means charge software
+	if(encodeprotocolupstream == NULL){
+		return;
+	}
+	zmq_buffer_push(zmq_buffer, encodeprotocolupstream_getmessage(encodeprotocolupstream), encodeprotocolupstream_getmessagelen(encodeprotocolupstream));
+
+	encodeprotocolupstream_destroy(encodeprotocolupstream);
 }
 
 int zmq_buffer_destroy(struct zmq_buffer * zmq_buffer){ 
