@@ -6,5 +6,6 @@
 	"dbPassword":"cetc",
 	"zmqRecvaddr":"tcp://192.168.1.155:18889",
 	"zmqBindaddr":"tcp://*:18888",
-	"bindPort":"40000"
+	"bindPort":"40000",
+	"dump":""
 }

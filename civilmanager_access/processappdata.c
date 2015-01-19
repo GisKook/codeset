@@ -283,8 +283,11 @@ int processappdata_join(struct processappdata* pad){
 
 void processappdata_delete(struct processappdata * pad, int fd){ 
 	struct connection * connection = connectionmanager_delete(pad->connectionmanager, fd);
-	loginenterprisemanager_delete(pad->loginenterprisemanager, connection_getenterpriseid(connection), fd);
-	free(connection);
+	if(connection != NULL){
+		loginenterprisemanager_delete(pad->loginenterprisemanager, connection_getenterpriseid(connection), fd);
+		free(connection);
+	}
+	//assert(connection != NULL);
 }
 
 struct sockets_buffer * processappadata_getsocketbuffer(struct processappdata * pad){

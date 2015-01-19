@@ -10,6 +10,7 @@
 #define ZMQRECVADDR "zmqRecvaddr"
 #define ZMQBINDADDR "zmqBindaddr"
 #define BINDPORT "bindPort"
+#define DUMP "dump"
 
 int cnconfig_loadfile( const char* filename ); 
 const char* cnconfig_getvalue( const char * key );

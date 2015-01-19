@@ -7,6 +7,7 @@
 #include <string.h>
 #include <assert.h>
 #include <errno.h>
+#include <unistd.h>
 #include "cndef.h"
 #include "sockets_buffer.h"
 #include "cnconsole.h"
@@ -25,6 +26,29 @@ int main(){
 	if( 0 != cnconfig_loadfile("./conf.json")){
 		fprintf(stderr, "config file is not load well.\n");
 		return -1;
+	}
+	const char * dump = cnconfig_getvalue(DUMP);
+	if(strlen(dump) == sizeof("true")-1 && 0 == strcmp("true", dump)){ 
+		FILE *errfd = fopen("./stderr.log", "w");
+		if(errfd == NULL){
+			fprintf(stderr, "create stderr.log fail. error message %s\n", strerror(errno));
+		}
+		dup2(fileno(errfd), STDERR_FILENO);
+		fclose(errfd);
+		FILE *outfd = fopen("./stdout.log","w");
+		if(errfd == 0){
+			fprintf(stderr, "create stdout.log fail. error message %s\n", strerror(errno));
+		}
+		dup2(fileno(outfd), STDOUT_FILENO);
+		fclose(outfd);
+//		FILE *errfd = freopen("./stderr.log", "w", stderr);
+//		if (errfd == NULL){
+//			fprintf(stderr, "create stderr.log error. error message: %s", strerror(errno));
+//		}
+//		FILE *outfd = freopen("./stdout.log", "w", stdout);
+//		if(outfd == NULL){
+//			fprintf(stderr, "create stdout.log error. error message: %s", strerror(errno));
+//		}
 	}
 
 	int efd = epoll_create1(O_CLOEXEC);

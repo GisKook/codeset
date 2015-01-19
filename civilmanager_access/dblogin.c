@@ -96,7 +96,7 @@ void * dblogin_monitor(void * dblogin){
 	return NULL;
 };
 
-struct dblogin * dblogin_start(struct loginmanager * manager){ 
+struct dblogin * dblogin_start(struct loginmanager * manager){
 	PGConnInfo conn;
 	conn.pghost = (char*)(cnconfig_getvalue(DBHOST));
 	conn.pgport = (char*)(cnconfig_getvalue(DBPORT));
@@ -127,6 +127,7 @@ struct dblogin * dblogin_start(struct loginmanager * manager){
 		password = res->GetValue(i, 3);
 		issuedfrequency = res->GetValue(i,4);
 		logindata = (struct login *)malloc(sizeof(struct login));
+		memset(logindata, 0, sizeof(struct login));
 		memcpy(logindata->login, login, MIN(MAXLOGINLEN, strlen(login)));
 		memcpy(logindata->enterpriseid, enterpriseid, MIN(MAXENTERPRISEIDLEN, strlen(enterpriseid)));
 		memcpy(logindata->loginname, loginname, MIN(MAXLOGINNAMELEN, strlen(loginname)));
