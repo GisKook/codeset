@@ -60,6 +60,8 @@ struct loginenterprise * _loginenterprisemanager_insert( struct loginenterprisem
 	while( *newnode ){ 
 		lp = rb_entry( *newnode, struct loginenterprise, node); 
 		result = strcmp(enterpriseid, lp->enterpriseid);
+		parent = *newnode;
+
 		if(result < 0){
 			newnode = &((*newnode)->rb_left);
 		}else if(result > 0){
@@ -96,7 +98,7 @@ void loginenterprisemanager_insert( struct loginenterprisemanager * manager, cha
 	if((le = _loginenterprisemanager_insert(manager, enterpriseid, login, fd, newloginenterprise))){
 		goto out;
 	}
-	if(le == NULL && newloginenterprise != NULL){
+	if(newloginenterprise != NULL){
 		rb_insert_color(&newloginenterprise->node, &manager->root);
 	}
 
@@ -191,7 +193,6 @@ void loginenterprisemanager_delete(struct loginenterprisemanager *manager, char 
 	int i;
 	for(i = 0; i < le->loginfdcount; ++i){ 
 		if(le->loginfd[i].fd == fd){ 
-			le->loginfd[i].fd = 0;
 			break;
 		}
 	}
@@ -200,7 +201,7 @@ void loginenterprisemanager_delete(struct loginenterprisemanager *manager, char 
 		rb_erase(&le->node,&manager->root); 
 		free(le);
 	}else{
-		memmove((le->loginfd+i-1), le->loginfd+i, sizeof(struct loginfd)*(le->loginfdcount-i));
+		memmove((le->loginfd+i), le->loginfd+i+1, sizeof(struct loginfd)*(le->loginfdcount-i));
 		le->loginfd = (struct loginfd*)realloc(le->loginfd, sizeof(struct loginfd)*le->loginfdcount);
 	}
 	pthread_mutex_unlock(&manager->mutex);

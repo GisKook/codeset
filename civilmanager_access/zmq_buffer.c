@@ -44,7 +44,7 @@ struct zmq_buffer_authentication{
 	unsigned char * messagebuf;
 	unsigned int messagelen;
 	struct encodeprotocol_respond * encodeprotocol_respond;
-	char enterpriseid[MAXENTERPRISEIDLEN];
+	char enterpriseid[MAXENTERPRISEIDLEN+1];
 	int fd;
 	unsigned int usersendindex; // 用户提交上来的sendindex
 	unsigned char messagetype; 
@@ -121,8 +121,7 @@ void * recv_downstream(void* p){
 									}
 									free(zba->authenticationbuf);
 									zba->authenticationbuf = NULL;
-									free(zba->encodeprotocol_respond->message.respondlogin);
-									free(zba->encodeprotocol_respond);
+									encodeprotocol_clear(zba->encodeprotocol_respond);
 									zba->encodeprotocol_respond = NULL;
 									free(zba);
 									zba = NULL;
@@ -149,9 +148,9 @@ void * recv_downstream(void* p){
 							zba->messagebuf = NULL;
 							free(zba);
 							zba = NULL;
-							zmq_buffer_clear(zb, authentication->nauthenticationid());
+							zmq_buffer_clear(zb, authentication->nauthenticationid()); 
 						}else{
-							fprintf(stderr, "recv a unknow autentication message. %s %s %d\n", __FILE__, __FUNCTION__, __LINE__);
+							fprintf(stdout, "recv a error auth message. %s %s %d\n", __FILE__, __FUNCTION__, __LINE__); 
 						}
 					}
 					break;
@@ -161,10 +160,10 @@ void * recv_downstream(void* p){
 						unsigned int sendindex = sendfeedbackmessage->nserialid();
 						int result = sendfeedbackmessage->nres();
 						struct zmq_buffer_authentication * zba = zmq_buffer_get(zb, sendindex);
-						if(result == 0){ 
-							zmq_buffer_charge(zb, zba->enterpriseid, zba->messagetype, zba->recvid);
-						}
 						if(zba != NULL && sendindex == zba->internalsendindex){
+							if(result == 0){ 
+								zmq_buffer_charge(zb, zba->enterpriseid, zba->messagetype, zba->recvid);
+							}
 							struct encodeprotocol_respond epr;
 							struct sendfeedback sendfeedback;
 							epr.messagetype = RES_SENDFEEDBACK;
@@ -179,8 +178,8 @@ void * recv_downstream(void* p){
 							zba->messagebuf = NULL;
 							free(zba);
 							zmq_buffer_clear(zb, sendindex);
-						}else{ 
-							fprintf(stderr, "recv a error feedback. index %u %s %s %d\n", sendindex, __FILE__, __FUNCTION__, __LINE__);
+						}else{
+							fprintf(stdout, "recv a error feedback. index %u %s %s %d\n", sendindex, __FILE__, __FUNCTION__, __LINE__);
 						}
 					}
 					break;
@@ -275,7 +274,10 @@ unsigned char * zmq_buffer_generateauthentication(unsigned int sendindex, char *
 	authenticationmessage->set_nauthenticationid(sendindex);
 	authenticationmessage->set_sqtsentid(enterpriseid);
 	authenticationmessage->set_ncategory(messagetype); // 1 for 北斗发送 2 for 短信发送
-	message.SerializeToString(&authenticationstring);
+	bool rc = message.SerializeToString(&authenticationstring);
+
+	assert(rc); 
+
 	message.release_fwjqmsg();
 	message.Clear();
 	struct encodeprotocolupstream * encodeprotocolupstream = encodeprotocolupstream_create(BUSINESSSOFTWARE, 1, SENDSOFTWARE, (unsigned char *)authenticationstring.c_str(), authenticationstring.length()); // 1 means charge software
@@ -301,7 +303,8 @@ unsigned char * zmq_buffer_generatebeidoumessage(unsigned int internalsendindex,
 	beidousendmessage.set_ninfolen(request->messagelength);
 	beidousendmessage.set_sinfobuff((const char *)request->message); 
 	string beidoumessagestring;
-	beidousendmessage.SerializeToString(&beidoumessagestring);
+	bool rc = beidousendmessage.SerializeToString(&beidoumessagestring);
+	assert(rc);
 	struct encodeprotocolupstream * epumessage = encodeprotocolupstream_create(BUSINESSSOFTWARE, 2, SENDSOFTWARE, (unsigned char *)beidoumessagestring.c_str(), beidoumessagestring.length()); // 2 means beidou send software
 	unsigned int epumessagelen = encodeprotocolupstream_getmessagelen(epumessage);
 	*len = epumessagelen;
@@ -318,7 +321,7 @@ int zmq_buffer_upstream_add(struct zmq_buffer * zmq_buffer, struct fmtreportsock
 
 		return -1;
 	}
-	unsigned int internalsendindex = __sync_fetch_and_add(&zmq_buffer->internalsendindex, 1);
+	unsigned int internalsendindex = __sync_add_and_fetch(&zmq_buffer->internalsendindex, 1);
 	unsigned int index = internalsendindex % zmq_buffer->slotcount;
 	struct zmq_buffer_authentication * entry = zmq_buffer->slot[index]; 
 	string authenticationstring;
@@ -334,6 +337,7 @@ int zmq_buffer_upstream_add(struct zmq_buffer * zmq_buffer, struct fmtreportsock
 		entry->authenticationbuf = NULL;
 		free(entry->messagebuf);
 		entry->messagebuf = NULL;
+		encodeprotocol_clear(entry->encodeprotocol_respond);
 
 		sendfeedback.sendindex = entry->usersendindex;
 		sendfeedback.feedback = FEEDBACK_FULL; // 发送队列已满
@@ -350,6 +354,7 @@ int zmq_buffer_upstream_add(struct zmq_buffer * zmq_buffer, struct fmtreportsock
 	entry->messagebuf = beidoumessage;
 	entry->messagelen = beidoumessagelen;
 
+	memcpy(entry->enterpriseid, enterpriseid, MIN(strlen(enterpriseid), MAXENTERPRISEIDLEN));
 	entry->fd = fd;
 	entry->usersendindex = usersendindex; 
 	entry->internalsendindex = internalsendindex;
@@ -426,14 +431,14 @@ void zmq_buffer_downstream_getcardid(Beidoumessage * beidoumessage, int * sendad
 
 void zmq_buffer_downstream_push(struct zmq_buffer * zmq_buffer, char * enterpriseid, struct encodeprotocol_respond * encodeprotocol_respond){
 	if(loginenterprisemanager_check(zmq_buffer->loginenterprisemanager, enterpriseid) != 0){
-		unsigned int internalsendindex = __sync_fetch_and_add(&(zmq_buffer->internalsendindex), 1);
+		unsigned int internalsendindex = __sync_add_and_fetch(&(zmq_buffer->internalsendindex), 1);
 		unsigned int index = internalsendindex % (zmq_buffer->slotcount);
 		struct zmq_buffer_authentication * entry = zmq_buffer->slot[index]; 
 		if(entry == NULL){
 			entry = (struct zmq_buffer_authentication *)malloc(sizeof(struct zmq_buffer_authentication));
 			zmq_buffer->slot[index] = entry;
 		}else{
-			fprintf(stderr, "should not here. the list size is too small %s %s %d\n", __FILE__, __FUNCTION__, __LINE__);
+			fprintf(stdout, "the list is full now. the list's size is %d %s %s %d\n",zmq_buffer->slotcount, __FILE__, __FUNCTION__, __LINE__);
 			struct sendfeedback sendfeedback;
 			struct encodeprotocol_respond epr;
 			sendfeedback.sendindex = entry->usersendindex;
@@ -518,7 +523,8 @@ void zmq_buffer_charge(struct zmq_buffer * zmq_buffer, char * enterpriseid, unsi
 	chargemessage->set_ncategory(messagetype); // 1 for 北斗发送 2 for 短信发送
 	chargemessage->set_nrecvid(recvid);
 	string chargestring;
-	message.SerializeToString(&chargestring);
+	bool rc = message.SerializeToString(&chargestring);
+	assert(rc);
 	message.release_kfqqmsg();
 	message.Clear();
 

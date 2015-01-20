@@ -82,7 +82,7 @@ int main(){
 	int port = atoi(szport);
 	listen_addr.sin_port = htons(port);
 	if(bind(listen_fd, (struct sockaddr*)&listen_addr, sizeof(struct sockaddr_in)) == -1){
-		fprintf(stderr, "bind listen socket error. %s %d\n", __FILE__,__LINE__);
+		fprintf(stderr, "bind listen socket fail. error message: %s %s %d\n", strerror(errno), __FILE__,__LINE__);
 		close(listen_fd);
 		close(efd);
 
@@ -149,6 +149,7 @@ int main(){
 				continue;
 			}else if(events[i].data.fd == listen_fd){ 
 				conn_fd = accept(listen_fd, NULL, NULL);
+				printf("accept %d\n", conn_fd);
 				if(unlikely(conn_fd == -1)){
 					fprintf(stderr, "conn socket error. %s %s %d\n", __FILE__,__FUNCTION__,__LINE__);
 					continue;
@@ -192,17 +193,18 @@ int main(){
 					if(len == -1){ 
 						if(errno != EAGAIN){
 							perror("read");
-							printf ("Closed connection on descriptor %d\n", events[i].data.fd);
+							//printf ("Closed connection on descriptor %d\n", events[i].data.fd);
 
 							// Closing the descriptor will make epoll remove it
 							// from the set of descriptors which are monitored.
 							tempfd = events[i].data.fd;
 							close(events[i].data.fd); 
+							printf ("-1Closed connection on descriptor %d\n", events[i].data.fd);
 							signal = 1;
 						}
 						break;
 					}else if(len == 0){
-						fprintf (stderr,"Closed connection on descriptor %d\n", events[i].data.fd);
+						fprintf (stderr,"0Closed connection on descriptor %d\n", events[i].data.fd);
 
 						// Closing the descriptor will make epoll remove it
 						// from the set of descriptors which are monitored.

@@ -23,6 +23,7 @@
 #include "connectionmanager.h"
 
 #define MAX_FIFO_LEN 4096
+#define MAX_ZMQ_FIFO_LEN 2
 #define LOGINSUCCESS 0
 #define LOGINPASSWORDERROR 1
 #define LOGINILLEGALUSER 2
@@ -232,7 +233,7 @@ struct processappdata * processappdata_create(struct sockets_buffer * sbuf, stru
 	assert(dbcardinfo != NULL); 
 	pad->cardmanager = cardmanager;
 
-	struct zmq_buffer * zmq_buffer = zmq_buffer_create(sbuf, cardmanager, loginenterprisemanager, MAX_FIFO_LEN); 
+	struct zmq_buffer * zmq_buffer = zmq_buffer_create(sbuf, cardmanager, loginenterprisemanager, MAX_ZMQ_FIFO_LEN); 
 	assert(zmq_buffer); 
 	pad->zmq_buffer = zmq_buffer;
 
