@@ -17,4 +17,6 @@ void loginenterprisemanager_delete(struct loginenterprisemanager *manager, char 
 
 int loginenterprisemanager_check(struct loginenterprisemanager * loginenterprisemanager, char * enterpriseid);
 
+void loginenterprisemanager_updateheartcheck(struct loginenterprisemanager * loginenterprisemanager, char * enterpriseid, int fd);
+
 #endif

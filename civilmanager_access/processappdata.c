@@ -146,6 +146,7 @@ void * processmessage(void * param){
 				request = fmtrepdata->message;
 				switch(request->messagetype){
 					case REQ_HEARTBEAT:
+						loginenterprisemanager_updateheartcheck(loginenterprisemanager, request->message.heartbeat->account,fds[i+1]);
 						epr.messagetype = RES_HEARTBEAT;
 						memset(&respondheartbeat, 0, sizeof(struct respondheartbeat));
 						memcpy(respondheartbeat.account, request->message.heartbeat->account, MIN(12, strlen(request->message.heartbeat->account)));

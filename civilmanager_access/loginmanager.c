@@ -1,4 +1,4 @@
-//管理所有连接
+//管理所有登录账号，dblogin为其服务
 #include <string.h>
 #include <stdio.h>
 

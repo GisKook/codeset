@@ -7,6 +7,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <pthread.h>
+#include <time.h>
+#include <assert.h>
 #include "rbtree.h"
 #include "cndef.h"
 #include "toolkit.h"
@@ -19,6 +21,7 @@ struct loginenterprisemanager{
 
 struct loginfd{
 	char login[MAXLOGINLEN];
+	time_t heartchecktime;
 	int fd;
 };
 
@@ -71,6 +74,7 @@ struct loginenterprise * _loginenterprisemanager_insert( struct loginenterprisem
 			lp->loginfd = (struct loginfd*)realloc(lp->loginfd,sizeof(struct loginfd)*(lp->loginfdcount+1)); 
 			memcpy(lp->loginfd[lp->loginfdcount].login, login, MIN(MAXLOGINLEN, strlen(login)));
 			lp->loginfd[lp->loginfdcount].fd = fd;
+			lp->loginfd[lp->loginfdcount].heartchecktime = time(NULL);
 			++lp->loginfdcount;
 			return lp;
 		}
@@ -83,6 +87,7 @@ struct loginenterprise * _loginenterprisemanager_insert( struct loginenterprisem
 	loginenterprise->loginfd = (struct loginfd *)malloc(sizeof(struct loginfd));
 	memcpy(loginenterprise->loginfd->login, login, MIN(MAXLOGINLEN, strlen(login)));
 	loginenterprise->loginfd->fd = fd;
+	loginenterprise->loginfd->heartchecktime = time(NULL);
 	++loginenterprise->loginfdcount;
 
 	rb_link_node(&loginenterprise->node, parent, newnode);
@@ -209,4 +214,17 @@ void loginenterprisemanager_delete(struct loginenterprisemanager *manager, char 
 
 int loginenterprisemanager_check(struct loginenterprisemanager * loginenterprisemanager, char * enterpriseid){
 	return _loginenterprisemanager_search(loginenterprisemanager, enterpriseid) != NULL;
+}
+
+void loginenterprisemanager_updateheartcheck(struct loginenterprisemanager * loginenterprisemanager, char * enterpriseid, int fd){ 
+	struct loginenterprise * loginenterprise = _loginenterprisemanager_search(loginenterprisemanager, enterpriseid);
+	if(loginenterprise != NULL){
+		int i;
+		for(i = 0; i < loginenterprise->loginfdcount; ++i){ 
+			assert(loginenterprise->loginfd != NULL);
+			if(fd == loginenterprise->loginfd[i].fd){ 
+				loginenterprise->loginfd[i].heartchecktime = time(NULL);
+			}
+		}
+	}
 }

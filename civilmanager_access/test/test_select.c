@@ -1,9 +1,11 @@
 #include <stdio.h>
 #include <sys/select.h>
+#include <time.h>
 
 void your_callback()
 {
 	printf("%s\n", __FUNCTION__);
+	printf("%d\n", time(NULL));
 }
 
 int main()
