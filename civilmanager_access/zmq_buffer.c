@@ -162,6 +162,7 @@ void * recv_downstream(void* p){
 						struct zmq_buffer_authentication * zba = zmq_buffer_get(zb, sendindex);
 						if(zba != NULL && sendindex == zba->internalsendindex){
 							if(result == 0){ 
+								printf("index %d ", sendindex);
 								zmq_buffer_charge(zb, zba->enterpriseid, zba->messagetype, zba->recvid);
 							}
 							struct encodeprotocol_respond epr;
@@ -331,6 +332,7 @@ int zmq_buffer_upstream_add(struct zmq_buffer * zmq_buffer, struct fmtreportsock
 
 	if(entry == NULL){
 		entry = (struct zmq_buffer_authentication *)malloc(sizeof(struct zmq_buffer_authentication));
+		memset(entry, 0, sizeof(struct zmq_buffer_authentication));
 		zmq_buffer->slot[index] = entry;
 	}else{
 		free(entry->authenticationbuf);
@@ -344,6 +346,7 @@ int zmq_buffer_upstream_add(struct zmq_buffer * zmq_buffer, struct fmtreportsock
 		epr.messagetype = RES_SENDFEEDBACK;
 		epr.message.sendfeedback = &sendfeedback;
 		sockets_buffer_write(zmq_buffer->sockets_buffer, entry->fd, &epr);
+		memset(entry, 0, sizeof(struct zmq_buffer_authentication));
 	}
 	unsigned int authenticationlen = 0;
 	unsigned char * authenticationbuffer = zmq_buffer_generateauthentication(internalsendindex, enterpriseid, messagetype, &authenticationlen);
@@ -436,6 +439,7 @@ void zmq_buffer_downstream_push(struct zmq_buffer * zmq_buffer, char * enterpris
 		struct zmq_buffer_authentication * entry = zmq_buffer->slot[index]; 
 		if(entry == NULL){
 			entry = (struct zmq_buffer_authentication *)malloc(sizeof(struct zmq_buffer_authentication));
+			memset(entry, 0, sizeof(struct zmq_buffer_authentication));
 			zmq_buffer->slot[index] = entry;
 		}else{
 			fprintf(stdout, "the list is full now. the list's size is %d %s %s %d\n",zmq_buffer->slotcount, __FILE__, __FUNCTION__, __LINE__);
@@ -448,6 +452,7 @@ void zmq_buffer_downstream_push(struct zmq_buffer * zmq_buffer, char * enterpris
 			sockets_buffer_write(zmq_buffer->sockets_buffer, entry->fd, &epr);
 			free(entry->authenticationbuf);
 			free(entry->messagebuf);
+			memset(entry, 0, sizeof(struct zmq_buffer_authentication));
 		}
 		unsigned int authlen = 0;
 		unsigned char * authbuffer = zmq_buffer_generateauthentication(internalsendindex, enterpriseid, 1, &authlen); 
@@ -516,6 +521,7 @@ struct zmq_buffer_authentication * zmq_buffer_get(struct zmq_buffer * zmq_buffer
 }
 
 void zmq_buffer_charge(struct zmq_buffer * zmq_buffer, char * enterpriseid, unsigned char messagetype, unsigned long long recvid ){
+	printf("%s\n", enterpriseid);
 	BsTxMsg message;
 	message.set_nrecvtype(BsTxMsg_recvtype_KFQQ);
 	BsTxMsg_KfqqMsg * chargemessage = message.mutable_kfqqmsg();

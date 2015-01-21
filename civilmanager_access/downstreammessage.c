@@ -68,6 +68,7 @@ void * downstream(void *param){
 								processappdata_delete(pad, fd);
 
 								close(fd);
+								fprintf(stdout, "close connect %d\n", fd);
 								break;
 							}
 							writelen += ret;

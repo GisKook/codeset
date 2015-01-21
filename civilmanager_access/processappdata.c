@@ -23,7 +23,7 @@
 #include "connectionmanager.h"
 
 #define MAX_FIFO_LEN 4096
-#define MAX_ZMQ_FIFO_LEN 2
+#define MAX_ZMQ_FIFO_LEN 512
 #define LOGINSUCCESS 0
 #define LOGINPASSWORDERROR 1
 #define LOGINILLEGALUSER 2
@@ -204,17 +204,18 @@ void * formatmessage(void * p){
 
 	int socketfd;
 	for(;;){ 
-		memset(primerbuffer, 0, MAX_FIFO_LEN);
+		memset(buf, 0, MAX_FIFO_LEN);
 		read(pad->fd_sigfmt, buf, MAX_FIFO_LEN);
 		while((tok = toolkit_strsep(&buf, '*')) != NULL){ 
 			socketfd=atoi(tok); 
 			if(unlikely(socketfd == 1)){ // magic number 1 means exit.
 				//			exit(pad, tid_db, tid_upward);
-				free(buf);
+				free(primerbuffer);
 				return NULL;
 			}
 			fmtreportsockdata_add(pad->sbuf, socketfd, pad->connectionmanager);
 		}
+		buf = primerbuffer;
 	}
 }
 

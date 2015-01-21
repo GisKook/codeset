@@ -58,7 +58,6 @@ void * pgdbmonitorcardcallback(void *par, void *par2){
 			fprintf(stderr, "recv a unknow message from datebase. %s %s %d\n", __FILE__, __FUNCTION__, __LINE__);
 			break;
 	}
-	cardmanager_print(cardmanager);
 
 	return NULL;
 }
