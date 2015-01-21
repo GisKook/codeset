@@ -8,6 +8,7 @@
 #include <assert.h>
 #include <errno.h>
 #include <unistd.h>
+#include <signal.h>
 #include "cndef.h"
 #include "sockets_buffer.h"
 #include "cnconsole.h"
@@ -23,10 +24,12 @@
 #define MAX_RECVLEN 4096
 
 int main(){
+	
 	if( 0 != cnconfig_loadfile("./conf.json")){
 		fprintf(stderr, "config file is not load well.\n");
 		return -1;
 	}
+    signal(SIGPIPE, SIG_IGN);
 	const char * dump = cnconfig_getvalue(DUMP);
 	if(strlen(dump) == sizeof("true")-1 && 0 == strcmp("true", dump)){ 
 		FILE *errfd = fopen("./stderr.log", "w");
