@@ -98,7 +98,7 @@ void * processlogin(void * param){
 		fds = sockets_buffer_getsignalfdfifo(pad->sbuf);
 
 		fdscount = fds[0]; 
-		for(i = 0; i < fdscount; ++i){ 
+		for(i = 0; i < fdscount; ++i){
 			loginlist = sockets_buffer_gethighlist(pad->sbuf, fds[i+1]); 
 			list_for_each_safe(pos,n,loginlist){ 
 				logindata = list_entry(pos, struct fmtreportsockdata, list);
@@ -132,14 +132,14 @@ void * processlogin(void * param){
 					sockets_buffer_write(pad->sbuf, fds[i+1], &epr);
 					if(logindata != NULL){
 						list_del(&logindata->list);
-						free(logindata);
-						logindata = NULL;
+						fmtreportsockdata_clear(logindata);
 					}
 				} else{
 					assert(0);
 				}
 			}
 		}
+		free(fds);
 	}
 
 	return NULL;
@@ -214,6 +214,7 @@ void * processmessage(void * param){
 				}
 			}
 		}
+		free(fds);
 
 	}
 

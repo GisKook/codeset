@@ -208,6 +208,7 @@ void loginenterprisemanager_delete(struct loginenterprisemanager *manager, char 
 	--le->loginfdcount;
 	if(le->loginfdcount <= 0){ 
 		rb_erase(&le->node,&manager->root); 
+		free(le->loginfd);
 		free(le);
 	}else{
 		memmove((le->loginfd+i), le->loginfd+i+1, sizeof(struct loginfd)*(le->loginfdcount-i));

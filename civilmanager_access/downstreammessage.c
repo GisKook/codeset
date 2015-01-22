@@ -80,6 +80,7 @@ void * downstream(void *param){
 				mqueue_reader_commit(mqueue, &res);
 			}
 		}
+		free(activefds);
 	}
 
 	return NULL;

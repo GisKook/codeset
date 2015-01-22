@@ -13,6 +13,7 @@
 #include "sockets_buffer.h"
 #include "connectionmanager.h"
 
+int fmtreportsockdata_clear(struct fmtreportsockdata* msg ); 
 int fmtreportsockdata_add(struct sockets_buffer * sbuf, int fd, struct connectionmanager * connectionmanager){
 	struct kfifo* fifo = sockets_buffer_getrawdata(sbuf, fd);
 	assert(fifo != NULL);
@@ -72,10 +73,7 @@ int fmtreportsockdata_add(struct sockets_buffer * sbuf, int fd, struct connectio
 			}else if(retcode == -2){ 
 
 			}else{
-				free(rcmsg->message);
-				rcmsg->message = NULL;
-				free(rcmsg);
-				rcmsg = NULL;
+				fmtreportsockdata_clear(rcmsg);
 			}
 
 			rcmsg = NULL;

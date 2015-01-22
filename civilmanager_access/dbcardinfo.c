@@ -100,6 +100,7 @@ struct dbcardinfo * dbcardinfo_start(struct cardmanager * cardmanager){
 
 	fprintf(stdout, "****table %s load ok.\n", tablename);
 	res->Destroy();
+	delete res;
 
 	struct dbcardinfo * dbcardinfo = (struct dbcardinfo *)malloc(sizeof(struct dbcardinfo));
 	dbcardinfo->db = db;
