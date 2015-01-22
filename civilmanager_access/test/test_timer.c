@@ -37,7 +37,7 @@ handler(int sig, siginfo_t *si, void *uc)
 
 	printf("Caught signal %d\n", sig);
 	print_siginfo(si);
-	signal(sig, SIG_IGN);
+	//signal(sig, SIG_IGN);
 }
 
 	int
@@ -67,11 +67,11 @@ main(int argc, char *argv[])
 
 	/* Block timer signal temporarily */
 
-	printf("Blocking signal %d\n", SIG);
-	sigemptyset(&mask);
-	sigaddset(&mask, SIG);
-	if (sigprocmask(SIG_SETMASK, &mask, NULL) == -1)
-		errExit("sigprocmask");
+//	printf("Blocking signal %d\n", SIG);
+//	sigemptyset(&mask);
+//	sigaddset(&mask, SIG);
+//	if (sigprocmask(SIG_SETMASK, &mask, NULL) == -1)
+//		errExit("sigprocmask");
 
 	/* Create the timer */
 
@@ -98,14 +98,12 @@ main(int argc, char *argv[])
 	   multiple times */
 
 	printf("Sleeping for %d seconds\n", atoi(argv[1]));
-	sleep(atoi(argv[1]));
-
+	//sleep(atoi(argv[1]));
 	/* Unlock the timer signal, so that timer notification
 	   can be delivered */
-
 	printf("Unblocking signal %d\n", SIG);
-	if (sigprocmask(SIG_UNBLOCK, &mask, NULL) == -1)
-		errExit("sigprocmask");
+//	if (sigprocmask(SIG_UNBLOCK, &mask, NULL) == -1)
+//		errExit("sigprocmask");
 
 	exit(EXIT_SUCCESS);
 }

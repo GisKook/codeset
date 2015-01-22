@@ -6,6 +6,7 @@
 #include <assert.h>
 #include <math.h>
 #include <zmq.h>
+#include <sys/select.h>
 #include "fmtreportsockdata.h"
 #include "parseprotocol.h"
 #include "list.h"
@@ -21,6 +22,7 @@
 #include "cardmanager.h"
 #include "dbcardinfo.h"
 #include "connectionmanager.h"
+#include "cnconfig.h"
 
 #define MAX_FIFO_LEN 4096
 #define MAX_ZMQ_FIFO_LEN 512
@@ -33,6 +35,7 @@ struct processappdata{
 	pthread_t threadid_fmt;
 	pthread_t threadid_upward;
 	pthread_t threadid_downward;
+	pthread_t threadid_checkheart;
 	int fd_sigfmt;
 	struct sockets_buffer* sbuf;
 	struct loginmanager * loginmanager;
@@ -42,6 +45,34 @@ struct processappdata{
 	struct zmq_buffer * zmq_buffer;
 	struct connectionmanager * connectionmanager;
 };
+
+void processappdata_delete(struct processappdata * pad, int fd); 
+
+void * processcheckheart(void * param){ 
+	struct processappdata * processappdata = (struct processappdata *)param;
+	const char * sztimeout = cnconfig_getvalue(TIMEOUT);
+	int timeout = atoi(sztimeout);
+	struct timeval timeval; 
+	struct loginenterprisemanager * loginenterprisemanager = processappdata->loginenterprisemanager;
+	memset(&timeval, 0, sizeof(struct timeval));
+	int *fds;
+	int fdcounts;
+	int i;
+
+	for(;;){
+		timeval.tv_sec = timeout;
+		select(0, NULL, NULL, NULL, &timeval);
+		fds = loginenterprisemanager_gettimeout(loginenterprisemanager, timeout, &fdcounts);
+		for(i = 0; i < fdcounts; ++i){
+			processappdata_delete(processappdata, fds[i]);
+			sockets_buffer_clear(processappdata->sbuf, fds[i]);
+			fprintf(stdout, "close connection timeout. %d \n", fds[i]);
+			close(fds[i]);
+		}
+		
+		loginenterprisemanager_resettimeout(loginenterprisemanager);
+	}
+}
 
 void * processlogin(void * param){
 	struct processappdata * pad = (struct processappdata*)param; 
@@ -221,7 +252,6 @@ void * formatmessage(void * p){
 }
 
 struct processappdata * processappdata_create(struct sockets_buffer * sbuf, struct loginmanager * loginmanager, int fd_sigfmt){
-	struct loginenterprisemanager * loginenterprisemanager = loginenterprisemanager_create();
 	struct processappdata * pad = (struct processappdata*)malloc(sizeof(struct processappdata));
 	memset(pad, 0, sizeof(struct processappdata));
 	assert(pad != NULL);
@@ -235,6 +265,8 @@ struct processappdata * processappdata_create(struct sockets_buffer * sbuf, stru
 	assert(dbcardinfo != NULL); 
 	pad->cardmanager = cardmanager;
 
+	struct loginenterprisemanager * loginenterprisemanager = loginenterprisemanager_create();
+	
 	struct zmq_buffer * zmq_buffer = zmq_buffer_create(sbuf, cardmanager, loginenterprisemanager, MAX_ZMQ_FIFO_LEN); 
 	assert(zmq_buffer); 
 	pad->zmq_buffer = zmq_buffer;
@@ -273,6 +305,13 @@ struct processappdata * processappdata_create(struct sockets_buffer * sbuf, stru
 	}
 	fprintf(stdout, "thread 0x%lx format application data create successfully.\n", pad->threadid_fmt);
 
+	if(0 != pthread_create(&pad->threadid_checkheart, NULL, processcheckheart, pad)){
+		free(pad);
+		pad = NULL;
+		fprintf(stderr,"thread create error. %s %s %d\n", __FILE__, __FUNCTION__, __LINE__);
+		return NULL;
+	}
+	fprintf(stdout, "thread 0x%lx heartcheck create successfully.\n", pad->threadid_checkheart);
 
 	struct downstreammessage * dsm = downstreammessage_create(pad);
 	pad->dsm = dsm;

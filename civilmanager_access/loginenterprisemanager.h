@@ -19,4 +19,6 @@ int loginenterprisemanager_check(struct loginenterprisemanager * loginenterprise
 
 void loginenterprisemanager_updateheartcheck(struct loginenterprisemanager * loginenterprisemanager, char * enterpriseid, int fd);
 
+int * loginenterprisemanager_gettimeout(struct loginenterprisemanager * manager, int timeout, int *count);
+void loginenterprisemanager_resettimeout(struct loginenterprisemanager * manager);
 #endif
