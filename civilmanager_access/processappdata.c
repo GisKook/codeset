@@ -48,7 +48,7 @@ struct processappdata{
 
 void processappdata_delete(struct processappdata * pad, int fd); 
 
-void * processcheckheart(void * param){ 
+void * processcheckheart(void * param){
 	struct processappdata * processappdata = (struct processappdata *)param;
 	const char * sztimeout = cnconfig_getvalue(TIMEOUT);
 	int timeout = atoi(sztimeout);
@@ -67,11 +67,13 @@ void * processcheckheart(void * param){
 			processappdata_delete(processappdata, fds[i]);
 			sockets_buffer_clear(processappdata->sbuf, fds[i]);
 			fprintf(stdout, "close connection timeout. %d \n", fds[i]);
+			
 			close(fds[i]);
 		}
-		
 		loginenterprisemanager_resettimeout(loginenterprisemanager);
 	}
+
+	return NULL;
 }
 
 void * processlogin(void * param){

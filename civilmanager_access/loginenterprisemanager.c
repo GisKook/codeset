@@ -58,7 +58,7 @@ void loginenterprisemanager_destroy(struct loginenterprisemanager *manager){
 	free(manager);
 };
 
-struct loginenterprise * _loginenterprisemanager_insert( struct loginenterprisemanager * manager, char * enterpriseid, char * login, int fd, struct loginenterprise * newloginenterprise){ 
+struct loginenterprise * _loginenterprisemanager_insert( struct loginenterprisemanager * manager, char * enterpriseid, char * login, int fd, struct loginenterprise ** newloginenterprise){
 	struct rb_node **newnode = &(manager->root.rb_node), *parent = NULL; 
 	struct loginenterprise * lp;
 	int result = 0;
@@ -88,13 +88,14 @@ struct loginenterprise * _loginenterprisemanager_insert( struct loginenterprisem
 	memset(loginenterprise, 0, sizeof(struct loginenterprise));
 	memcpy(loginenterprise->enterpriseid, enterpriseid, MIN(MAXENTERPRISEIDLEN, strlen(enterpriseid)));
 	loginenterprise->loginfd = (struct loginfd *)malloc(sizeof(struct loginfd));
+	memset(loginenterprise->loginfd, 0, sizeof(struct loginfd));
 	memcpy(loginenterprise->loginfd->login, login, MIN(MAXLOGINLEN, strlen(login)));
 	loginenterprise->loginfd->fd = fd;
 	loginenterprise->loginfd->heartchecktime = time(NULL);
 	++loginenterprise->loginfdcount;
 
 	rb_link_node(&loginenterprise->node, parent, newnode);
-	newloginenterprise = loginenterprise;
+	*newloginenterprise = loginenterprise;
 
 	return NULL;
 };
@@ -103,7 +104,7 @@ void loginenterprisemanager_insert( struct loginenterprisemanager * manager, cha
 	pthread_mutex_lock(&manager->mutex);
 	struct loginenterprise * le;
 	struct loginenterprise * newloginenterprise = NULL;
-	if((le = _loginenterprisemanager_insert(manager, enterpriseid, login, fd, newloginenterprise))){
+	if((le = _loginenterprisemanager_insert(manager, enterpriseid, login, fd, &newloginenterprise))){
 		goto out;
 	}
 	if(newloginenterprise != NULL){
@@ -158,7 +159,7 @@ struct loginenterprise * _loginenterprisemanager_search(struct loginenterprisema
 
 		if(result < 0){
 			node = node->rb_left;
-		}else if(result < 0){
+		}else if(result > 0){
 			node = node->rb_right;
 		}else{
 			return le;
@@ -261,4 +262,22 @@ int * loginenterprisemanager_gettimeout(struct loginenterprisemanager * manager,
 void loginenterprisemanager_resettimeout(struct loginenterprisemanager * manager){
 	memset(manager->timeout, 0, MAXTIMEOUT);
 	manager->timeoutcount = 0;
+}
+
+void loginenterprisemanager_print(struct loginenterprisemanager * manager){
+	struct rb_root root = manager->root;
+	struct rb_node *node = rb_first(&root);
+	struct loginenterprise * loginenterprise = NULL;
+	int i, fdcount;
+	while( node != NULL ){
+		loginenterprise = rb_entry(node, struct loginenterprise, node); 
+		fdcount = loginenterprise->loginfdcount; 
+		fprintf(stdout, "%s has connections ", loginenterprise->enterpriseid);
+		for( i = 0; i < fdcount; ++i){
+			fprintf(stdout, " %d,", loginenterprise->loginfd[i].fd);
+		}
+		fprintf(stdout, "\n");
+
+		node = rb_next(node);
+	}
 }

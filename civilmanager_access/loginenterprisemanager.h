@@ -21,4 +21,5 @@ void loginenterprisemanager_updateheartcheck(struct loginenterprisemanager * log
 
 int * loginenterprisemanager_gettimeout(struct loginenterprisemanager * manager, int timeout, int *count);
 void loginenterprisemanager_resettimeout(struct loginenterprisemanager * manager);
+void loginenterprisemanager_print(struct loginenterprisemanager * manager);
 #endif

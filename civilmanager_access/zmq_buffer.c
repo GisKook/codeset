@@ -162,7 +162,6 @@ void * recv_downstream(void* p){
 						struct zmq_buffer_authentication * zba = zmq_buffer_get(zb, sendindex);
 						if(zba != NULL && sendindex == zba->internalsendindex){
 							if(result == 0){ 
-								printf("index %d ", sendindex);
 								zmq_buffer_charge(zb, zba->enterpriseid, zba->messagetype, zba->recvid);
 							}
 							struct encodeprotocol_respond epr;
@@ -521,7 +520,6 @@ struct zmq_buffer_authentication * zmq_buffer_get(struct zmq_buffer * zmq_buffer
 }
 
 void zmq_buffer_charge(struct zmq_buffer * zmq_buffer, char * enterpriseid, unsigned char messagetype, unsigned long long recvid ){
-	printf("%s\n", enterpriseid);
 	BsTxMsg message;
 	message.set_nrecvtype(BsTxMsg_recvtype_KFQQ);
 	BsTxMsg_KfqqMsg * chargemessage = message.mutable_kfqqmsg();

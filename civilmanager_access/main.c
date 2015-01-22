@@ -152,7 +152,6 @@ int main(){
 				continue;
 			}else if(events[i].data.fd == listen_fd){ 
 				conn_fd = accept(listen_fd, NULL, NULL);
-				printf("accept %d\n", conn_fd);
 				if(unlikely(conn_fd == -1)){
 					fprintf(stderr, "conn socket error. %s %s %d\n", __FILE__,__FUNCTION__,__LINE__);
 					continue;
