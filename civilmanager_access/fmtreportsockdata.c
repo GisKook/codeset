@@ -95,6 +95,7 @@ int fmtreportsockdata_clear(struct fmtreportsockdata* msg ){
 		return -1;
 	}
 	parseprotocol_clear(msg->message);
+	free(msg->message);
 	msg->message = NULL;
 	free(msg);
 	msg = NULL;

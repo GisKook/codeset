@@ -1,16 +1,19 @@
-// 根据fd得到其他属性
+// 根据fd得到其他属性 当前接入的链接
 #define MAXLOGINNAMELEN 100
 #define MAXLOGINLEN 32
 #define MAXENTERPRISEIDLEN 32
+#define MAXTIMEOUT 32
 
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include <time.h>
 #include "rbtree.h"
 #include "cndef.h"
 
 struct connection{
 	int fd;
+	time_t heartchecktime;
 	struct rb_node node;
 	char enterpriseid[MAXENTERPRISEIDLEN];
 	char login[MAXLOGINLEN];
@@ -20,6 +23,8 @@ struct connection{
 struct connectionmanager{ 
 	struct rb_root root;
 	int connectioncount;
+	int timeout[MAXTIMEOUT];
+	int timeoutcount;
 };
 
 struct connection * connection_create(int fd, char * login, char * loginname, char * enterpriseid){
@@ -133,3 +138,36 @@ void connectionmanager_print(struct connectionmanager * manager){
 	}
 }
 
+void connectionmanager_updateheartcheck(struct connectionmanager * connectionmanager, int fd){ 
+	struct connection * connection = connectionmanager_search(connectionmanager, fd);
+	if(connection != NULL){
+		connection->heartchecktime = time(NULL);
+	}
+}
+
+void connectionmanager_timeout(struct connectionmanager * connectionmanager, int timeout){
+	time_t cur = time(NULL);
+	struct rb_root root = connectionmanager->root;
+	struct rb_node *node = rb_first(&root);
+	struct connection * connection = NULL;
+	while( node != NULL ){
+		connection = rb_entry(node, struct connection, node); 
+		if((long int)cur - (long int)(connection->heartchecktime) > timeout){ 
+			connectionmanager->timeout[connectionmanager->timeoutcount] = connection->fd;
+			connectionmanager->timeoutcount++;
+		}
+
+		node = rb_next(node);
+	}
+}
+
+int * connectionmanager_gettimeout(struct connectionmanager * manager, int timeout, int *count){
+	connectionmanager_timeout(manager, timeout);
+	*count = manager->timeoutcount;
+	return manager->timeout;
+}
+
+void connectionmanager_resettimeout(struct connectionmanager * manager){
+	memset(manager->timeout, 0, MAXTIMEOUT);
+	manager->timeoutcount = 0;
+}

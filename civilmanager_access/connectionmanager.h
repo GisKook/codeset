@@ -15,5 +15,8 @@ struct connection * connectionmanager_search(struct connectionmanager * manager,
 struct connection * connectionmanager_insert(struct connectionmanager * manager, struct connection * connection); 
 struct connection * connectionmanager_delete(struct connectionmanager * manager, int fd);
 void connectionmanager_print(struct connectionmanager * manager);
+void connectionmanager_updateheartcheck(struct connectionmanager * connectionmanager, int fd); 
+int * connectionmanager_gettimeout(struct connectionmanager * manager, int timeout, int *count);
+void connectionmanager_resettimeout(struct connectionmanager * manager);
 
 #endif

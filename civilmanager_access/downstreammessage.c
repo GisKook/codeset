@@ -36,7 +36,7 @@ void * downstream(void *param){
 			fd = activefds[i+1];
 			mqueue = sockets_buffer_getwritequeue(sockbuffer, fd);
 			if((count = mqueue_reader_parpare(mqueue, &res)) > 0){ 
-				for(j = 0; j < count; ++j){ 
+				for(j = 0; j < count; ++j){
 					epr = (struct encodeprotocol_respond *)mqueue_reader_next(&res);
 					if(epr != NULL){
 						switch(epr->messagetype){
@@ -75,6 +75,7 @@ void * downstream(void *param){
 						}
 						free(content);
 						content = NULL;
+						encodeprotocol_clear(epr);
 					}
 				}
 				mqueue_reader_commit(mqueue, &res);

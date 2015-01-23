@@ -8,5 +8,5 @@
 	"zmqBindaddr":"tcp://*:18888",
 	"bindPort":"40000",
 	"dump":"",
-	"timeout":"5" 
+	"timeout":"50" 
 }

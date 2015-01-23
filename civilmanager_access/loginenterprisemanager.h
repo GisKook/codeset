@@ -17,9 +17,5 @@ void loginenterprisemanager_delete(struct loginenterprisemanager *manager, char 
 
 int loginenterprisemanager_check(struct loginenterprisemanager * loginenterprisemanager, char * enterpriseid);
 
-void loginenterprisemanager_updateheartcheck(struct loginenterprisemanager * loginenterprisemanager, char * enterpriseid, int fd);
-
-int * loginenterprisemanager_gettimeout(struct loginenterprisemanager * manager, int timeout, int *count);
-void loginenterprisemanager_resettimeout(struct loginenterprisemanager * manager);
 void loginenterprisemanager_print(struct loginenterprisemanager * manager);
 #endif

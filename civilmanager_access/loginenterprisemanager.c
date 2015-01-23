@@ -2,7 +2,6 @@
 #define MAXENTERPRISEIDLEN 32
 #define MAXFDCOUNT 1024
 #define MAXLOGINLEN 32
-#define MAXTIMEOUT 32
 
 #include <string.h>
 #include <stdlib.h>
@@ -17,14 +16,11 @@
 struct loginenterprisemanager{
 	struct rb_root root;
 	int loginenterprisefdcount;
-	int timeout[MAXTIMEOUT]; 
-	int timeoutcount;
 	pthread_mutex_t mutex;
 };
 
 struct loginfd{
 	char login[MAXLOGINLEN];
-	time_t heartchecktime;
 	int fd;
 };
 
@@ -77,7 +73,6 @@ struct loginenterprise * _loginenterprisemanager_insert( struct loginenterprisem
 			lp->loginfd = (struct loginfd*)realloc(lp->loginfd,sizeof(struct loginfd)*(lp->loginfdcount+1)); 
 			memcpy(lp->loginfd[lp->loginfdcount].login, login, MIN(MAXLOGINLEN, strlen(login)));
 			lp->loginfd[lp->loginfdcount].fd = fd;
-			lp->loginfd[lp->loginfdcount].heartchecktime = time(NULL);
 			++lp->loginfdcount;
 			return lp;
 		}
@@ -91,7 +86,6 @@ struct loginenterprise * _loginenterprisemanager_insert( struct loginenterprisem
 	memset(loginenterprise->loginfd, 0, sizeof(struct loginfd));
 	memcpy(loginenterprise->loginfd->login, login, MIN(MAXLOGINLEN, strlen(login)));
 	loginenterprise->loginfd->fd = fd;
-	loginenterprise->loginfd->heartchecktime = time(NULL);
 	++loginenterprise->loginfdcount;
 
 	rb_link_node(&loginenterprise->node, parent, newnode);
@@ -219,50 +213,6 @@ void loginenterprisemanager_delete(struct loginenterprisemanager *manager, char 
 
 int loginenterprisemanager_check(struct loginenterprisemanager * loginenterprisemanager, char * enterpriseid){
 	return _loginenterprisemanager_search(loginenterprisemanager, enterpriseid) != NULL;
-}
-
-void loginenterprisemanager_updateheartcheck(struct loginenterprisemanager * loginenterprisemanager, char * enterpriseid, int fd){ 
-	struct loginenterprise * loginenterprise = _loginenterprisemanager_search(loginenterprisemanager, enterpriseid);
-	if(loginenterprise != NULL){
-		int i;
-		for(i = 0; i < loginenterprise->loginfdcount; ++i){ 
-			assert(loginenterprise->loginfd != NULL);
-			if(fd == loginenterprise->loginfd[i].fd){ 
-				loginenterprise->loginfd[i].heartchecktime = time(NULL);
-			}
-		}
-	}
-}
-
-void loginenterprisemanager_timeout(struct loginenterprisemanager * loginenterprisemanager, int timeout){
-	time_t cur = time(NULL);
-	struct rb_root root = loginenterprisemanager->root;
-	struct rb_node *node = rb_first(&root);
-	struct loginenterprise * loginenterprise = NULL;
-	int i, fdcount;
-	while( node != NULL ){
-		loginenterprise = rb_entry(node, struct loginenterprise, node); 
-		fdcount = loginenterprise->loginfdcount; 
-		for( i = 0; i < fdcount; ++i){
-			if((long int)cur - (long int)(loginenterprise->loginfd[i].heartchecktime) > timeout){ 
-				loginenterprisemanager->timeout[loginenterprisemanager->timeoutcount] = loginenterprise->loginfd[i].fd;
-				loginenterprisemanager->timeoutcount++;
-			}
-		}
-
-		node = rb_next(node);
-	}
-}
-
-int * loginenterprisemanager_gettimeout(struct loginenterprisemanager * manager, int timeout, int *count){
-	loginenterprisemanager_timeout(manager, timeout);
-	*count = manager->timeoutcount;
-	return manager->timeout;
-}
-
-void loginenterprisemanager_resettimeout(struct loginenterprisemanager * manager){
-	memset(manager->timeout, 0, MAXTIMEOUT);
-	manager->timeoutcount = 0;
 }
 
 void loginenterprisemanager_print(struct loginenterprisemanager * manager){

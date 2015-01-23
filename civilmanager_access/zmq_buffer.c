@@ -278,6 +278,7 @@ unsigned char * zmq_buffer_generateauthentication(unsigned int sendindex, char *
 
 	assert(rc); 
 
+	message.clear_fwjqmsg();
 	message.release_fwjqmsg();
 	message.Clear();
 	struct encodeprotocolupstream * encodeprotocolupstream = encodeprotocolupstream_create(BUSINESSSOFTWARE, 1, SENDSOFTWARE, (unsigned char *)authenticationstring.c_str(), authenticationstring.length()); // 1 means charge software
@@ -529,6 +530,7 @@ void zmq_buffer_charge(struct zmq_buffer * zmq_buffer, char * enterpriseid, unsi
 	string chargestring;
 	bool rc = message.SerializeToString(&chargestring);
 	assert(rc);
+	message.clear_kfqqmsg();
 	message.release_kfqqmsg();
 	message.Clear();
 

@@ -53,7 +53,7 @@ void * processcheckheart(void * param){
 	const char * sztimeout = cnconfig_getvalue(TIMEOUT);
 	int timeout = atoi(sztimeout);
 	struct timeval timeval; 
-	struct loginenterprisemanager * loginenterprisemanager = processappdata->loginenterprisemanager;
+	struct connectionmanager * connectionmanager = processappdata->connectionmanager;
 	memset(&timeval, 0, sizeof(struct timeval));
 	int *fds;
 	int fdcounts;
@@ -62,7 +62,7 @@ void * processcheckheart(void * param){
 	for(;;){
 		timeval.tv_sec = timeout;
 		select(0, NULL, NULL, NULL, &timeval);
-		fds = loginenterprisemanager_gettimeout(loginenterprisemanager, timeout, &fdcounts);
+		fds = connectionmanager_gettimeout(connectionmanager, timeout, &fdcounts);
 		for(i = 0; i < fdcounts; ++i){
 			processappdata_delete(processappdata, fds[i]);
 			sockets_buffer_clear(processappdata->sbuf, fds[i]);
@@ -70,7 +70,7 @@ void * processcheckheart(void * param){
 			
 			close(fds[i]);
 		}
-		loginenterprisemanager_resettimeout(loginenterprisemanager);
+		connectionmanager_resettimeout(connectionmanager);
 	}
 
 	return NULL;
@@ -130,12 +130,10 @@ void * processlogin(void * param){
 					epr.messagetype = RES_LOGIN;
 					epr.message.respondlogin= &respondlogin;
 					sockets_buffer_write(pad->sbuf, fds[i+1], &epr);
-					if(logindata != NULL){
-						list_del(&logindata->list);
-						fmtreportsockdata_clear(logindata);
-					}
-				} else{
-					assert(0);
+				} 
+				if(logindata != NULL){
+					list_del(&logindata->list);
+					fmtreportsockdata_clear(logindata);
 				}
 			}
 		}
@@ -179,7 +177,7 @@ void * processmessage(void * param){
 				request = fmtrepdata->message;
 				switch(request->messagetype){
 					case REQ_HEARTBEAT:
-						loginenterprisemanager_updateheartcheck(loginenterprisemanager, request->message.heartbeat->account,fds[i+1]);
+						connectionmanager_updateheartcheck(connectionmanager, fds[i+1]);
 						epr.messagetype = RES_HEARTBEAT;
 						memset(&respondheartbeat, 0, sizeof(struct respondheartbeat));
 						memcpy(respondheartbeat.account, request->message.heartbeat->account, MIN(12, strlen(request->message.heartbeat->account)));
@@ -209,8 +207,7 @@ void * processmessage(void * param){
 				}
 				if(fmtrepdata != NULL){
 					list_del(pos);
-					free(fmtrepdata);
-					fmtrepdata = NULL;
+					fmtreportsockdata_clear(fmtrepdata);
 				}
 			}
 		}
