@@ -25,7 +25,7 @@
 #include "cnconfig.h"
 
 #define MAX_FIFO_LEN 4096
-#define MAX_ZMQ_FIFO_LEN 512
+#define MAX_ZMQ_FIFO_LEN 40960
 #define LOGINSUCCESS 0
 #define LOGINPASSWORDERROR 1
 #define LOGINILLEGALUSER 2
@@ -189,6 +189,7 @@ void * processmessage(void * param){
 							loginenterprisemanager_delete(loginenterprisemanager, request->message.logoff->account, fds[i+1]);
 							struct connection * connection = connectionmanager_delete(connectionmanager, fds[i+1]); 
 							connection_destroy(connection);
+							free(connection);
 
 							close(fds[i+1]);
 						}

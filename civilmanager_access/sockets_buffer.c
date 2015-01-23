@@ -391,6 +391,7 @@ int sockets_buffer_write(struct sockets_buffer * sbuf, int fd, struct encodeprot
 
 struct mqueue * sockets_buffer_getwritequeue(struct sockets_buffer * sbuf, int fd){
 	struct fd_buffer * fdbuffer = sockets_buffer_getfdbuffer(sbuf, fd);
+	assert(fdbuffer != 0);
 
 	return fdbuffer->writebuffer;
 }
