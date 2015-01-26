@@ -65,7 +65,7 @@ void * processcheckheart(void * param){
 		fds = connectionmanager_gettimeout(connectionmanager, timeout, &fdcounts);
 		for(i = 0; i < fdcounts; ++i){
 			processappdata_delete(processappdata, fds[i]);
-			sockets_buffer_clear(processappdata->sbuf, fds[i]);
+			sockets_buffer_del(processappdata->sbuf, fds[i]);
 			fprintf(stdout, "close connection timeout. %d \n", fds[i]);
 			
 			close(fds[i]);
@@ -171,6 +171,9 @@ void * processmessage(void * param){
 		fdscount = fds[0];
 		for( i = 0; i < fdscount; ++i){
 			tasklist = sockets_buffer_getnormallist(pad->sbuf, fds[i+1]);
+			if(tasklist == NULL){ 
+				continue;
+			}
 			list_for_each_safe(pos, n, tasklist){
 				fmtrepdata = list_entry(pos, struct fmtreportsockdata, list);
 				assert(fmtrepdata != NULL); 

@@ -144,6 +144,7 @@ int sockets_buffer_add(struct sockets_buffer* sockets_buf, int fd,char *ip, unsi
 }
 
 int sockets_buffer_del(struct sockets_buffer* buf, int fd){
+
 	assert(buf != NULL);
 	if(unlikely(buf == NULL)){
 		return -1;
@@ -323,6 +324,7 @@ int * sockets_buffer_getsignalfdfifo(struct sockets_buffer * sbuf){
 		activefds = (int*)malloc((fdfifolen+1)*sizeof(int)); 
 		if(activefds == NULL){
 			fprintf(stderr, "malloc %d bytes error. %s %s %d\n", fdfifolen+1, __FILE__, __FUNCTION__, __LINE__);
+			pthread_mutex_unlock(&sbuf->tasklistlock);
 
 			return NULL;
 		}
@@ -391,9 +393,8 @@ int sockets_buffer_write(struct sockets_buffer * sbuf, int fd, struct encodeprot
 
 struct mqueue * sockets_buffer_getwritequeue(struct sockets_buffer * sbuf, int fd){
 	struct fd_buffer * fdbuffer = sockets_buffer_getfdbuffer(sbuf, fd);
-	assert(fdbuffer != 0);
 
-	return fdbuffer->writebuffer;
+	return fdbuffer == NULL?NULL:fdbuffer->writebuffer;
 }
 
 int * sockets_buffer_getdownstreamsignal(struct sockets_buffer * sbuf){
@@ -408,6 +409,7 @@ int * sockets_buffer_getdownstreamsignal(struct sockets_buffer * sbuf){
 		activefds = (int*)malloc((fdfifolen+1)*sizeof(int)); 
 		if(activefds == NULL){
 			fprintf(stderr, "malloc %d bytes error. %s %s %d\n", fdfifolen+1, __FILE__, __FUNCTION__, __LINE__);
+			pthread_mutex_unlock(&sbuf->taskdownstreamlock);
 
 			return NULL;
 		}

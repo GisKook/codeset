@@ -153,8 +153,12 @@ void connectionmanager_timeout(struct connectionmanager * connectionmanager, int
 	while( node != NULL ){
 		connection = rb_entry(node, struct connection, node); 
 		if((long int)cur - (long int)(connection->heartchecktime) > timeout){ 
-			connectionmanager->timeout[connectionmanager->timeoutcount] = connection->fd;
-			connectionmanager->timeoutcount++;
+			if(connectionmanager->timeoutcount < MAXTIMEOUT){
+				connectionmanager->timeout[connectionmanager->timeoutcount] = connection->fd;
+				connectionmanager->timeoutcount++;
+			}else{
+				break;
+			}
 		}
 
 		node = rb_next(node);

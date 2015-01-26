@@ -62,6 +62,7 @@ int main(){
 	}
 
 	struct epoll_event ev;
+	memset(&ev, 0, sizeof(struct epoll_event));
 	ev.events = EPOLLIN;
 	ev.data.fd = STDIN_FILENO;
 	if(-1 == epoll_ctl(efd, EPOLL_CTL_ADD, STDIN_FILENO, &ev)){
@@ -98,6 +99,7 @@ int main(){
 		return -1;
 	}
 
+	memset(&ev, 0, sizeof(struct epoll_event));
 	ev.events = EPOLLIN;
 	ev.data.fd = listen_fd;
 	if(-1 == epoll_ctl(efd, EPOLL_CTL_ADD, listen_fd, &ev)){
@@ -144,7 +146,7 @@ int main(){
 			if( (events[i].events & EPOLLERR) ||
 					(events[i].events & EPOLLHUP) || 
 					!(events[i].events & EPOLLIN)){
-				fprintf(stderr, "epoll error. error messsage: %s events[i].events :%d\n", strerror(errno),events[i].events);
+				fprintf(stderr, "epoll error. error messsage: %s fd: %d\n", strerror(errno),events[i].data.fd);
 				close(events[i].data.fd);
 				sockets_buffer_del(socket_buf, events[i].data.fd);
 				processappdata_delete(pad, events[i].data.fd);
@@ -157,6 +159,7 @@ int main(){
 					continue;
 				}
 				fcntl(conn_fd, F_SETFL, (fcntl(conn_fd, F_GETFL)|O_NONBLOCK));
+				memset(&ev, 0, sizeof(struct epoll_event));
 				ev.events = EPOLLIN | EPOLLET;
 				ev.data.fd = conn_fd;
 				if(unlikely(epoll_ctl(efd, EPOLL_CTL_ADD, conn_fd, &ev) == -1)){

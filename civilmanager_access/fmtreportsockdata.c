@@ -16,7 +16,9 @@
 int fmtreportsockdata_clear(struct fmtreportsockdata* msg ); 
 int fmtreportsockdata_add(struct sockets_buffer * sbuf, int fd, struct connectionmanager * connectionmanager){
 	struct kfifo* fifo = sockets_buffer_getrawdata(sbuf, fd);
-	assert(fifo != NULL);
+	if(fifo == NULL){
+		return -1;
+	}
 	struct list_head* highpri_head = sockets_buffer_gethighlist(sbuf, fd);
 	assert(highpri_head != NULL);
 	struct list_head* normalpri_head = sockets_buffer_getnormallist(sbuf, fd);
@@ -50,7 +52,7 @@ int fmtreportsockdata_add(struct sockets_buffer * sbuf, int fd, struct connectio
 
 			retcode = parseprotocol_parserequest( rcmsg->message, cmd, cmdlen);
 			if(retcode == REQ_LOGIN){
-				list_add_tail(&(rcmsg->list), highpri_head);
+				list_add_tail(&(rcmsg->list), highpri_head); 
 				sockets_buffer_signal(sbuf, fd);
 			}else if(retcode == REQ_LOGOFF || retcode == REQ_HEARTBEAT || retcode == REQ_REQ){
 				if( connectionmanager_search(connectionmanager, fd) != NULL){

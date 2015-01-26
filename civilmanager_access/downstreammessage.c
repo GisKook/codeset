@@ -35,6 +35,9 @@ void * downstream(void *param){
 		for(i = 0; i < len; ++i){
 			fd = activefds[i+1];
 			mqueue = sockets_buffer_getwritequeue(sockbuffer, fd);
+			if(mqueue == NULL){
+				continue;
+			}
 			if((count = mqueue_reader_parpare(mqueue, &res)) > 0){ 
 				for(j = 0; j < count; ++j){
 					epr = (struct encodeprotocol_respond *)mqueue_reader_next(&res);
