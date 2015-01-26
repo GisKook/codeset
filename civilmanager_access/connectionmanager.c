@@ -130,12 +130,17 @@ struct connection * connectionmanager_delete(struct connectionmanager * manager,
 void connectionmanager_print(struct connectionmanager * manager){
 	struct rb_root root = manager->root;
 	struct rb_node *node = rb_first(&root);
-	struct connection *connection; 
+	struct connection *connection = NULL; 
+	int logincount = 0;
 	while(node != NULL){
 		connection = rb_entry(node, struct connection, node);
-		fprintf(stdout, "    fd: %d, enterpriseid: %s, login: %s, loginname: %s\n", connection->fd, connection->enterpriseid, connection->login, connection->loginname);
+		if(connection != NULL){
+			fprintf(stdout, "    fd: %d, enterpriseid: %s, login: %s, loginname: %s\n", connection->fd, connection->enterpriseid, connection->login, connection->loginname);
+			++logincount;
+		}
 		node = rb_next(node);
 	}
+	fprintf(stdout, "*****total have %d connections.\n", logincount);
 }
 
 void connectionmanager_updateheartcheck(struct connectionmanager * connectionmanager, int fd){ 

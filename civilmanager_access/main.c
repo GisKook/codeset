@@ -187,6 +187,9 @@ int main(){
 					case UNPRM:
 						printrecvmessage = 0;
 						break;
+					case PCS: 
+						processappdata_printconnections(pad);
+						break;
 					default:
 						break;
 				}

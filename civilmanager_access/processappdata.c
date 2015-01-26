@@ -349,3 +349,7 @@ int processappdata_destroy(struct processappdata* pad){
 
 	return 0;
 }
+
+void processappdata_printconnections(struct processappdata * pad){
+	connectionmanager_print(pad->connectionmanager);
+}

@@ -10,6 +10,7 @@ int console_print_cmds(){
 	fprintf(stdout, "    2.prm      : print received message.\n");
 	fprintf(stdout, "    3.unprm    : stop print received message.\n");
 	fprintf(stdout, "    4.pcm      : print cached message. \n");
+	fprintf(stdout, "    5.pcs      : print connection message. \n");
 	fprintf(stdout, "--------------------------------------------\n");
 	return 0;
 }
@@ -23,6 +24,8 @@ int console_parsecmd(unsigned char* buf, struct sockets_buffer* socketbuf){
 	}else if(memcmp(buf, "pcm", 3) == 0){ 
 		sockets_buffer_print(socketbuf);
 		return PCM;
+	}else if(memcmp(buf, "pcs", 3) == 0){ 
+		return PCS;
 	}else{
 		console_print_cmds();
 		return -1;

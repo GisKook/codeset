@@ -11,5 +11,6 @@ int processappdata_join(struct processappdata* pad);
 int processappdata_destroy(struct processappdata* pad);
 void processappdata_delete(struct processappdata * pad, int fd);
 struct sockets_buffer * processappadata_getsocketbuffer(struct processappdata * pad);
+void processappdata_printconnections(struct processappdata * pad);
 
 #endif
