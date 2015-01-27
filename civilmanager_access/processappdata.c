@@ -145,6 +145,12 @@ void * processlogin(void * param){
 
 void * processmessage(void * param){
 	struct processappdata * pad = (struct processappdata*)param; 
+
+	struct zmq_buffer * _zmq_buffer = zmq_buffer_create(pad->sbuf, pad->cardmanager, pad->loginenterprisemanager, MAX_ZMQ_FIFO_LEN); 
+	assert(_zmq_buffer); 
+	pad->zmq_buffer = _zmq_buffer;
+
+
 	struct loginenterprisemanager * loginenterprisemanager = pad->loginenterprisemanager;
 	int * fds;
 	int fdscount = 0;
@@ -238,6 +244,7 @@ void * formatmessage(void * p){
 	char * primerbuffer = buf;
 	char * tok = NULL;
 
+
 	int socketfd;
 	for(;;){ 
 		memset(buf, 0, MAX_FIFO_LEN);
@@ -270,10 +277,6 @@ struct processappdata * processappdata_create(struct sockets_buffer * sbuf, stru
 	pad->cardmanager = cardmanager;
 
 	struct loginenterprisemanager * loginenterprisemanager = loginenterprisemanager_create();
-	
-	struct zmq_buffer * zmq_buffer = zmq_buffer_create(sbuf, cardmanager, loginenterprisemanager, MAX_ZMQ_FIFO_LEN); 
-	assert(zmq_buffer); 
-	pad->zmq_buffer = zmq_buffer;
 
 	struct connectionmanager * connectionmanager = connectionmanager_create();
 	pad->connectionmanager = connectionmanager;

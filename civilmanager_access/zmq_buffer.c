@@ -70,6 +70,16 @@ static inline void zmq_buffer_clear(struct zmq_buffer * zmq_buffer, unsigned int
 }
 
 void * recv_downstream(void* p){
+	void * ctx = zmq_ctx_new();
+	assert(ctx);
+	void * socket = zmq_socket(ctx, ZMQ_SUB);
+	assert(socket);
+	int rc = zmq_setsockopt(socket, ZMQ_SUBSCRIBE, "", 0);
+	assert(rc == 0);
+	const char * zmqrecvaddr = cnconfig_getvalue(ZMQRECVADDR);
+	rc = zmq_connect(socket, zmqrecvaddr);
+	assert(rc == 0);
+
 	GOOGLE_PROTOBUF_VERIFY_VERSION;
 
 	struct zmq_buffer * zb = (struct zmq_buffer*)p;
@@ -84,7 +94,7 @@ void * recv_downstream(void* p){
 		zmq_msg_t msg;
 		int rc = zmq_msg_init(&msg);
 		assert(rc == 0); 
-		rc = zmq_msg_recv(&msg, zb->recvsocket, 0);
+		rc = zmq_msg_recv(&msg, socket, 0);
 		assert(rc != -1); 
 		if(rc > 0){
 			parseprotocoldownstream = parseprotocoldownstream_parse((char *)zmq_msg_data(&msg), zmq_msg_size(&msg));

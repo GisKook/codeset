@@ -30,8 +30,8 @@ unsigned int fdfifo_len(struct fdfifo * fifo){
 
 void fdfifo_put(struct fdfifo * fifo, int fd){ 
 	unsigned int i;
-	int start = fifo->in % fifo->capacity;
-	int end = fifo->out % fifo->capacity;
+	unsigned int start = fifo->in % fifo->capacity;
+	unsigned int end = fifo->out % fifo->capacity;
 	if(fifo->in > fifo->out){
 		for( i = start; i < end; ++i){ 
 			if(fifo->entry[i] == fd){
@@ -75,7 +75,7 @@ void fdfifo_getall(struct fdfifo * fifo, int * buf){
 
 	if(in <= out){ 
 		memcpy(buf, &fifo->entry[out], (fifo->capacity - out)*sizeof(int));
-		memcpy(buf + (fifo->capacity-fifo->out), &fifo->entry[0], (in)*sizeof(int));
+		memcpy(buf + (fifo->capacity-out), &fifo->entry[0], in*sizeof(int));
 	}
 	fifo->in = fifo->out = 0;
 }
@@ -93,9 +93,9 @@ void fdfifo_getall(struct fdfifo * fifo, int * buf){
 //	for(i = 0; i < 512; ++i){
 //		fdfifo_put(fdfifo, i+512);
 //	}
-////	for(i = 0; i < 512; ++i){
-////		fdfifo_put(fdfifo, i+1024);
-////	}
+//	for(i = 0; i < 512; ++i){
+//		fdfifo_put(fdfifo, i+1024);
+//	}
 //	assert(fdfifo_len(fdfifo) == 1024);
 ////	for(i = 0; i < 1024; ++i){
 ////		fprintf(stdout, "%d\n", fdfifo->entry[i]);
