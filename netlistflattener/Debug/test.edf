@@ -1,0 +1,97 @@
+(edif current_sim
+ (edifVersion 2 0 0)
+ (edifLevel 0)
+ (keywordMap (keywordLevel 0))
+ (status
+  (written
+   (timeStamp 2014 10 30 16 51 26)
+   (program "CAPTURE.EXE" (Version "10.3.0.p001 CIS"))
+   (comment "Original data from OrCAD/CAPTURE schematic"))
+  (comment "")
+  (comment "Thursday, October 30, 2014")
+  (comment "C:\BRYAN\ELECTRONICS\ENG_SOFTWARE\DESIGN_SPARK_RS\DS_BUGS\DESCENT_BUG_SEPT_2014\IMPORT_BUG.DSN")
+  (comment "")
+  (comment "")
+  (comment "")
+  (comment "")
+  (comment "")
+  (comment ""))
+ (external OrCAD_LIB
+  (edifLevel 0)
+  (technology
+   (numberDefinition
+    (scale 1 1 (unit distance))))
+  (cell R
+   (cellType generic)
+   (comment "From OrCAD library ANALOG1.OLB")
+   (view NetlistView
+    (viewType netlist)
+    (interface
+     (port &2 (direction INOUT))
+     (port &1 (direction INOUT))))))
+(library MAIN_LIB
+ (edifLevel 0)
+ (technology
+  (numberDefinition
+   (scale 1 1 (unit distance))))
+ (cell Lower
+  (cellType generic)
+  (view NetlistView
+   (viewType netlist)
+   (interface
+    (port PL2 (direction INOUT))
+    (port PL1 (direction INOUT)))
+   (contents
+    (instance RL1
+     (viewRef NetlistView
+      (cellRef R
+       (libraryRef OrCAD_LIB))))
+    (instance RL2
+     (viewRef NetlistView
+      (cellRef R
+       (libraryRef OrCAD_LIB))))
+    (net NL1
+     (joined
+      (portRef &2 (instanceRef RL2))
+      (portRef &2 (instanceRef RL1))))
+    (net PL1
+     (joined
+      (portRef &1 (instanceRef RL1))
+      (portRef PL1)))
+    (net PL2
+     (joined
+      (portRef &1 (instanceRef RL2))
+      (portRef PL2))))))
+(cell current_sim
+ (cellType generic)
+ (view NetlistView
+  (viewType netlist)
+  (interface)
+  (contents
+   (instance RH1
+    (viewRef NetlistView
+     (cellRef R
+      (libraryRef OrCAD_LIB))))
+   (instance RH2
+    (viewRef NetlistView
+     (cellRef R
+      (libraryRef OrCAD_LIB))))
+   (instance ULower
+    (viewRef NetlistView
+     (cellRef Lower)))
+   (net NH1
+    (joined
+     (portRef &1 (instanceRef RH2))
+     (portRef &1 (instanceRef RH1))))
+   (net NH2
+    (joined
+     (portRef &2 (instanceRef RH1))
+     (portRef PL1 (instanceRef ULower))))
+   (net NH3
+    (joined
+     (portRef &2 (instanceRef RH2))
+     (portRef PL2 (instanceRef ULower))))))))
+    (design current_sim
+     (cellRef current_sim
+      (libraryRef MAIN_LIB))))
+

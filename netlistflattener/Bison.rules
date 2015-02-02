@@ -1,0 +1,19 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<VisualStudioToolFile
+	Name="Bison Tools"
+	Version="8.00"
+	>
+	<Rules>
+		<CustomBuildRule
+			Name="Bison"
+			DisplayName="Bison"
+			CommandLine="C:\GnuWin32\bin\bison.exe -y -g -t -v -d $(InputPath)"
+			Outputs="y.tab.c,y.tab.h"
+			FileExtensions="*.y"
+			ExecutionDescription="Running Bison"
+			>
+			<Properties>
+			</Properties>
+		</CustomBuildRule>
+	</Rules>
+</VisualStudioToolFile>
