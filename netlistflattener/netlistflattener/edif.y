@@ -21,12 +21,17 @@
 
 #include "ed.h"
 #include "eelibsl.h"
+#include "edif.h"
 #define M_PI 3.1415926
 #define SIZE_PIN_TEXT 60
+#define EDIFPARSENON 0
+#define EDIFPARSING 1
+int edifparsestatus = EDIFPARSENON;
 
 static FILE *Input = NULL;              /* input stream */
 static FILE *Error = NULL;              /* error stream */
 static int   LineNumber;                /* current input line number */
+static FILE *Output = NULL;
 
 global struct inst *insts, *iptr; 
 global struct con  *cons,  *cptr;
@@ -920,7 +925,13 @@ _Derivation :	CALCULATED
 	    ;
 
 DesignNameDef :	NameDef
-		{if(bug>2)fprintf(Error,"%5d DesignNameDef: '%s'\n", LineNumber, $1->s); }
+		{if(bug>2)fprintf(Error,"%5d DesignNameDef: '%s'\n", LineNumber, $1->s);
+		edifparsestatus = EDIFPARSENON;
+		putc('\n', Output);
+		fputs("(design ",Output);
+		fputs($1->s,Output);
+		
+		}
 	      ;
 
 Design 	    :	DESIGN DesignNameDef _Design PopC
@@ -1820,6 +1831,7 @@ Library :	LIBRARY LibNameDef EdifLevel _Library PopC
 	;
 
 _Library	:	Technology
+			{edifparsestatus = EDIFPARSING;}
 	 		|	_Library Status
 	 		|	_Library Cell
 	 		|	_Library Comment
@@ -4951,8 +4963,8 @@ char *FormString()
  *	It is passed two file streams, the first is where the input comes
  *	from; the second is where error messages get printed.
  */
-int ParseEDIF(inp,err)
-FILE *inp,*err;
+int ParseEDIF(inp,err,outp)
+FILE *inp,*err,*outp;
 {
   register int i;
   static int ContextDefined = 1;
@@ -4961,6 +4973,7 @@ FILE *inp,*err;
    */
   Input = inp;
   Error = err;
+  Output = outp;
   LineNumber = 1;
   /*
    *	Define both the enabled token and context strings.
@@ -5050,7 +5063,7 @@ FILE *inp,*err;
    */
   return yyparse();
 
-  // DumpStack();
+ //  DumpStack();
 }
 
 /*
@@ -5188,6 +5201,7 @@ int yylex()
    */
   for (s = L_START, l = 0; 1; ){
     c = Getc(Input);
+    
 	if( c !='&' )
        yytext[l++] = c; 
     if (c == '\n' && s==L_START){
@@ -5209,11 +5223,12 @@ int yylex()
         else if (c == '+'){
           l = 0;				/* strip '+' */
           s = L_INT;
-        } else if (c == EOF)
+        } else if (c == EOF){
           return ('\0');
-        else {
+        }else {
           yytext[1] = '\0';
           Stack(yytext, c);
+		    Writec(c);
           return (c);
         }
         break;
@@ -5242,6 +5257,7 @@ int yylex()
         yytext[--l] = '\0';
         if (CSP->Context->Token && (c = MatchToken(yytext))){
           Stack(yytext, c);
+	//	    Writec(c);
           return (c);
         }
         // yylval.s = strcpy((char *)Malloc(l + 1),yytext);
@@ -5254,6 +5270,7 @@ int yylex()
 	   yylval.st = st ;
 	}
         Stack(yytext, IDENT);
+	//    Writec(c);
         return (IDENT);
       /*
        *	Scan until you find the start of an identifier, discard
@@ -5269,6 +5286,7 @@ int yylex()
         }
         Ungetc(c);
         Stack("(",'(');
+	//    Writec(c);
         return ('(');
       /*
        *	Suck up the keyword identifier, if it matches the set of
@@ -5282,6 +5300,7 @@ int yylex()
         yytext[--l] = '\0';
         if (c = MatchContext(yytext)){
           Stack(yytext, c);
+	//	    Writec(c);
           return (c);
         }
         // yylval.s = strcpy((char *)Malloc(l + 1),yytext);
@@ -5289,6 +5308,7 @@ int yylex()
         st->s = strdup(yytext); st->nxt=NULL; 
 		yylval.st = st ;
         Stack(yytext, KEYWORD);
+	//    Writec(c);
         return (KEYWORD);
       /*
        *	Suck up string characters but once resolved they should
@@ -5304,6 +5324,7 @@ int yylex()
           // st->s = strdup(yytext); 
 	      yylval.st = st ; 
           Stack(yytext, STR);
+		    Writec(c);
           return (STR);
          // } else  if (c == '%'){  // fwb
           // s = L_ASCIICHAR;
@@ -5338,5 +5359,6 @@ int yylex()
         l = 0;
         break;
     }
+    Writec(c);
   }
 }

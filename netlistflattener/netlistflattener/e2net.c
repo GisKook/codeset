@@ -15,8 +15,8 @@ int bug=0;  		// debug level: >2 netlist, >5 schematic, >8 all
 
 char *InFile = "-";
 
-char FileNameNet[64], FileNameSdtLib[64], FileNameEESchema[64], FileNameKiPro[64];
-FILE * FileEdf, * FileNet, * FileEESchema, * FileSdtLib=NULL, * FileKiPro=NULL;
+char FileNameEdn[64], FileNameSdtLib[64], FileNameEESchema[64], FileNameKiPro[64];
+FILE * FileEdf, * FileEdn, * FileEESchema, * FileSdtLib=NULL, * FileKiPro=NULL;
 
 global char                      *cur_nnam=NULL;
 global struct inst               *insts=NULL, *iptr=NULL;
@@ -49,25 +49,25 @@ main(int argc, char *argv[])
 
   if( argc != 2 ){
      FileEdf = stdin;
-     FileNet = stdout;
+     FileEdn = stdout;
   }else{
      InFile= argv[1];
-     sprintf(FileNameNet,"%s.net",argv[1]);
+     sprintf(FileNameEdn,"%s.edn",argv[1]);
      fprintf(stderr, "Parsing %s\n", InFile);
      if( (FileEdf = fopen( InFile, "rt" )) == NULL ) {
           fprintf(stderr, " %s non trouve\n", InFile);
           return(-1);
      }
 
-     if( (FileNet = fopen( FileNameNet, "wt" )) == NULL ) {
-          fprintf(stderr, " %s impossible a creer\n", FileNameNet);
+     if( (FileEdn = fopen( FileNameEdn, "w" )) == NULL ) {
+          fprintf(stderr, " %s impossible a creer\n", FileNameEdn);
           return(-1);
      }
   }
 
   Libs=NULL;
   FileEESchema = NULL;
-  ParseEDIF(FileEdf, stderr);
+  ParseEDIF(FileEdf, stderr, FileEdn);
   fprintf(stderr,"Parse Complete\n");
 
   // bubble sort cons by ref
@@ -120,40 +120,12 @@ main(int argc, char *argv[])
   }
 #endif
 
-  // output kicad netlist
-
-  mytime = time(NULL);
-  // printf(ctime(&mytime));
- // ctime_r(&mytime, date);
-  date[24] = 0;
-
-  //fprintf(FileNet,"( { netlist created  13/9/2007-18:11:44}\n" );
-  fprintf(FileNet,"( { netlist created  %s}\n", date );
-  // by component
-  strcpy(s1,  "" );
-  while (cons != NULL){
-    if(strcmp(s1, cons->ref) != 0) {
-      if(!first) fprintf(FileNet," )\n");
-      for( s=NULL, iptr=insts ; iptr != NULL && iptr->ins != NULL ; iptr = iptr->nxt ){
-		if( !strcmp(cons->ref, iptr->ins)){
-		   s = iptr->sym;
-		   break;
-		}
-      }	
-      fprintf(FileNet," ( 84DFBB8F $noname %s %s  {Lib=%s}\n", cons->ref, s, s);
-      first=0;
-    }
-    fprintf(FileNet,"  (%5s %s )\n",cons->pin, cons->nnam);
-    strcpy(s1,  cons->ref);
-    cons = cons->nxt;
-  }
-  fprintf(FileNet," )\n)\n");
 
   fclose(FileEdf);
-  fclose(FileNet);
+  fclose(FileEdn);
   
-  if( FileNet != stdout )
-    fprintf(stderr,"  output is %s \n", FileNameNet);
+  if( FileEdn != stdout )
+    fprintf(stderr,"  output is %s \n", FileNameEdn);
 
   fprintf(stderr, " BonJour\n");
   exit(0);

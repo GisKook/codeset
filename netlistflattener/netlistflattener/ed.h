@@ -14,8 +14,9 @@
 #define Malloc(s)               malloc(s)
 #define Free(p)                 free(p)
 #define ABS(v)                  ((v) < 0 ? -(v) : (v))
-#define Getc(s)                 getc(s)
+#define Getc(s)                 getc(s); 
 #define Ungetc(c)               ungetc(c,Input);
+#define Writec(s)               if(edifparsestatus == EDIFPARSENON) putc(c, Output);
 
 extern int atoi();
 extern int bug;
