@@ -18,7 +18,7 @@
 #define Ungetc(c)               ungetc(c,Input);
 #define Writec(s)               if(edifparsestatus == EDIFPARSENON) putc(c, Output);
 
-extern int atoi();
+//extern int atoi();
 extern int bug;
 
 struct inst {

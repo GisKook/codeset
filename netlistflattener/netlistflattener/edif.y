@@ -38,6 +38,27 @@ global struct con  *cons,  *cptr;
 global int    pass2;
 global float  scale;
 global char   fName[SCH_NAME_LEN + 1];
+//global struct edifinstance *edifinstance = NULL, *iptredifinstance = NULL;
+
+// interfaces
+int portdirection = 0;
+struct edifinterfaceport * edifinterfaceports = NULL, *iptredifinterfaceport = NULL;
+
+// instances
+struct edifinstance * edifinstances = NULL, *iptredifinstance = NULL;
+char * edifinstanceviewref = NULL, *edifinstancecellref = NULL, *edifinstancelibraryref = NULL;
+
+// nets
+struct edifnet * edifnets = NULL, *iptredifnet = NULL;
+struct edifnetportref * edifnetportrefs = NULL, *iptredifnetportref = NULL;
+char * netinstanceref = NULL;
+
+// contents
+struct edifcontents * edifcellcontents = NULL;
+
+// cells
+struct edifcell * edifcells = NULL, *iptredifcells = NULL;
+char * celltype = NULL;
 
 int TempR, TempMat[2][2];
 LibraryStruct		 *LSptr;
@@ -677,6 +698,17 @@ CellNameDef :	NameDef
 Cell    :  CELL CellNameDef _Cell PopC
 		{$$=$2; if(bug>1)fprintf(Error,"  CELL: '%s'\n", $2->s); 
  		 InCell=0;
+ 		 if(edifparsestatus == EDIFPARSING){
+ 		 iptredifcells = (struct edifcell *)Malloc(sizeof(struct edifcell)); 
+ 		 iptredifcells->cell = strdup($2->s);
+ 		 iptredifcells->celltype = strdup(celltype);
+ 		 iptredifcells->edifinterfaceport = edifinterfaceports;
+ 		 edifinterfaceports = NULL;
+ 		 iptredifcells->edifcontents = edifcellcontents;
+ 		 edifcellcontents = NULL;
+ 		 iptredifcells->next = edifcells;
+ 		 edifcells = iptredifcells;
+ 		 }
 		}
         ;
 
@@ -711,6 +743,7 @@ CellNameRef :	NameRef
 
 CellRef :	CELLREF CellNameRef _CellRef PopC
 		{$$=$2; 
+		edifinstancecellref = $2->s;
 		 cellRef = $2->s;
 		 strncpy(fName,        $2->s, SCH_NAME_LEN);
 		 if(bug>1            )fprintf(Error,"%05d CELLREF: %s ", LineNumber, $2->s); 
@@ -726,7 +759,9 @@ LibNameRef :	NameRef
 
 LibraryRef :	LIBRARYREF LibNameRef PopC
 		{$$=$2; 
-		 libRef = $2->s;}
+		 libRef = $2->s;
+		 edifinstancelibraryref = $2->s;
+		 }
 		;
 
 _CellRef    :
@@ -743,6 +778,7 @@ CellType    :	CELLTYPE _CellType PopC
 _CellType   :	TIE
 	    |	RIPPER
 	    |	GENERIC
+	    {celltype="generic";}
 	    ;
 
 Change :	CHANGE __Change _Change PopC
@@ -799,7 +835,13 @@ Compound :	COMPOUND LogicNameRef PopC
 	 ;
 
 Contents :	CONTENTS _Contents PopC
-		{$$=$2;}
+		{$$=$2;
+		edifcellcontents = (struct edifcontents *)Malloc(sizeof(struct edifcontents));
+		edifcellcontents->edifinstance = edifinstances;
+		edifinstances = NULL;
+		edifcellcontents->edifnet = edifnets;
+		edifnets = NULL;
+		}
 	 ;
 
 _Contents :
@@ -927,6 +969,9 @@ _Derivation :	CALCULATED
 DesignNameDef :	NameDef
 		{if(bug>2)fprintf(Error,"%5d DesignNameDef: '%s'\n", LineNumber, $1->s);
 		edifparsestatus = EDIFPARSENON;
+		edifgetcellname(edifcells);
+		
+		
 		putc('\n', Output);
 		fputs("(design ",Output);
 		fputs($1->s,Output);
@@ -1008,11 +1053,19 @@ Direction   :	DIRECTION _Direction PopC
 	    ;
 
 _Direction  :	INOUT
-		{$$=PIN_BIDI;}
+	//	{$$=PIN_BIDI;}
+		{
+		$$=DIRECTIONBIDI; 
+		portdirection = DIRECTIONBIDI;
+		}
 	    |	INPUT
-		{$$=PIN_INPUT;}
+	//	{$$=PIN_INPUT;}
+		{$$=DIRECTIONINPUT;
+		portdirection = DIRECTIONINPUT;}
 	    |	OUTPUT
-		{$$=PIN_OUTPUT;}
+	//	{$$=PIN_OUTPUT;}
+		{$$=DIRECTIONOUTPUT;
+		portdirection = DIRECTIONOUTPUT;}
 	    ;
 
 Display : DISPLAY _Display _DisplayJust _DisplayOrien _DisplayOrg PopC
@@ -1485,7 +1538,15 @@ Instance :	INSTANCE InstNameDef _Instance PopC
 		{
 		int fcr;
 		char part[PART_NAME_LEN]; int i;
-
+		
+		iptredifinstance = (struct edifinstance *)Malloc(sizeof(struct edifinstance));
+		iptredifinstance->instance = strdup($2->s);
+		iptredifinstance->viewref = strdup(edifinstanceviewref);
+		iptredifinstance->cellref = strdup(edifinstancecellref);
+		iptredifinstance->libraryref = strdup(edifinstancelibraryref);
+		iptredifinstance->next = edifinstances;
+		edifinstances = iptredifinstance;
+		
 		// check for multi-part symbol
 		strncpy(part, cellRef, PART_NAME_LEN);
 		for( i=PART_NAME_LEN ; part[i] == '\0' && i>0 ; i-- );
@@ -1561,6 +1622,7 @@ _Instance :	ViewRef
 	  |	_Instance Transform
 		{ 
 		  // see ^Transform tx=$2->p->x; ty=$2->p->y; 
+		  
 
 		  if( $2->n != PIN_N ){
 		      IRot[0][0] = Rot[0][0]; IRot[0][1] = Rot[0][1];
@@ -1610,7 +1672,8 @@ InstNameRef :	NameRef
 
 InstanceRef :	INSTANCEREF InstNameRef _InstanceRef PopC
 		{$$=$2;
-		 New = NULL;
+		 New = NULL; 
+		 netinstanceref = $2->s;
 		}
 	    ;
 
@@ -1738,7 +1801,9 @@ Joined :	JOINED _Joined PopC
 _Joined :
 		{$$=NULL;}
 	|	_Joined PortRef
-		{ if(bug>4)fprintf(Error,"%5d _Joined PortRef: '%s'\n", LineNumber, $2->s);}
+		{ if(bug>4)fprintf(Error,"%5d _Joined PortRef: '%s'\n", LineNumber, $2->s);
+		}
+		
 	|	_Joined PortList
 	|	_Joined GlobPortRef
 	;
@@ -2083,7 +2148,13 @@ NetNameDef :	NameDef
 	   ;
 
 Net 	:	NET NetNameDef _Net PopC
-		{$$=$2;}
+		{$$=$2;
+		iptredifnet	= (struct edifnet *)Malloc(sizeof(sizeof(struct edifnet)));
+		iptredifnet->net = strdup($2->s);
+		iptredifnet->edifnetportref = edifnetportrefs;
+		iptredifnet->next = edifnets;
+		edifnets = iptredifnet;
+		}
     	;
 
 _Net 	:		Joined
@@ -2504,7 +2575,16 @@ _Polygon   :	PointList
 	   ;
 
 Port :		PORT _Port PopC
-		{$$=$2;}
+		{
+		$$=$2; 
+		if(edifparsestatus == EDIFPARSING){ 
+			iptredifinterfaceport = (struct edifinterfaceport *)Malloc(sizeof(struct edifinterfaceport));
+			iptredifinterfaceport->next = edifinterfaceports;
+			iptredifinterfaceport->port = strdup($2->s);
+			iptredifinterfaceport->direction = portdirection;
+			edifinterfaceports = iptredifinterfaceport;
+		}
+		}
      ;
 
 PortNameDef :	NameDef
@@ -2744,6 +2824,12 @@ PortNameRef :	NameRef
 
 PortRef     :	PORTREF PortNameRef _PortRef PopC
 		{$$=$2; // $$->nxt=$3;
+		iptredifnetportref = (struct edifnetportref *)Malloc(sizeof(struct edifnetportref));
+		iptredifnetportref->portref	= strdup($2->s);
+		iptredifnetportref->instanceref = strdup(netinstanceref);
+		iptredifnetportref->next = edifnetportrefs;
+		edifnetportrefs = iptredifnetportref;
+		
 		if(bug>3){
 		     fprintf(Error," PORTREF:'%s' ", $2->s);
 		     if($2->nxt != NULL)fprintf(Error,"rename:'%s' ", $2->nxt->s);
@@ -3426,6 +3512,7 @@ ViewNameRef :	NameRef
 
 ViewRef :	VIEWREF ViewNameRef _ViewRef PopC
 		{
+		edifinstanceviewref = $2->s;	  
 		$$=$2; 
 		if(bug>2               )fprintf(Error,"  VIEWREF ViewNameRef '%s'  ",$2->s);
 		if(bug>2 && $3->s!=NULL)fprintf(Error,"_ViewRef: '%s' \n", $3->s);

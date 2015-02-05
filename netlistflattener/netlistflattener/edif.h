@@ -1,6 +1,10 @@
 #ifndef GISKOOK_EDIF_H_H
 #define GISKOOK_EDIF_H_H
 
+#ifndef global
+#define global extern
+#endif
+
 struct edifinstance{
 	char * instance;
 	char * viewref;
@@ -9,15 +13,15 @@ struct edifinstance{
 	struct edifinstance * next;
 };
 
-struct edifport{
+struct edifnetportref{
 	char * portref;
-	struct edifinstance * instance;
+	char * instanceref;
+	struct edifnetportref * next;
 };
 
 struct edifnet{
 	char * net;
-	struct edifport * edifport;
-	unsigned int portcount;
+	struct edifnetportref * edifnetportref;
 	struct edifnet * next;
 };
 
@@ -26,17 +30,19 @@ struct edifcontents{
 	struct edifnet * edifnet; 
 };
 
-struct edifinterface{
+#define DIRECTIONBIDI 0
+#define DIRECTIONINPUT 1
+#define DIRECTIONOUTPUT 2
+struct edifinterfaceport{
 	char * port;
-	char * direction;
-	struct edifinterface * edifinterface;
+	int direction;
+	struct edifinterfaceport * next;
 };
 
 struct edifcell{
 	char * cell;
 	char * celltype;
-	char * comment; 
-	struct edifinterface * edifinterface;
+	struct edifinterfaceport * edifinterfaceport;
 	struct edifcontents * edifcontents;
 	struct edifcell * next;
 };
