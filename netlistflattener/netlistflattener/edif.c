@@ -22,11 +22,11 @@ char ** edifgetcellname(struct edifcell * edifcell){
 	return cellname;
 }
 
-int edifgetcellinstancecount(struct edifcell * edficell){
+int edifgetcellinstancecount(struct edifcell * edifcell){
 	struct edifinstance * edifinstance = NULL, *instance = NULL;
 	int count = 0;
-	if(edficell != NULL && edifcell->edifcontents != NULL && edifcell->edifcontents->edifinstance != NULL){ 
-		edifinstance = edficell->edifcontents->edifinstance;
+	if(edifcell != NULL && edifcell->edifcontents != NULL && edifcell->edifcontents->edifinstance != NULL){ 
+		edifinstance = edifcell->edifcontents->edifinstance;
 		for(instance = edifinstance ; instance != NULL; instance = edifinstance->next, ++count);
 	} 
 
@@ -43,7 +43,6 @@ struct edifcell * edifcellcopy(struct edifcell * edifcell){
 	struct edifcell * cell = (struct edifcell *)malloc(sizeof(struct edifcell));
 	cell->cell = strdup(edifcell->cell);
 	cell->celltype = strdup(edifcell->celltype);
-
 }
 
 struct edifcell * edifcellflatten(struct edifcell * edifcellout, struct edifcell * edifcellin){ 

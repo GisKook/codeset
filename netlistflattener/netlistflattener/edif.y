@@ -60,6 +60,11 @@ struct edifcontents * edifcellcontents = NULL;
 struct edifcell * edifcells = NULL, *iptredifcells = NULL;
 char * celltype = NULL;
 
+// libraries
+struct ediflibrary * ediflibrarys = NULL, *iptrediflibrary = NULL, *iptrflattenediflibrary = NULL;
+char * libraryname = NULL;
+
+
 int TempR, TempMat[2][2];
 LibraryStruct		 *LSptr;
 LibraryEntryStruct	 *LEptr;
@@ -968,10 +973,9 @@ _Derivation :	CALCULATED
 
 DesignNameDef :	NameDef
 		{if(bug>2)fprintf(Error,"%5d DesignNameDef: '%s'\n", LineNumber, $1->s);
-		edifparsestatus = EDIFPARSENON;
-		edifgetcellname(edifcells);
-		
-		
+		edifparsestatus = EDIFPARSENON; 
+		ediflibrary_flatten(ediflibrarys);
+		ediflibrary_writer(iptrflattenediflibrary, Output);
 		putc('\n', Output);
 		fputs("(design ",Output);
 		fputs($1->s,Output);
@@ -1874,24 +1878,34 @@ LessThan :	LESSTHAN ScaledInt PopC
 
 LibNameDef :	NameDef
 		{if(bug>1)fprintf(Error,"Library: %s\n", $1->s);
-		 convert=1; // normal view
-
-  		 CurrentLib = (LibraryStruct *) Malloc(sizeof(LibraryStruct));
-  		 CurrentLib->Name = strdup($1->s);
-  		 CurrentLib->isSheet = 0; 
-		 CurrentLib->Entries = NULL; CurrentLib->NumOfParts=0; 
-  		 CurrentLib->nxt = Libs;
-	 	 Libs=CurrentLib;
+//	 	 Libs=CurrentLib;
+//		 convert=1; // normal view
+//
+//  		 CurrentLib = (LibraryStruct *) Malloc(sizeof(LibraryStruct));
+//  		 CurrentLib->Name = strdup($1->s);
+//  		 CurrentLib->isSheet = 0; 
+//		 CurrentLib->Entries = NULL; CurrentLib->NumOfParts=0; 
+//  		 CurrentLib->nxt = Libs;
+//	 	 Libs=CurrentLib;
+		libraryname = $1->s;
 		}
 	   ;
 
 Library :	LIBRARY LibNameDef EdifLevel _Library PopC
 		{if(bug>1)fprintf(Error,"EndLibrary %s \n\n", $2->s);
-		 if( SchHead == 1 && strcmp(fName,"") ){
-			if(bug>1)fprintf(Error,"EndLibrary fName '%s' \n", fName);
-		    CloseSch(); SchHead=0;
-		 }
-		 New=NULL;
+//		 if( SchHead == 1 && strcmp(fName,"") ){
+//			if(bug>1)fprintf(Error,"EndLibrary fName '%s' \n", fName);
+//		    CloseSch(); SchHead=0;
+//		 }
+//		 New=NULL;
+		iptrediflibrary = (struct ediflibrary *)malloc(sizeof(struct ediflibrary));
+		memset(iptrediflibrary, 0, sizeof(struct ediflibrary));
+		iptrediflibrary->library = strdup(libraryname);
+		iptrediflibrary->edifcell = edifcells;
+		edifcells = NULL;
+		iptrediflibrary->next = ediflibrarys;
+		
+		ediflibrarys = iptrediflibrary; 
 		}
 	;
 

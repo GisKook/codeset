@@ -47,4 +47,10 @@ struct edifcell{
 	struct edifcell * next;
 };
 
+struct ediflibrary{
+	char * library;
+	struct edifcell * edifcell;
+	struct ediflibrary * next;
+};
+
 #endif
