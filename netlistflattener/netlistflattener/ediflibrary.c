@@ -30,6 +30,10 @@ char ** ediflibrary_getnames(struct ediflibrary * ediflibrary){
 	return libname;
 }
 
+struct edifcell * ediflibrary_getcells(struct ediflibrary * ediflibrary){ 
+	return ediflibrary != NULL?ediflibrary->edifcell:NULL;
+}
+
 struct ediflibrary * ediflibrary_flatten(struct ediflibrary * ediflibrarys){
 
 }
