@@ -2,6 +2,7 @@
 #include <string.h>
 #include "edif.h"
 #include "ediflibrary.h"
+#include "edifinterface.h"
 
 struct edifsubcircuit{
 	char * ediflibrary;
@@ -12,20 +13,26 @@ struct edifsubcircuit{
 };
 
 struct edifsubcircuit * edifsubcircuit_create(struct ediflibrary * ediflibrary){
-	struct edifsubcircuit * subcircuit = NULL; 
+	struct edifsubcircuit * subcircuit = NULL, * iptrsubcircuit = NULL; 
 	struct ediflibrary * library = NULL;
 	struct edifcell * cell = NULL;
 	if(ediflibrary != NULL){
-		subcircuit = (struct edifsubcircuit *)malloc(sizeof(struct edifsubcircuit));
 		memset(subcircuit, 0, sizeof(struct edifsubcircuit));
 		for(library = ediflibrary; library != NULL; library = ediflibrary->next){
-			edifcell = ediflibrary_getcells(library);
-			if(edifcell != NULL){
-				if (edifcell->edifinterfaceport != NULL) {
-
+			cell = ediflibrary_getcells(library);
+			if(cell != NULL){
+				if (cell->edifinterfaceport != NULL) { 
+					iptrsubcircuit = (struct edifsubcircuit *)malloc(sizeof(struct edifsubcircuit));
+					memset(iptrsubcircuit, 0, sizeof(struct edifsubcircuit));
+					iptrsubcircuit->ediflibrary = strdup(library->library);
+					iptrsubcircuit->edifcell = strdup(cell->cell);
+					iptrsubcircuit->edifinterfaceport = edifinterface_copy(cell->edifinterfaceport);
+					iptrsubcircuit->next = subcircuit;
+					subcircuit = iptrsubcircuit;
 				}
 			}
 		}
 	}
+
 	return subcircuit;
 }
