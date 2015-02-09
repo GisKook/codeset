@@ -15,18 +15,17 @@ struct edifsubcircuit{
 struct edifsubcircuit * edifsubcircuit_create(struct ediflibrary * ediflibrary){
 	struct edifsubcircuit * subcircuit = NULL, * iptrsubcircuit = NULL; 
 	struct ediflibrary * library = NULL;
-	struct edifcell * cell = NULL;
+	struct edifcell * cell = NULL, *tmpcell = NULL;
 	if(ediflibrary != NULL){
-		memset(subcircuit, 0, sizeof(struct edifsubcircuit));
 		for(library = ediflibrary; library != NULL; library = ediflibrary->next){
 			cell = ediflibrary_getcells(library);
-			if(cell != NULL){
-				if (cell->edifinterfaceport != NULL) { 
+			for(tmpcell = cell; tmpcell != NULL; tmpcell = tmpcell->next){
+				if (tmpcell->edifinterfaceport != NULL) { 
 					iptrsubcircuit = (struct edifsubcircuit *)malloc(sizeof(struct edifsubcircuit));
 					memset(iptrsubcircuit, 0, sizeof(struct edifsubcircuit));
 					iptrsubcircuit->ediflibrary = strdup(library->library);
-					iptrsubcircuit->edifcell = strdup(cell->cell);
-					iptrsubcircuit->edifinterfaceport = edifinterface_copy(cell->edifinterfaceport);
+					iptrsubcircuit->edifcell = strdup(tmpcell->cell);
+					iptrsubcircuit->edifinterfaceport = edifinterface_copy(tmpcell->edifinterfaceport);
 					iptrsubcircuit->next = subcircuit;
 					subcircuit = iptrsubcircuit;
 				}
@@ -35,4 +34,29 @@ struct edifsubcircuit * edifsubcircuit_create(struct ediflibrary * ediflibrary){
 	}
 
 	return subcircuit;
+}
+
+int edifsubcircuit_isreal(struct edifsubcircuit * subcircuit, char * cellname){
+	struct edifsubcircuit * iptrsubcircuit = NULL;
+	int cellnamelen = strlen(cellname);
+	for(iptrsubcircuit = subcircuit; iptrsubcircuit != NULL; iptrsubcircuit = iptrsubcircuit->next){
+		if(cellnamelen == strlen(iptrsubcircuit->edifcell) && 0 == strcmp(iptrsubcircuit->edifcell, cellname)){// && iptrsubcircuit->used == 1){
+				return 1;
+		}
+	}
+
+	return 0;
+}
+
+int edifsubcircuit_search(struct edifsubcircuit * subcircuit, char * libraryref, char * cellref){ 
+	struct edifsubcircuit * tmpsubcircuit = NULL;
+	for(tmpsubcircuit = subcircuit; tmpsubcircuit != NULL; tmpsubcircuit = tmpsubcircuit->next){ 
+		if(strlen(tmpsubcircuit->ediflibrary) == strlen(libraryref) && strcmp(tmpsubcircuit->ediflibrary, libraryref) == 0 &&
+			strlen(tmpsubcircuit->edifcell) == strlen(cellref) && strcmp(tmpsubcircuit->edifcell, cellref) == 0){
+				tmpsubcircuit->used = 1;
+				return 1;
+		}
+	}
+
+	return 0;
 }
