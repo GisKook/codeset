@@ -1,4 +1,4 @@
-#ifndef EDIFINTERFACE_H_H
+﻿#ifndef EDIFINTERFACE_H_H
 #define EDIFINTERFACE_H_H
 
 struct edifinterface;

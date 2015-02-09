@@ -127,7 +127,6 @@ main(int argc, char *argv[])
   if( FileEdn != stdout )
     fprintf(stderr,"  output is %s \n", FileNameEdn);
 
-  fprintf(stderr, " BonJour\n");
   system("pause");
   exit(0);
 }

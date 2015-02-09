@@ -58,7 +58,7 @@ struct edifcontents * edifcellcontents = NULL;
 
 // cells
 struct edifcell * edifcells = NULL, *iptredifcells = NULL;
-char * celltype = NULL;
+char * celltype = NULL, * cellname = NULL;
 
 // libraries
 struct ediflibrary * ediflibrarys = NULL, *iptrediflibrary = NULL, *iptrflattenediflibrary = NULL;
@@ -652,52 +652,53 @@ BoundBox    :	BOUNDINGBOX Rectangle PopC
 	    	;
 
 CellNameDef :	NameDef
-		{char part[PART_NAME_LEN]; int i;
-			
-		memset(part, 0, PART_NAME_LEN);
-		 strncpy(part, $1->s, PART_NAME_LEN);
-		 for( i=PART_NAME_LEN-1 ; part[i] == '\0' && i>0 ; i-- )
-			;
-		 //fprintf(Error,"'%s' %c%c\n", part, part[i-1],part[i]);
-		 if( i > 0 && isdigit(part[i-1]) && isalpha(part[i]) ){ // mult-part symbol
-			unit = part[i]-'A'+1;
-			part[i] = '\0';
-		 }else
-			unit=1;
-		
-		 InCell=1;
-		 // if(bug>3)fprintf(Error,"  currlib: %s \n", CurrentLib->Name); 
-		 if(bug>1)fprintf(Error,"%05d CellNameDef %s %s unit %d\n", LineNumber, $1->s, part, unit ); 
-	 	 $1->s = part;
-
-		 // see if part already exits
-		 LibEntry = CurrentLib->Entries;
-		 for( i = CurrentLib->NumOfParts ; i > 0; i-- ) {
-			if( !strcmp(part,  LibEntry->Name) )
-				break;
-			LibEntry = LibEntry->nxt;
-		 }
-		 if( i != 0 ) {
-  		 	LibEntry->NumOfUnits++;
-		 }else{
-  		   LibEntry = (LibraryEntryStruct *) Malloc(sizeof(LibraryEntryStruct));
-		   strncpy(LibEntry->Name, $1->s, PART_NAME_LEN);
-		   if(strstr(LibEntry->Name,"VCC") || strstr(LibEntry->Name,"GND"))
-		   	  strcpy(LibEntry->Prefix, "#PWR");
-		   else
-			  strcpy(LibEntry->Prefix, "U0");
-  		   LibEntry->NumOfUnits = 1;
-  		   LibEntry->Type = ROOT;
-           LibEntry->PrefixPosX = 0; LibEntry->PrefixPosY = 0; LibEntry->PrefixSize =  DEFAULT_SIZE_TEXT/scale;
-  		   LibEntry->NamePosX   = 0; LibEntry->NamePosY   = 0; LibEntry->NameSize   =  DEFAULT_SIZE_TEXT/scale;
-           LibEntry->DrawPinNum = 1; LibEntry->DrawPinName = 1; LibEntry->DrawName = 1; LibEntry->DrawPrefix = 1;
-  		   LibEntry->TextInside = 30;
-  		   LibEntry->Fields = NULL;
-  		   LibEntry->Drawings = NULL;
-           LibEntry->nxt = CurrentLib->Entries;
-           CurrentLib->Entries = LibEntry; CurrentLib->NumOfParts++;
-		   LibEntry->AliasList = NULL;
-		 }
+		{
+///		char part[PART_NAME_LEN]; int i;
+///			
+///		memset(part, 0, PART_NAME_LEN);
+///		 strncpy(part, $1->s, PART_NAME_LEN);
+///		 for( i=PART_NAME_LEN-1 ; part[i] == '\0' && i>0 ; i-- )
+///			;
+///		 //fprintf(Error,"'%s' %c%c\n", part, part[i-1],part[i]);
+///		 if( i > 0 && isdigit(part[i-1]) && isalpha(part[i]) ){ // mult-part symbol
+///			unit = part[i]-'A'+1;
+///			part[i] = '\0';
+///		 }else
+///			unit=1;
+///		
+///		 InCell=1;
+///		 // if(bug>3)fprintf(Error,"  currlib: %s \n", CurrentLib->Name); 
+///		 if(bug>1)fprintf(Error,"%05d CellNameDef %s %s unit %d\n", LineNumber, $1->s, part, unit ); 
+///	 	 $1->s = part;
+///
+///		 // see if part already exits
+///		 LibEntry = CurrentLib->Entries;
+///		 for( i = CurrentLib->NumOfParts ; i > 0; i-- ) {
+///			if( !strcmp(part,  LibEntry->Name) )
+///				break;
+///			LibEntry = LibEntry->nxt;
+///		 }
+///		 if( i != 0 ) {
+///  		 	LibEntry->NumOfUnits++;
+///		 }else{
+///  		   LibEntry = (LibraryEntryStruct *) Malloc(sizeof(LibraryEntryStruct));
+///		   strncpy(LibEntry->Name, $1->s, PART_NAME_LEN);
+///		   if(strstr(LibEntry->Name,"VCC") || strstr(LibEntry->Name,"GND"))
+///		   	  strcpy(LibEntry->Prefix, "#PWR");
+///		   else
+///			  strcpy(LibEntry->Prefix, "U0");
+///  		   LibEntry->NumOfUnits = 1;
+///  		   LibEntry->Type = ROOT;
+///           LibEntry->PrefixPosX = 0; LibEntry->PrefixPosY = 0; LibEntry->PrefixSize =  DEFAULT_SIZE_TEXT/scale;
+///  		   LibEntry->NamePosX   = 0; LibEntry->NamePosY   = 0; LibEntry->NameSize   =  DEFAULT_SIZE_TEXT/scale;
+///           LibEntry->DrawPinNum = 1; LibEntry->DrawPinName = 1; LibEntry->DrawName = 1; LibEntry->DrawPrefix = 1;
+///  		   LibEntry->TextInside = 30;
+///  		   LibEntry->Fields = NULL;
+///  		   LibEntry->Drawings = NULL;
+///           LibEntry->nxt = CurrentLib->Entries;
+///           CurrentLib->Entries = LibEntry; CurrentLib->NumOfParts++;
+///		   LibEntry->AliasList = NULL;
+///		 }
 		}
 	    ;
 Cell    :  CELL CellNameDef _Cell PopC
@@ -2611,32 +2612,32 @@ PortNameDef :	NameDef
 			    	fprintf(Error,"  PortNameDef:'%s'\n", $1->s);
 		    }
 		    if(bug>2)fprintf(Error,"%5d New PIN_DRAW_TYPE LibraryDrawEntryStruct ",LineNumber);
-		    New = (LibraryDrawEntryStruct *) Malloc(sizeof(LibraryDrawEntryStruct));
-            New->DrawType = PIN_DRAW_TYPE; New->Convert = convert;
-            New->nxt = LibEntry->Drawings;
-            LibEntry->Drawings = New;
-            New->Unit = unit; 
-            New->U.Pin.Len = 300;
-            New->U.Pin.PinShape = NONE;		// NONE, DOT, CLOCK, SHORT
-		    New->U.Pin.PinType  = PIN_UNSPECIFIED;
-/* TODO: other pin types */
-		    New->U.Pin.Orient   = 0;
-            //New->U.Pin.Flags    = 0;           	// Pin Visible no port property in OrCad Ver 10
-			New->U.Pin.Flags    = (!strncmp($1->s,"OFFPAGE",7)
-							    |  !strncmp($1->s,"GND",3)
-							    |  !strncmp($1->s,"DGND",4)
-								  )?0:PINNOTDRAW ;
-            New->U.Pin.SizeNum  = TextSize;
-            New->U.Pin.SizeName = TextSize;
-		    New->U.Pin.Num[0]='0'; New->U.Pin.Num[4]=0;
-		    if($1->nxt != NULL){
-		        New->U.Pin.ReName = $1->nxt->s;
-		        strncpy(New->U.Pin.Num, $1->nxt->s, 4); // default pin#
-		    }else{
-		        New->U.Pin.ReName = NULL;
-		        strncpy(New->U.Pin.Num, $1->s, 4); // default pin#
-		    }
-		    New->U.Pin.Name = strdup($1->s);
+///		    New = (LibraryDrawEntryStruct *) Malloc(sizeof(LibraryDrawEntryStruct));
+///            New->DrawType = PIN_DRAW_TYPE; New->Convert = convert;
+///            New->nxt = LibEntry->Drawings;
+///            LibEntry->Drawings = New;
+///            New->Unit = unit; 
+///            New->U.Pin.Len = 300;
+///            New->U.Pin.PinShape = NONE;		// NONE, DOT, CLOCK, SHORT
+///		    New->U.Pin.PinType  = PIN_UNSPECIFIED;
+////* TODO: other pin types */
+///		    New->U.Pin.Orient   = 0;
+///            //New->U.Pin.Flags    = 0;           	// Pin Visible no port property in OrCad Ver 10
+///			New->U.Pin.Flags    = (!strncmp($1->s,"OFFPAGE",7)
+///							    |  !strncmp($1->s,"GND",3)
+///							    |  !strncmp($1->s,"DGND",4)
+///								  )?0:PINNOTDRAW ;
+///            New->U.Pin.SizeNum  = TextSize;
+///            New->U.Pin.SizeName = TextSize;
+///		    New->U.Pin.Num[0]='0'; New->U.Pin.Num[4]=0;
+///		    if($1->nxt != NULL){
+///		        New->U.Pin.ReName = $1->nxt->s;
+///		        strncpy(New->U.Pin.Num, $1->nxt->s, 4); // default pin#
+///		    }else{
+///		        New->U.Pin.ReName = NULL;
+///		        strncpy(New->U.Pin.Num, $1->s, 4); // default pin#
+///		    }
+///		    New->U.Pin.Name = strdup($1->s);
 		    if(bug>2)fprintf(Error,"  _Port PortNameDef '%s':'%s'\n", New->U.Pin.Name, New->U.Pin.Num);
 		}
 	    |	Array
