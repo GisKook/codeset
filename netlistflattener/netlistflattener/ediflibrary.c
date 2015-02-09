@@ -79,20 +79,24 @@ struct edifinstance * ediflibrary_getintance(struct ediflibrary * library, char 
 	for(iptrlibrary = library; iptrlibrary != NULL; iptrlibrary = iptrlibrary->next){
 		if (strlen(iptrlibrary->library, libraryname) == strlen(libraryname) && 0 == strcmp(iptrlibrary->library, libraryname)){
 			cell = library->edifcell;
-			if(cell != NULL && strlen(cell->cell) == strlen(cellname) && 0 == strcmp(cell->cell, cellname)){ 
-				if(cell->edifcontents != NULL && cell->edifcontents->edifinstance != NULL){ 
-					for(tmpinstance = cell->edifcontents->edifinstance; tmpinstance != NULL; tmpinstance = tmpinstance->next) {
-						iptrinstance = (struct edifinstance *)malloc(sizeof(struct edifinstance));
-						memset(iptrinstance, 0, sizeof(struct edifinstance)); 
-						iptrinstance->libraryref = strdup(tmpinstance->libraryref);
-						iptrinstance->cellref = strdup(tmpinstance->cellref);
-						iptrinstance->viewref = strdup(tmpinstance->viewref);
-						iptrinstance->instance = strdup(tmpinstance->instance);
-						iptrinstance->next = instance;
-						instance = iptrinstance;
+			for(cell = library->edifcell; cell != NULL; cell = cell->next){
+				if(cell != NULL && strlen(cell->cell) == strlen(cellname) && 0 == strcmp(cell->cell, cellname)){ 
+					if(cell->edifcontents != NULL && cell->edifcontents->edifinstance != NULL){ 
+						for(tmpinstance = cell->edifcontents->edifinstance; tmpinstance != NULL; tmpinstance = tmpinstance->next) {
+							iptrinstance = (struct edifinstance *)malloc(sizeof(struct edifinstance));
+							memset(iptrinstance, 0, sizeof(struct edifinstance)); 
+							iptrinstance->libraryref = strdup(tmpinstance->libraryref);
+							iptrinstance->cellref = strdup(tmpinstance->cellref);
+							iptrinstance->viewref = strdup(tmpinstance->viewref);
+							iptrinstance->instance = strdup(tmpinstance->instance);
+							iptrinstance->next = instance;
+							instance = iptrinstance;
+						}
+						break;
 					}
-				}
+				} 
 			}
+			
 		}
 	}
 

@@ -1551,6 +1551,9 @@ Instance :	INSTANCE InstNameDef _Instance PopC
 		iptredifinstance->libraryref = strdup(edifinstancelibraryref);
 		iptredifinstance->next = edifinstances;
 		edifinstances = iptredifinstance;
+		edifinstanceviewref = NULL;
+		edifinstancecellref = NULL;
+		edifinstancelibraryref = NULL;
 		
 		// check for multi-part symbol
 		strncpy(part, cellRef, PART_NAME_LEN);
@@ -1901,7 +1904,7 @@ Library :	LIBRARY LibNameDef EdifLevel _Library PopC
 //		 New=NULL;
 		iptrediflibrary = (struct ediflibrary *)malloc(sizeof(struct ediflibrary));
 		memset(iptrediflibrary, 0, sizeof(struct ediflibrary));
-		iptrediflibrary->library = strdup(libraryname);
+		iptrediflibrary->library = strdup($2->s);
 		iptrediflibrary->edifcell = edifcells;
 		edifcells = NULL;
 		iptrediflibrary->next = ediflibrarys;
