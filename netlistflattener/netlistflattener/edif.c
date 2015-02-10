@@ -48,6 +48,7 @@ struct edifcell * edifcellcopy(struct edifcell * edifcell){
 struct edifcell * edifcellflatten(struct edifcell * edifcellout, struct edifcell * edifcellin){ 
 	int i;
 	if (edifcellin->edifinterfaceport != NULL) { 
+
 	}
 }
 

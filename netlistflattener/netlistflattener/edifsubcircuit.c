@@ -60,3 +60,11 @@ int edifsubcircuit_search(struct edifsubcircuit * subcircuit, char * libraryref,
 
 	return 0;
 }
+
+int edifsubcircuit_getcount(struct edifsubcircuit * subcircuit){
+	struct edifsubcircuit * circuit = NULL;
+	int count;
+	for (circuit = subcircuit, count = 0; circuit != NULL; circuit = circuit->next, ++count);
+
+	return count;
+}

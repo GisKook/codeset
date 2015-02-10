@@ -2172,6 +2172,8 @@ Net 	:	NET NetNameDef _Net PopC
 		iptredifnet->edifnetportref = edifnetportrefs;
 		iptredifnet->next = edifnets;
 		edifnets = iptredifnet;
+		iptredifnet = NULL;
+		edifnetportrefs = NULL;
 		}
     	;
 

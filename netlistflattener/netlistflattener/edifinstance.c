@@ -15,14 +15,18 @@ int edifinstance_getcount(struct edifinstance * edifinstance){
 }
 
 struct edifinstance * edifinstance_copy(struct edifinstance * edifinstance){ 
-	struct edifinstance * instance = NULL; 
-	if(edifinstance != NULL){
-		instance = (struct edifinstance *)malloc(sizeof(struct edifinstance));
-		memset(instance, 0, sizeof(struct edifinstance));
-		instance->instance = strdup(edifinstance->instance);
-		instance->viewref = strdup(edifinstance->viewref);
-		instance->cellref = strdup(edifinstance->cellref);
-		instance->libraryref = strdup(edifinstance->libraryref);
+	struct edifinstance * instance = NULL, * iptrinstance = NULL, *tmpinstance = NULL; 
+	for(tmpinstance = edifinstance; tmpinstance != NULL; tmpinstance = tmpinstance->next){ 
+		if(tmpinstance != NULL){
+			iptrinstance = (struct edifinstance *)malloc(sizeof(struct edifinstance));
+			memset(iptrinstance, 0, sizeof(struct edifinstance));
+			iptrinstance->instance = strdup(tmpinstance->instance);
+			iptrinstance->viewref = strdup(tmpinstance->viewref);
+			iptrinstance->cellref = strdup(tmpinstance->cellref);
+			iptrinstance->libraryref = strdup(tmpinstance->libraryref);
+			iptrinstance->next = instance; 
+			instance = iptrinstance;
+		}
 	}
 
 	return instance;
@@ -76,4 +80,17 @@ struct edifinstance * edifinstance_flatten(struct edifinstance * edifinstance, s
 	}
 
 	return instance; 
+}
+
+void edifinstance_destroy(struct edifinstance * edifinstance){
+	struct edifinstance * instance = NULL, *nextinstance = NULL;
+	for (instance = edifinstance; instance != NULL; ){
+		nextinstance = instance->next;
+		free(instance->instance);
+		free(instance->libraryref);
+		free(instance->cellref);
+		free(instance->viewref);
+		free(instance);
+		instance = nextinstance;
+	}
 }
