@@ -1,7 +1,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include "edif.h"
+#include "ediflibrary.h"
 
+global char * glibrary;
 int edifnet_getcount(struct edifnet * edifnet){
 	int count = 0;
 	struct edifnet * net = NULL;
@@ -102,7 +104,7 @@ struct edifnet * edifnet_flatten(struct edifcontents * edifcontents, struct edif
 				iptrportref->next = portref;
 				portref = iptrportref;
 			}else{
-				iptrportref = edifnet_getnetports(tmpnet, edifnetportref->portref);
+				iptrportref = ediflibrary_getnetportref(library, glibrary, cellname, edifnetportref->portref);
 				edifnet_addtail(iptrportref, portref);
 				portref = iptrportref;
 			}

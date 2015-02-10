@@ -2849,6 +2849,7 @@ PortRef     :	PORTREF PortNameRef _PortRef PopC
 		iptredifnetportref->instanceref = strdup(netinstanceref);
 		iptredifnetportref->next = edifnetportrefs;
 		edifnetportrefs = iptredifnetportref;
+		netinstanceref = NULL;
 		
 		if(bug>3){
 		     fprintf(Error," PORTREF:'%s' ", $2->s);
