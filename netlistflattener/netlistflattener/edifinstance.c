@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include "edifwriter.h"
 #include "edifsubcircuit.h"
 #include "edif.h"
 
@@ -92,5 +93,30 @@ void edifinstance_destroy(struct edifinstance * edifinstance){
 		free(instance->viewref);
 		free(instance);
 		instance = nextinstance;
+	}
+}
+
+void edifinstance_writer(struct edifinstance * instance, FILE * out){
+	struct edifinstance * edifinstance = NULL;
+	if (instance == NULL || out == NULL) {
+		fprintf(stderr, "edifinstance writer. \n");
+		return;
+	}
+	for(edifinstance = instance; edifinstance != NULL; edifinstance = edifinstance->next){
+		gkfputs("    (instance ");
+		gkfputs(edifinstance->instance);
+		gkfputx;
+		gkfputs("     (veiwRef ");
+		gkfputs(edifinstance->viewref);
+		gkfputx;
+		gkfputs("      (cellRef ");
+		gkfputs(edifinstance->cellref);
+		gkfputx;
+		if (edifinstance->libraryref != NULL) {
+			gkfputs("       (libraryRef ");
+			gkfputs(edifinstance->libraryref);
+			gkfputs(")");
+		}
+		gkfputs(")))\n");
 	}
 }

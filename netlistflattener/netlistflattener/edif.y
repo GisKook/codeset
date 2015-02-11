@@ -61,7 +61,7 @@ struct edifcell * edifcells = NULL, *iptredifcells = NULL;
 char * celltype = NULL, * cellname = NULL;
 
 // libraries
-struct ediflibrary * ediflibrarys = NULL, *iptrediflibrary = NULL, *iptrflattenediflibrary = NULL;
+struct ediflibrary * ediflibrarys = NULL, *iptrediflibrary = NULL, *iptrflattenediflibrary = NULL, * librarys = NULL;
 char * libraryname = NULL;
 
 
@@ -975,8 +975,8 @@ _Derivation :	CALCULATED
 DesignNameDef :	NameDef
 		{if(bug>2)fprintf(Error,"%5d DesignNameDef: '%s'\n", LineNumber, $1->s);
 		edifparsestatus = EDIFPARSENON; 
-		ediflibrary_flatten(ediflibrarys);
-		ediflibrary_writer(iptrflattenediflibrary, Output);
+		librarys = ediflibrary_flatten(ediflibrarys);
+		ediflibrary_writer(librarys, Output);
 		putc('\n', Output);
 		fputs("(design ",Output);
 		fputs($1->s,Output);

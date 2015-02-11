@@ -5,5 +5,6 @@ struct edifcell;
 struct edifsubcircuit;
 struct ediflibrary;
 struct edifcell * edifcell_flatten(struct edifcell * cell, struct ediflibrary * library, struct edifsubcircuit * edifsubcircuit);
+void edifcell_writer(struct edifcell * cell, FILE * out);
 
 #endif

@@ -70,7 +70,11 @@ struct ediflibrary * ediflibrary_flatten(struct ediflibrary * ediflibrarys){
 }
 
 void ediflibrary_writer(struct ediflibrary * ediflibrary, FILE * out){
-
+	if(ediflibrary == NULL || out == NULL){
+		fprintf(stderr, "ediflibrary write error.\n");
+		return;
+	}
+	edifcell_writer(ediflibrary->edifcell, out); 
 }
 
 struct edifinstance * ediflibrary_getintance(struct ediflibrary * library, char * libraryname, char * cellname){
@@ -106,7 +110,7 @@ struct edifinstance * ediflibrary_getintance(struct ediflibrary * library, char 
 
 struct edifnetportref * ediflibrary_getnetportref(struct ediflibrary * library, char * libraryname, char * cellname, char * portref){
 	struct ediflibrary *iptrlibrary = NULL;
-	struct edifnet * net = NULL, *iptrnet = NULL, *tmpnet = NULL;
+	struct edifnet *tmpnet = NULL;
 	struct edifcell * cell = NULL;
 	struct edifnetportref * tmpnetportref = NULL, *iptrnetportref = NULL, *portrefs = NULL;
 	for(iptrlibrary = library; iptrlibrary != NULL; iptrlibrary = iptrlibrary->next){
@@ -127,5 +131,33 @@ struct edifnetportref * ediflibrary_getnetportref(struct ediflibrary * library, 
 			}
 		}
 	}
+	return NULL;
+}
+
+struct edifnet * ediflibrary_getnet(struct ediflibrary * library, char * libraryname, char * cellname){
+	struct ediflibrary *iptrlibrary = NULL;
+	struct edifnet * net = NULL, *iptrnet = NULL, *tmpnet = NULL;
+	struct edifcell * cell = NULL;
+	struct edifnetportref * tmpnetportref = NULL, *iptrnetportref = NULL, *portrefs = NULL;
+	for(iptrlibrary = library; iptrlibrary != NULL; iptrlibrary = iptrlibrary->next){
+		if (strlen(iptrlibrary->library, libraryname) == strlen(libraryname) && 0 == strcmp(iptrlibrary->library, libraryname)){
+			cell = library->edifcell;
+			for(cell = library->edifcell; cell != NULL; cell = cell->next){
+				if(cell != NULL && strlen(cell->cell) == strlen(cellname) && 0 == strcmp(cell->cell, cellname)){ 
+					if(cell->edifcontents != NULL && cell->edifcontents->edifnet != NULL){ 
+						for(tmpnet = cell->edifcontents->edifnet; tmpnet != NULL; tmpnet = tmpnet->next) { 
+							if(edifnet_isinteral(tmpnet)){ 
+								iptrnet = edifnet_copy(tmpnet);
+								iptrnet->next = net;
+								net = iptrnet;
+							}
+						}
+						return net;
+					}
+				}
+			}
+		}
+	}
+	
 	return NULL;
 }
