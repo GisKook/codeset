@@ -6,10 +6,35 @@
 #include "edifinstance.h"
 #include "edifnet.h"
 
-struct edifcontents * edifcontens_flatten(struct edifcontents * edifcontents, struct ediflibrary * library, struct edifsubcircuit * subcircuit){
+struct edifcontents * edifcontents_copy(struct edifcontents * edifcontents){
+	struct edifcontents * contents = NULL;
+	if(edifcontents == NULL){
+		fprintf(stderr, "%s error. \n", __FUNCTION__);
+
+		return NULL;
+	}
+	contents = (struct edifcontents *)malloc(sizeof(struct edifcontents));
+	memset(contents, 0, sizeof(struct edifcontents));
+	contents->edifinstance = edifinstance_copy(edifcontents->edifinstance);
+	contents->edifnet = edifnet_copynets(edifcontents->edifnet);
+
+	return contents;
+}
+
+void edifcontents_destroy(struct edifcontents * edifcontents){ 
+	if (edifcontents) {
+		edifinstance_destroy(edifcontents->edifinstance);
+		edifnet_destroy(edifcontents->edifnet);
+		free(edifcontents);
+	}
+}
+
+struct edifcontents * edifcontents_flatten(struct edifcontents * edifcontents, struct ediflibrary * library, struct edifsubcircuit * subcircuit){
 	struct edifcontents * con = NULL;
 	int subcircuitcount = 0, i = 0;
 	struct edifinstance * instance = NULL, * iptrinstance = NULL;
+	struct edifnet * net = NULL, *iptrnet = NULL;
+	struct edifcontents * contents = NULL, * iptrcontents = NULL;
 	if(edifcontents == NULL || library == NULL || subcircuit == NULL){
 		fprintf(stderr, "%s error.\n", __FUNCTION__);
 	}
@@ -23,10 +48,27 @@ struct edifcontents * edifcontens_flatten(struct edifcontents * edifcontents, st
 		edifinstance_destroy(iptrinstance);
 		iptrinstance = instance;
 	}
-	
 	con->edifinstance = instance;
-	con->edifnet = edifnet_flatten(edifcontents, library, subcircuit);
+	
+	contents = edifcontents_copy(edifcontents);
+	for(i = 0; i < subcircuitcount; ++i){
+		net = edifnet_flatten(contents, library, subcircuit); 
+		edifnet_destroy(contents->edifnet);
+		contents->edifnet = net;
+	}
+	iptrnet = edifnet_copynets(net);
+	edifcontents_destroy(contents);
+	con->edifnet = iptrnet;
 
 	return con;
 }
 
+
+void edifcontents_writer(struct edifcontents * edifcontents, FILE * out){
+	if(edifcontents == NULL || out == NULL){
+		fprintf(stderr, "contents error.\n");
+		return;
+	} 
+	edifinstance_writer(edifcontents->edifinstance, out);
+	edifnet_writer(edifcontents->edifnet, out);
+}
