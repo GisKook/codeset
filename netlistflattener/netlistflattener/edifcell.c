@@ -41,7 +41,7 @@ void edifcell_writer(struct edifcell * cell, FILE * out){
 		edifinterface_writer(cell->edifinterfaceport, out);
 		edifcontents_writer(cell->edifcontents, out);
 
-		gkfputs("))\n");
+		gkfputs("))");
 
 	}else{ 
 		fprintf(stderr, "cell writer error. %s cell is %lx File is %lx\n", __FUNCTION__, cell, out);

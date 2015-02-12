@@ -5,6 +5,7 @@
 #include "edifwriter.h"
 #include "edif.h"
 #include "ediflibrary.h"
+#include "edifinstance.h"
 
 global char * glibrary;
 int edifnet_getcount(struct edifnet * edifnet){
@@ -114,14 +115,16 @@ struct edifnetportref * edifnet_addtail(struct edifnetportref * edifnetportref, 
 	return edifnetportref;
 }
 
+#define MAXCELLNAMELEN 128
 struct edifnet * edifnet_flatten(struct edifcontents * edifcontents, struct ediflibrary * library, struct edifsubcircuit * eidfsubcircuit){
 	struct edifnet * net= NULL, *iptrnet = NULL, *tmpnet = NULL, *internet = NULL;
 	struct edifinstance * instance = NULL;
 	struct edifnetportref * edifnetportref = NULL, *portref = NULL, *iptrportref = NULL;
 	char * cellname = NULL;
-	char * cellnames[] = {NULL};
+	char * cellnames[128] = {NULL};
 	int cellcount = 0, i = 0;
 	int alreadhave = 0;
+	int flatten = 0;
 	if (edifcontents == NULL || library == NULL) {
 		return NULL;
 	}
@@ -139,6 +142,7 @@ struct edifnet * edifnet_flatten(struct edifcontents * edifcontents, struct edif
 				iptrportref->next = portref;
 				portref = iptrportref;
 			}else{
+				flatten = 1;
 				iptrportref = ediflibrary_getnetportref(library, glibrary, cellname, edifnetportref->portref); 
 				for(i = 0; i < cellcount; ++i){
 					if (strlen(cellname) == strlen(cellnames[i]) && strcmp(cellname, cellnames[i]) == 0) {
@@ -167,6 +171,13 @@ struct edifnet * edifnet_flatten(struct edifcontents * edifcontents, struct edif
 		iptrnet->next = net;
 		net = iptrnet;
 	}
+	if(flatten){
+		instance = edifinstance_flatten(edifcontents->edifinstance, library, eidfsubcircuit);
+		edifinstance_destroy(edifcontents->edifinstance);
+		edifcontents->edifinstance = instance; 
+	}
+	
+
 
 	return net;
 }

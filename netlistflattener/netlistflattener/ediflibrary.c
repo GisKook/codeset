@@ -6,6 +6,7 @@
 #include "edifcell.h"
 #include "edifinstance.h"
 #include "edifnet.h"
+#include "edifwriter.h"
 
 global char * glibrary = NULL;
 
@@ -75,6 +76,7 @@ void ediflibrary_writer(struct ediflibrary * ediflibrary, FILE * out){
 		return;
 	}
 	edifcell_writer(ediflibrary->edifcell, out); 
+	gkfputy;
 }
 
 struct edifinstance * ediflibrary_getintance(struct ediflibrary * library, char * libraryname, char * cellname){
