@@ -11,6 +11,7 @@ struct edifinstance * ediflibrary_getintance(struct ediflibrary * library, char 
 struct edifnetportref * ediflibrary_getnetportref(struct ediflibrary * library, char * libraryname, char * cellname, char * portref);
 struct edifnet * ediflibrary_getnet(struct ediflibrary * library, char * libraryname, char * cellname);
 void ediflibrary_writer(struct ediflibrary * ediflibrary, FILE * out);
+struct ediflibrary * ediflibrary_getlibrary(struct ediflibrary * library, char * libraryname);
 
 
 #endif

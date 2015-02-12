@@ -103,7 +103,6 @@ struct edifinstance * ediflibrary_getintance(struct ediflibrary * library, char 
 					}
 				} 
 			}
-			
 		}
 	}
 
@@ -161,5 +160,20 @@ struct edifnet * ediflibrary_getnet(struct ediflibrary * library, char * library
 		}
 	}
 	
+	return NULL;
+}
+
+struct ediflibrary * ediflibrary_getlibrary(struct ediflibrary * library, char * libraryname){
+	struct ediflibrary * iptrlibrary = NULL;
+	if (library == NULL || libraryname == NULL) {
+		fprintf(stderr, "%s error. library: 0x%lx libraryname: %s\n", __FUNCTION__, library, libraryname);
+		return NULL;
+	}
+	for (iptrlibrary = library; iptrlibrary != NULL; iptrlibrary = iptrlibrary->next) {
+		if(strlen(library->library) == strlen(libraryname) && 0 == strcmp(libraryname, library->library)){
+			return iptrlibrary;
+		}
+	}
+
 	return NULL;
 }

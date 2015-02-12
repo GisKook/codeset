@@ -6,6 +6,7 @@
 #include "edifsubcircuit.h"
 #include "edifinterface.h"
 #include "edifcontents.h"
+#include "ediflibrary.h"
 
 struct edifcell * edifcell_flatten(struct edifcell * cell, struct ediflibrary * library, struct edifsubcircuit * edifsubcircuit){
 	struct edifcell * edifcell = NULL, *iptredifcell = NULL, *tmpcell = NULL;
@@ -45,5 +46,56 @@ void edifcell_writer(struct edifcell * cell, FILE * out){
 
 	}else{ 
 		fprintf(stderr, "cell writer error. %s cell is %lx File is %lx\n", __FUNCTION__, cell, out);
-	} 
+	}
+}
+
+struct edifcell * edifcell_getcell(struct edifcell * edifcell, char * cellname){
+	struct edifcell * cell = NULL; 
+	if(edifcell == NULL || cellname == NULL){
+		fprintf(stderr, "%s error. edifcell :0x%lx, cellname :%s\n", __FUNCTION__, edifcell, cellname);
+		return NULL;
+	}
+	for (cell = edifcell; cell != NULL; cell = cell->next) {
+		if(strlen(cell->cell) == strlen(cellname) && strcmp(cell->cell, cellname) == 0){ 
+			break;
+		}
+	}
+
+	return cell;
+}
+
+int edifcell_getsubcellcount(struct edifcell * edifcell, char * cellname){
+	struct edifinstance * iptredifinstance = NULL, * instance = NULL;
+	int count = 0;
+	if (edifcell != NULL && edifcell->edifcontents != NULL && edifcell->edifcontents->edifinstance != NULL) { 
+		iptredifinstance = edifcell->edifcontents->edifinstance; 
+		for(instance = iptredifinstance; instance != NULL; instance = instance->next){
+			if (instance->libraryref == NULL) {
+				count++;
+			}
+		}
+	}
+
+	return count;
+}
+
+char * edifcell_getsubcellname(struct ediflibrary * ediflibrary, char * libraryname, char * cellname, int index){ 
+	struct ediflibrary * library = NULL;
+	struct edifcell * cell = NULL;
+	struct edifinstance * iptrinstance = NULL, * instance = NULL;
+	int count = 0;
+	
+	library = ediflibrary_getlibrary(ediflibrary, libraryname);
+
+	if(library){ 
+		cell = edifcell_getcell(library->edifcell, cellname);
+		if(cell != NULL && cell->edifcontents != NULL){ 
+			for(iptrinstance = cell->edifcontents->edifinstance; iptrinstance != NULL; iptrinstance = iptrinstance->next){ 
+				if (iptrinstance->libraryref == NULL && count == index) {
+					return iptrinstance->cellref;
+				}
+				count ++;
+			}
+		}
+	}
 }

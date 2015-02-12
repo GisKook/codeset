@@ -120,11 +120,14 @@ struct edifnet * edifnet_flatten(struct edifcontents * edifcontents, struct edif
 	struct edifnet * net= NULL, *iptrnet = NULL, *tmpnet = NULL, *internet = NULL;
 	struct edifinstance * instance = NULL;
 	struct edifnetportref * edifnetportref = NULL, *portref = NULL, *iptrportref = NULL;
-	char * cellname = NULL;
+	char * cellname = NULL, *subcellname = NULL, *tmpcellname = NULL;
 	char * cellnames[128] = {NULL};
 	int cellcount = 0, i = 0;
 	int alreadhave = 0;
 	int flatten = 0;
+	int subcellcount = 0;
+	struct edifcell * cell = NULL, *iptrcell = NULL;
+	struct ediflibrary * ediflibrary = NULL;
 	if (edifcontents == NULL || library == NULL) {
 		return NULL;
 	}
@@ -144,6 +147,25 @@ struct edifnet * edifnet_flatten(struct edifcontents * edifcontents, struct edif
 			}else{
 				flatten = 1;
 				iptrportref = ediflibrary_getnetportref(library, glibrary, cellname, edifnetportref->portref); 
+				tmpcellname = cellname;
+				ediflibrary = ediflibrary_getlibrary(library, glibrary);
+				iptrcell= ediflibrary->edifcell;
+				while(iptrportref == NULL){
+					cell = edifcell_getcell(iptrcell, tmpcellname);
+					subcellcount = edifcell_getsubcellcount(cell, tmpcellname);
+					if(subcellcount == 0){
+						break;
+					}
+					for(i = 0; i < subcellcount; ++i){
+						subcellname = edifcell_getsubcellname(library, glibrary, tmpcellname, i);
+						iptrportref = ediflibrary_getnetportref(library, glibrary, subcellname, edifnetportref->portref);
+						if (iptrportref != NULL) {
+							break;
+						}
+					}
+					tmpcellname = subcellname;
+					iptrcell = cell;
+				}
 				for(i = 0; i < cellcount; ++i){
 					if (strlen(cellname) == strlen(cellnames[i]) && strcmp(cellname, cellnames[i]) == 0) {
 						alreadhave = 1;
