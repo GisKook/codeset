@@ -18,6 +18,7 @@
 #include <string.h>
 #include <ctype.h>
 #include <math.h>
+#include <time.h>
 
 #include "ed.h"
 #include "eelibsl.h"
@@ -3600,6 +3601,22 @@ _When :		Trigger
       ;
 
 Written :	WRITTEN _Written PopC
+	 {
+	 time_t rawtime;
+	 struct tm * timeinfo;
+	 char comment[256] = {0};
+	 char * curtime = NULL;
+	 char sztime[128] = {0};
+	 
+	 time(&rawtime);
+	 timeinfo = localtime(&rawtime);
+	 curtime = asctime(timeinfo);
+	 memcpy(sztime, curtime, strlen(curtime) - 1);
+	 
+	 sprintf(comment, "\n  (comment \"\")\n  (comment \"processed by netlistflattener.exe ver 0.91 at %s\")", sztime);
+	 fputs(comment, Output);
+	 
+	 }
 	;
 
 _Written :	TimeStamp
