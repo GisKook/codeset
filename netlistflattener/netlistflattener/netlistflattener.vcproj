@@ -46,10 +46,10 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				PreprocessorDefinitions="_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_DEPRECATE"
+				PreprocessorDefinitions="_CRT_SECURE_NO_DEPRECATE;DEBUG;_CRT_NONSTDC_NO_DEPRECATE"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
-				RuntimeLibrary="3"
+				RuntimeLibrary="0"
 				WarningLevel="3"
 				DebugInformationFormat="4"
 				CompileAs="1"
@@ -181,6 +181,34 @@
 				>
 			</File>
 			<File
+				RelativePath=".\edifcell.c"
+				>
+			</File>
+			<File
+				RelativePath=".\edifcontents.c"
+				>
+			</File>
+			<File
+				RelativePath=".\edifinstance.c"
+				>
+			</File>
+			<File
+				RelativePath=".\edifinterface.c"
+				>
+			</File>
+			<File
+				RelativePath=".\ediflibrary.c"
+				>
+			</File>
+			<File
+				RelativePath=".\edifnet.c"
+				>
+			</File>
+			<File
+				RelativePath=".\edifsubcircuit.c"
+				>
+			</File>
+			<File
 				RelativePath=".\savelib.c"
 				>
 			</File>
@@ -196,6 +224,42 @@
 			>
 			<File
 				RelativePath=".\ed.h"
+				>
+			</File>
+			<File
+				RelativePath=".\edif.h"
+				>
+			</File>
+			<File
+				RelativePath=".\edifcell.h"
+				>
+			</File>
+			<File
+				RelativePath=".\edifcontents.h"
+				>
+			</File>
+			<File
+				RelativePath=".\edifinstance.h"
+				>
+			</File>
+			<File
+				RelativePath=".\edifinterface.h"
+				>
+			</File>
+			<File
+				RelativePath=".\ediflibrary.h"
+				>
+			</File>
+			<File
+				RelativePath=".\edifnet.h"
+				>
+			</File>
+			<File
+				RelativePath=".\edifsubcircuit.h"
+				>
+			</File>
+			<File
+				RelativePath=".\edifwriter.h"
 				>
 			</File>
 			<File
