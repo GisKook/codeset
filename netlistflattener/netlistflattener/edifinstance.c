@@ -106,7 +106,7 @@ void edifinstance_writer(struct edifinstance * instance, FILE * out){
 		gkfputs("    (instance ");
 		gkfputs(edifinstance->instance);
 		gkfputx;
-		gkfputs("     (veiwRef ");
+		gkfputs("     (viewRef ");
 		gkfputs(edifinstance->viewref);
 		gkfputx;
 		gkfputs("      (cellRef ");

@@ -41,7 +41,7 @@ struct edifcell * ediflibrary_getcells(struct ediflibrary * ediflibrary){
 	return ediflibrary != NULL?ediflibrary->edifcell:NULL;
 }
 
-struct ediflibrary * ediflibrary_singleflatten(struct ediflibrary * edifsinglelibrary, struct ediflibrary * totallibrary, struct edifsubcircuit * edifsubcircuit){ 
+struct ediflibrary * ediflibrary_singleflatten(struct ediflibrary * edifsinglelibrary, struct ediflibrary * totallibrary, struct edifsubcircuit * edifsubcircuit){
 	struct ediflibrary * library = NULL, *iptrlibrary = NULL;
 	if(totallibrary == NULL || edifsinglelibrary == NULL || edifsubcircuit == NULL){
 		fprintf(stderr, "%s error.\n", __FUNCTION__);
@@ -63,10 +63,15 @@ struct ediflibrary * ediflibrary_flatten(struct ediflibrary * ediflibrarys){
 	struct edifsubcircuit * edifsubcircuit = edifsubcircuit_create(ediflibrarys);
 	for(tmplibrary = ediflibrarys; tmplibrary != NULL; tmplibrary = ediflibrarys->next){
 		iptrlibrary = ediflibrary_singleflatten(tmplibrary, ediflibrarys, edifsubcircuit);
-		iptrlibrary->next = library;
-		library = iptrlibrary;
+		if (iptrlibrary != NULL) {
+			iptrlibrary->next = library;
+			library = iptrlibrary;
+		}
 	}
 
+	if (library == NULL) {
+		return ediflibrarys;
+	}
 	return library;
 }
 

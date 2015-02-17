@@ -5,6 +5,7 @@
 #include "edifsubcircuit.h"
 #include "edifinstance.h"
 #include "edifnet.h"
+#include "edifwriter.h"
 
 struct edifcontents * edifcontents_copy(struct edifcontents * edifcontents){
 	struct edifcontents * contents = NULL;
@@ -69,6 +70,9 @@ void edifcontents_writer(struct edifcontents * edifcontents, FILE * out){
 		fprintf(stderr, "contents error.\n");
 		return;
 	} 
+	gkfputs("   (contents");
+	gkfputx;
 	edifinstance_writer(edifcontents->edifinstance, out);
 	edifnet_writer(edifcontents->edifnet, out);
+	gkfputs(")");
 }
