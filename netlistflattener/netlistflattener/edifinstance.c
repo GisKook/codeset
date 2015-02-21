@@ -65,7 +65,7 @@ struct edifinstance * edifinstance_flatten(struct edifinstance * edifinstance, s
 			libraryref = glibrary;
 		}
 		if (edifsubcircuit_search(subcircuit, libraryref, cellref)) {
-			flatteninstance = ediflibrary_getintance(library, libraryref, cellref);
+			flatteninstance = ediflibrary_getintance(library, libraryref, cellref, szinstance);
 			iptrinstance = edifinstance_addtail(flatteninstance, instance);
 			instance = iptrinstance;
 		}else{
@@ -120,3 +120,56 @@ void edifinstance_writer(struct edifinstance * instance, FILE * out){
 		gkfputs(")))\n");
 	}
 }
+
+int edifinstance_needflatten(struct edifinstance * instance, char * instancename){
+	struct edifinstance * tmpinstance = NULL;
+	if(instance){
+		for(tmpinstance = instance; tmpinstance != NULL; tmpinstance = tmpinstance->next){
+			if (strlen(tmpinstance->instance) == strlen(instancename) && strcmp(tmpinstance->instance, instancename) == 0) {
+				if(tmpinstance->libraryref == NULL){
+					return 1;
+				}
+			}
+		}
+	}
+
+	return 0;
+}
+
+char * edifinstance_getsubcircuitname(struct edifinstance * instance){
+	return instance->libraryref == NULL ? instance->cellref : NULL;
+}
+
+struct edifinstance * edifinstance_getinstance(struct edifinstance * instance, char * instancename){
+	struct edifinstance * edifinstance = NULL, * tmpinstance = NULL;
+	for(tmpinstance = instance; tmpinstance != NULL; tmpinstance = tmpinstance->next){
+		if(strlen(instancename) == strlen(tmpinstance->instance) && 0 == strcmp(instancename, tmpinstance->instance)){
+			return tmpinstance;
+		}
+	}
+
+	return NULL;
+}
+
+void edifinstance_addnames(char ** instancenames, char * instancename){
+	int i;
+	int hasinstance = 0;
+	for(i = 0 ;instancenames[i] != NULL;i++){ 
+		if(strlen(instancenames[i]) == strlen(instancename) && strcmp(instancenames[i], instancename) == 0){
+			hasinstance = 1;
+			break;
+		}
+	}
+	if(!hasinstance){
+		for(i = 0; instancenames[i] != NULL; i++);
+		instancenames[i] = strdup(instancename);
+	}
+}
+
+//struct edifnet * edifnet_getallinternalnets(struct ediflibrary * library){
+//	int subcellcount = 0;
+//	char * subcellname = NULL;
+//	int i = 0;
+//	subcellcount = edifcell_getsubcellcount(library->edifcell, ""); 
+//	for(i = 0; i < subcellcount; ++i){
+//}

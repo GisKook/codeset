@@ -9,6 +9,8 @@ struct edifsubcircuit{
 	char * edifcell;
 	struct edifinterfaceport * edifinterfaceport;
 	struct edifsubcircuit * next;
+	struct edifinstance * edifinstance;
+	struct edifnet * edifnet;
 	int used;
 };
 
@@ -26,6 +28,8 @@ struct edifsubcircuit * edifsubcircuit_create(struct ediflibrary * ediflibrary){
 					iptrsubcircuit->ediflibrary = strdup(library->library);
 					iptrsubcircuit->edifcell = strdup(tmpcell->cell);
 					iptrsubcircuit->edifinterfaceport = edifinterface_copy(tmpcell->edifinterfaceport);
+					iptrsubcircuit->edifinstance = edifinstance_copy(tmpcell->edifcontents->edifinstance);
+					iptrsubcircuit->edifnet = edifnet_copynets(tmpcell->edifcontents->edifnet);
 					iptrsubcircuit->next = subcircuit;
 					subcircuit = iptrsubcircuit;
 				}

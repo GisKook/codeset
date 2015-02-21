@@ -99,3 +99,19 @@ char * edifcell_getsubcellname(struct ediflibrary * ediflibrary, char * libraryn
 		}
 	}
 }
+
+
+int edifcell_isinteralinstance(struct edifcell * edifcell, char * instancename){ 
+	struct edifinstance * instance = NULL, *tmpinstance = NULL;
+	if (edifcell != NULL && edifcell->edifcontents != NULL) {
+		for (instance = edifcell->edifcontents->edifinstance; instance != NULL; instance = instance->next){ 
+			if (strlen(instancename) == strlen(instance->instance) && 0 == strcmp(instancename, instance->instance)) {
+				if (instance->libraryref == NULL) {
+					return 1;
+				}
+			}
+		};
+	}
+
+	return 0;
+}

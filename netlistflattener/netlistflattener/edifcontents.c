@@ -51,15 +51,16 @@ struct edifcontents * edifcontents_flatten(struct edifcontents * edifcontents, s
 	}
 	con->edifinstance = instance;
 	
-	contents = edifcontents_copy(edifcontents);
-	for(i = 0; i < subcircuitcount; ++i){
-		net = edifnet_flatten(contents, library, subcircuit); 
-		edifnet_destroy(contents->edifnet);
-		contents->edifnet = net;
-	}
-	iptrnet = edifnet_copynets(net);
-	edifcontents_destroy(contents);
-	con->edifnet = iptrnet;
+//	contents = edifcontents_copy(edifcontents);
+//	for(i = 0; i < subcircuitcount; ++i){
+//		net = edifnet_flattenex(contents, library, subcircuit); 
+//		edifnet_destroy(contents->edifnet);
+//		contents->edifnet = net;
+//	}
+//	iptrnet = edifnet_copynets(net);
+//	edifcontents_destroy(contents);
+//	con->edifnet = iptrnet;
+	con->edifnet = edifnet_flattenex(edifcontents, library, subcircuit);
 
 	return con;
 }
@@ -75,4 +76,12 @@ void edifcontents_writer(struct edifcontents * edifcontents, FILE * out){
 	edifinstance_writer(edifcontents->edifinstance, out);
 	edifnet_writer(edifcontents->edifnet, out);
 	gkfputs(")");
+}
+
+struct edifinstance * edifcontents_getinstance(struct edifcontents * edifcontents){
+	if(edifcontents != NULL && edifcontents->edifinstance != NULL){ 
+		return edifcontents->edifinstance;
+	}
+
+	return NULL;
 }

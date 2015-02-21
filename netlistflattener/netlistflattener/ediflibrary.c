@@ -84,10 +84,12 @@ void ediflibrary_writer(struct ediflibrary * ediflibrary, FILE * out){
 	gkfputy;
 }
 
-struct edifinstance * ediflibrary_getintance(struct ediflibrary * library, char * libraryname, char * cellname){
+struct edifinstance * ediflibrary_getintance(struct ediflibrary * library, char * libraryname, char * cellname, char * szinstance){
 	struct ediflibrary *iptrlibrary = NULL;
 	struct edifinstance * instance = NULL, *iptrinstance = NULL, *tmpinstance = NULL;
 	struct edifcell * cell = NULL;
+	char * instancename = NULL;
+	int instancepart1len, instancepart2len;
 	for(iptrlibrary = library; iptrlibrary != NULL; iptrlibrary = iptrlibrary->next){
 		if (strlen(iptrlibrary->library, libraryname) == strlen(libraryname) && 0 == strcmp(iptrlibrary->library, libraryname)){
 			cell = library->edifcell;
@@ -100,7 +102,13 @@ struct edifinstance * ediflibrary_getintance(struct ediflibrary * library, char 
 							iptrinstance->libraryref = strdup(tmpinstance->libraryref);
 							iptrinstance->cellref = strdup(tmpinstance->cellref);
 							iptrinstance->viewref = strdup(tmpinstance->viewref);
-							iptrinstance->instance = strdup(tmpinstance->instance);
+							instancepart1len = strlen(szinstance);
+							instancepart2len = strlen(tmpinstance->instance);
+							instancename = (char *)malloc(instancepart1len+instancepart2len+1);
+							memset(instancename, 0, instancepart1len+instancepart2len+1);
+							memcpy(instancename, szinstance, instancepart1len);
+							memcpy(instancename+instancepart1len, tmpinstance->instance, instancepart2len);
+							iptrinstance->instance = instancename;
 							iptrinstance->next = instance;
 							instance = iptrinstance;
 						}
@@ -140,7 +148,7 @@ struct edifnetportref * ediflibrary_getnetportref(struct ediflibrary * library, 
 	return NULL;
 }
 
-struct edifnet * ediflibrary_getnet(struct ediflibrary * library, char * libraryname, char * cellname){
+struct edifnet * ediflibrary_getnet(struct ediflibrary * library, char * libraryname, char * cellname, char * instancename){
 	struct ediflibrary *iptrlibrary = NULL;
 	struct edifnet * net = NULL, *iptrnet = NULL, *tmpnet = NULL;
 	struct edifcell * cell = NULL;
@@ -153,7 +161,7 @@ struct edifnet * ediflibrary_getnet(struct ediflibrary * library, char * library
 					if(cell->edifcontents != NULL && cell->edifcontents->edifnet != NULL){ 
 						for(tmpnet = cell->edifcontents->edifnet; tmpnet != NULL; tmpnet = tmpnet->next) { 
 							if(edifnet_isinteral(tmpnet)){ 
-								iptrnet = edifnet_copy(tmpnet);
+								iptrnet = edifnet_copyrename(tmpnet, instancename);
 								iptrnet->next = net;
 								net = iptrnet;
 							}
