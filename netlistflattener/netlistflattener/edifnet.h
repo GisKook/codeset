@@ -12,9 +12,9 @@ int edifnet_isinteral(struct edifnet * edifnet);
 void edifnet_writer(struct edifnet * net, FILE * out);
 struct edifnet * edifnet_copynets(struct edifnet * edifnet);
 void * edifnet_destroy(struct edifnet * edifnet);
-struct edifnet * edifnet_copyrename(struct edifnet * edifnet, char * instance);
-struct edifnetportref * edifnet_getportrefs(struct edifnet * edifnet, char * instancename, char * portref);
-struct edifnet * edifnet_getinternalnets(struct edifcontents * edifcontents, char * instancename);
-struct edifnet * edifnet_flattenex(struct edifcontents * edifcontents, struct ediflibrary * library, struct edifsubcircuit * eidfsubcircuit);
+struct edifnet * edifnet_copyrename(struct ediflibrary * library, struct edifnet * edifnet, char * instance);
+struct edifnetportref * edifnet_getportrefs(struct ediflibrary * library, struct edifnet * edifnet, char * instancename, char * portref);
+struct edifnet * edifnet_getinternalnets(struct ediflibrary * library, struct edifcontents * edifcontents, char * instancename);
+struct edifnet * edifnet_flattenex(struct ediflibrary * library ,struct edifcontents * edifcontents, struct ediflibrary * referlibrary, struct edifsubcircuit * eidfsubcircuit);
 
 #endif

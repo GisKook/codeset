@@ -49,10 +49,13 @@ struct ediflibrary * ediflibrary_singleflatten(struct ediflibrary * edifsingleli
 	} 
 	library = (struct ediflibrary *)malloc(sizeof(struct ediflibrary));
 	memset(library, 0, sizeof(struct ediflibrary));
+	library->usedinstance = (struct edifinstancename **)malloc(sizeof(struct edifinstancename *)*INSTANCECOUNT);
+	library->instancecapacity = INSTANCECOUNT;
+	memset(library->usedinstance, 0, sizeof(struct edifinstancename *)*INSTANCECOUNT);
 	library->library = strdup(edifsinglelibrary->library);
 	if(edifsinglelibrary->edifcell != NULL){
 		glibrary = library->library;
-		library->edifcell = edifcell_flatten(edifsinglelibrary->edifcell, totallibrary, edifsubcircuit);
+		library->edifcell = edifcell_flatten(library, edifsinglelibrary->edifcell, totallibrary, edifsubcircuit);
 	}
 
 	return library;
@@ -84,43 +87,6 @@ void ediflibrary_writer(struct ediflibrary * ediflibrary, FILE * out){
 	gkfputy;
 }
 
-struct edifinstance * ediflibrary_getintance(struct ediflibrary * library, char * libraryname, char * cellname, char * szinstance){
-	struct ediflibrary *iptrlibrary = NULL;
-	struct edifinstance * instance = NULL, *iptrinstance = NULL, *tmpinstance = NULL;
-	struct edifcell * cell = NULL;
-	char * instancename = NULL;
-	int instancepart1len, instancepart2len;
-	for(iptrlibrary = library; iptrlibrary != NULL; iptrlibrary = iptrlibrary->next){
-		if (strlen(iptrlibrary->library, libraryname) == strlen(libraryname) && 0 == strcmp(iptrlibrary->library, libraryname)){
-			cell = library->edifcell;
-			for(cell = library->edifcell; cell != NULL; cell = cell->next){
-				if(cell != NULL && strlen(cell->cell) == strlen(cellname) && 0 == strcmp(cell->cell, cellname)){ 
-					if(cell->edifcontents != NULL && cell->edifcontents->edifinstance != NULL){ 
-						for(tmpinstance = cell->edifcontents->edifinstance; tmpinstance != NULL; tmpinstance = tmpinstance->next) {
-							iptrinstance = (struct edifinstance *)malloc(sizeof(struct edifinstance));
-							memset(iptrinstance, 0, sizeof(struct edifinstance)); 
-							iptrinstance->libraryref = strdup(tmpinstance->libraryref);
-							iptrinstance->cellref = strdup(tmpinstance->cellref);
-							iptrinstance->viewref = strdup(tmpinstance->viewref);
-							instancepart1len = strlen(szinstance);
-							instancepart2len = strlen(tmpinstance->instance);
-							instancename = (char *)malloc(instancepart1len+instancepart2len+1);
-							memset(instancename, 0, instancepart1len+instancepart2len+1);
-							memcpy(instancename, szinstance, instancepart1len);
-							memcpy(instancename+instancepart1len, tmpinstance->instance, instancepart2len);
-							iptrinstance->instance = instancename;
-							iptrinstance->next = instance;
-							instance = iptrinstance;
-						}
-						break;
-					}
-				} 
-			}
-		}
-	}
-
-	return instance;
-}
 
 struct edifnetportref * ediflibrary_getnetportref(struct ediflibrary * library, char * libraryname, char * cellname, char * portref){
 	struct ediflibrary *iptrlibrary = NULL;
@@ -148,20 +114,20 @@ struct edifnetportref * ediflibrary_getnetportref(struct ediflibrary * library, 
 	return NULL;
 }
 
-struct edifnet * ediflibrary_getnet(struct ediflibrary * library, char * libraryname, char * cellname, char * instancename){
+struct edifnet * ediflibrary_getnet(struct ediflibrary * library, struct ediflibrary * referlibrary, char * libraryname, char * cellname, char * instancename){
 	struct ediflibrary *iptrlibrary = NULL;
 	struct edifnet * net = NULL, *iptrnet = NULL, *tmpnet = NULL;
 	struct edifcell * cell = NULL;
 	struct edifnetportref * tmpnetportref = NULL, *iptrnetportref = NULL, *portrefs = NULL;
-	for(iptrlibrary = library; iptrlibrary != NULL; iptrlibrary = iptrlibrary->next){
+	for(iptrlibrary = referlibrary; iptrlibrary != NULL; iptrlibrary = iptrlibrary->next){
 		if (strlen(iptrlibrary->library, libraryname) == strlen(libraryname) && 0 == strcmp(iptrlibrary->library, libraryname)){
-			cell = library->edifcell;
-			for(cell = library->edifcell; cell != NULL; cell = cell->next){
+			cell = referlibrary->edifcell;
+			for(cell = referlibrary->edifcell; cell != NULL; cell = cell->next){
 				if(cell != NULL && strlen(cell->cell) == strlen(cellname) && 0 == strcmp(cell->cell, cellname)){ 
 					if(cell->edifcontents != NULL && cell->edifcontents->edifnet != NULL){ 
 						for(tmpnet = cell->edifcontents->edifnet; tmpnet != NULL; tmpnet = tmpnet->next) { 
 							if(edifnet_isinteral(tmpnet)){ 
-								iptrnet = edifnet_copyrename(tmpnet, instancename);
+								iptrnet = edifnet_copyrename(library, tmpnet, instancename);
 								iptrnet->next = net;
 								net = iptrnet;
 							}
@@ -188,5 +154,16 @@ struct ediflibrary * ediflibrary_getlibrary(struct ediflibrary * library, char *
 		}
 	}
 
+	return NULL;
+}
+
+struct edifcell * ediflibrary_getcell(struct ediflibrary * library, char * cellname){
+	struct edifcell * cells = NULL, *iptrcell = NULL;
+	cells = ediflibrary_getcells(library); 
+	for(iptrcell = cells; iptrcell != NULL; iptrcell = iptrcell->next){
+		if(strlen(iptrcell->cell) == strlen(cellname) && strcmp(iptrcell->cell, cellname) == 0){
+			return iptrcell;
+		}
+	}
 	return NULL;
 }

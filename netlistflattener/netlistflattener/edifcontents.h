@@ -6,7 +6,7 @@ struct edifcontents;
 struct edifsubcircuit;
 struct ediflibrary;
 struct edifinstance;
-struct edifcontents * edifcontents_flatten(struct edifcontents * edifcontents, struct ediflibrary * library, struct edifsubcircuit * subcircuit);
+struct edifcontents * edifcontents_flatten(struct ediflibrary * library, struct edifcontents * edifcontents, struct ediflibrary * referlibrary, struct edifsubcircuit * subcircuit);
 void edifcontents_writer(struct edifcontents * edifcontents, FILE * out);
 struct edifinstance * edifcontents_getinstance(struct edifcontents * edifcontents);
 

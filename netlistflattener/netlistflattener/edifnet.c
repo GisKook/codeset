@@ -8,7 +8,7 @@
 #include "edifinstance.h"
 
 global char * glibrary;
-struct edifnetportref * edifnet_getportrefs(struct edifnet * net, char * instancename, char * portref);
+struct edifnetportref * edifnet_getportrefs(struct ediflibrary * library, struct edifnet * edifnet, char * instancename, char * portref);
 struct edifnetportref * edifnetportref_copy(struct edifnetportref * portref);
 int edifnet_getcount(struct edifnet * edifnet){
 	int count = 0;
@@ -40,7 +40,7 @@ struct edifnet * edifnet_copy(struct edifnet * edifnet){
 	return net;
 }
 
-struct edifnet * edifnet_copyrename(struct edifnet * edifnet, char * instance){
+struct edifnet * edifnet_copyrename(struct ediflibrary * library, struct edifnet * edifnet, char * instance){
 	struct edifnet * net = NULL;
 	struct edifnetportref * portref = NULL, *port = NULL, *newref = NULL;
 	char * sznewinstanceref = NULL;
@@ -49,8 +49,10 @@ struct edifnet * edifnet_copyrename(struct edifnet * edifnet, char * instance){
 	char * sznet = NULL;
 	int netpart1len = 0;
 	int netpart2len = 0;
+	char * realname = NULL;
 	instancerefpart1len = strlen(instance);
 	netpart1len = strlen(instance); 
+
 	if (edifnet != NULL){
 		net = (struct edifnet *)malloc(sizeof(struct edifnet));
 		memset(net, 0, sizeof(struct edifnet));
@@ -65,11 +67,18 @@ struct edifnet * edifnet_copyrename(struct edifnet * edifnet, char * instance){
 			memset(newref, 0, sizeof(struct edifnetportref));
 			newref->portref = strdup(port->portref); 
 			instancerefpart2len = strlen(port->instanceref);
-			sznewinstanceref = (char *)malloc(instancerefpart1len + instancerefpart1len + 1);
+			sznewinstanceref = (char *)malloc(instancerefpart1len + instancerefpart2len + 1);
 			memset(sznewinstanceref, 0, instancerefpart1len+instancerefpart2len+1);
 			memcpy(sznewinstanceref, instance, instancerefpart1len);
 			memcpy(sznewinstanceref+instancerefpart1len, port->instanceref, instancerefpart2len);
-			newref->instanceref = sznewinstanceref;
+			if(strlen(instance) != 0){
+				realname = edifinstance_getrealname(library, sznewinstanceref);
+			}else{
+				realname = strdup(sznewinstanceref);
+			}
+			
+			free(sznewinstanceref);
+			newref->instanceref = realname;
 			newref->next = net->edifnetportref;
 			net->edifnetportref = newref;
 		}
@@ -258,7 +267,7 @@ int edifnet_needflatten(struct edifcontents * edifcontents, struct edifnet * net
 	return 0;
 }
 
-struct edifnet * edifnet_getinternalnets(struct edifnet * edifnet, char * instancename){
+struct edifnet * edifnet_getinternalnets(struct ediflibrary * library, struct edifnet * edifnet, char * instancename){
 	struct edifnet * nets = NULL, * tmpnets= NULL, * iptrnets = NULL;
 	char * newnetname = NULL;
 	int newnamepart1len = 0;
@@ -267,7 +276,7 @@ struct edifnet * edifnet_getinternalnets(struct edifnet * edifnet, char * instan
 	if ( edifnet != NULL) { 
 		for (tmpnets = edifnet; tmpnets != NULL; tmpnets = tmpnets->next) {
 			if(edifnet_isinteral(tmpnets)){ 
-				iptrnets = edifnet_copyrename(tmpnets, instancename);
+				iptrnets = edifnet_copyrename(library, tmpnets, instancename);
 				iptrnets->next = nets;
 				newnamepart2len = strlen(tmpnets->net);
 				newnetname = (char *)malloc(sizeof(newnamepart1len + newnamepart2len + 1));
@@ -283,7 +292,16 @@ struct edifnet * edifnet_getinternalnets(struct edifnet * edifnet, char * instan
 	return nets;
 }
 
-struct edifnet * edifnet_flattensingle(struct edifnet * edifnet, struct edifcontents * edifcontents, struct ediflibrary * library, char ** instancenames){
+struct edifnet * edifnet_getnet(struct ediflibrary * referlibrary, char * libraryname, char * cellname){ 
+	struct ediflibrary * library = NULL;
+	struct edifcell * cell = NULL;
+	library = ediflibrary_getlibrary(referlibrary, libraryname);
+	cell = ediflibrary_getcell(library, cellname);
+
+	return cell->edifcontents->edifnet;
+}
+
+struct edifnet * edifnet_flattensingle(struct ediflibrary * library, struct edifnet * edifnet, struct edifcontents * edifcontents, struct ediflibrary * referlibrary, char ** instancenames){
 	struct edifnetportref * netportref = NULL, *iptrnetportref = NULL, *tmpnetportref = NULL;
 	struct edifinstance * instance = NULL;
 	struct edifnet * net = NULL, *iptrnet = NULL;
@@ -296,8 +314,8 @@ struct edifnet * edifnet_flattensingle(struct edifnet * edifnet, struct edifcont
 	for (tmpnetportref = edifnet->edifnetportref; tmpnetportref != NULL; tmpnetportref = tmpnetportref->next) {
 		if(edifinstance_needflatten(instance, tmpnetportref->instanceref)){ 
 			cellname = edifnet_getcellname(instance, tmpnetportref->instanceref);
-			iptrnet = ediflibrary_getnet(library, glibrary, cellname, "");
-			iptrnetportref = edifnet_getportrefs(iptrnet, tmpnetportref->instanceref, tmpnetportref->portref);
+			iptrnet = edifnet_getnet(referlibrary, glibrary, cellname);
+			iptrnetportref = edifnet_getportrefs(library, iptrnet, tmpnetportref->instanceref, tmpnetportref->portref);
 			iptrnetportref->next = netportref;
 			netportref = iptrnetportref;
 			edifinstance_addnames(instancenames, tmpnetportref->instanceref);
@@ -315,7 +333,7 @@ struct edifnet * edifnet_flattensingle(struct edifnet * edifnet, struct edifcont
 	return net;
 }
 
-struct edifnet * edifnet_getallinternalnets(struct edifcontents * edifcontents, struct ediflibrary * library, char ** instancenames){
+struct edifnet * edifnet_getallinternalnets(struct ediflibrary * library,  struct edifcontents * edifcontents, struct ediflibrary * referlibrary, char ** instancenames){
 	struct edifinstance * instance = NULL;
 	char * tmpinstance = NULL, * subcircuit = NULL;
 	int i = 0;
@@ -323,7 +341,7 @@ struct edifnet * edifnet_getallinternalnets(struct edifcontents * edifcontents, 
 	for(tmpinstance = instancenames[i]; tmpinstance!=NULL; i++,tmpinstance=instancenames[i] ){ 
 		instance = edifinstance_getinstance(edifcontents->edifinstance, tmpinstance);
 		subcircuit = edifinstance_getsubcircuitname(instance);
-		iptrnet = ediflibrary_getnet(library, glibrary, subcircuit, tmpinstance);
+		iptrnet = ediflibrary_getnet(library, referlibrary, glibrary, subcircuit, tmpinstance);
 	//	iptrnet = edifnet_getinternalnets(net, tmpinstance);
 		if(iptrnet){
 			iptrnet->next = net;
@@ -348,7 +366,7 @@ struct edifnet *edifnet_add(struct edifnet * edifnet, struct edifnet * net){
 	return edifnet;
 }
 
-struct edifnet * edifnet_flattenex(struct edifcontents * edifcontents, struct ediflibrary * library, struct edifsubcircuit * eidfsubcircuit){
+struct edifnet * edifnet_flattenex(struct ediflibrary * library, struct edifcontents * edifcontents, struct ediflibrary * referlibrary, struct edifsubcircuit * eidfsubcircuit){
 	struct edifnet * originalnet = NULL, * iptrnet = NULL, * net = NULL, * tmpnet = NULL;
 	char * instancenames[128];
 	char * netnames[128];
@@ -361,7 +379,7 @@ struct edifnet * edifnet_flattenex(struct edifcontents * edifcontents, struct ed
 	originalnet = edifcontents->edifnet;
 	for(tmpnet = originalnet; tmpnet != NULL; tmpnet = tmpnet->next){
 		if (edifnet_needflatten(edifcontents, tmpnet)) {
-			iptrnet = edifnet_flattensingle(tmpnet, edifcontents, library, instancenames);
+			iptrnet = edifnet_flattensingle(library, tmpnet, edifcontents, referlibrary, instancenames);
 			iptrnet->next = net;
 			net = iptrnet;
 		}else{ 
@@ -370,12 +388,11 @@ struct edifnet * edifnet_flattenex(struct edifcontents * edifcontents, struct ed
 			net = iptrnet;
 		}
 	}
-	iptrnet = edifnet_getallinternalnets(edifcontents, library, instancenames);
+	iptrnet = edifnet_getallinternalnets(library, edifcontents, referlibrary, instancenames);
 	if (iptrnet) {
 		iptrnet = edifnet_add(iptrnet, net);
 		net = iptrnet;
 	}
-	
 
 	return net;
 }
@@ -429,11 +446,12 @@ void edifnet_writer(struct edifnet * edifnet, FILE * out){
 	}
 }
 
-struct edifnetportref * edifnet_getportrefs(struct edifnet * net, char * instancename, char * portref){
+struct edifnetportref * edifnet_getportrefs(struct ediflibrary * library, struct edifnet * net, char * instancename, char * portref){
 	struct edifnetportref * netportref = NULL, *iptrnetportref = NULL, * tmpnetportref = NULL;
 	char * newinstanceref = NULL;
 	int instancerefpart1len = 0;
 	int instancerefpart2len = 0;
+	char * name = NULL;
 	instancerefpart1len = strlen(instancename);
 	if(net != NULL && net->edifnetportref != NULL){
 		for(tmpnetportref = net->edifnetportref; tmpnetportref != NULL; tmpnetportref = tmpnetportref->next){ 
@@ -446,7 +464,8 @@ struct edifnetportref * edifnet_getportrefs(struct edifnet * net, char * instanc
 				memset(newinstanceref, 0, instancerefpart1len + instancerefpart2len + 1);
 				memcpy(newinstanceref, instancename, instancerefpart1len);
 				memcpy(newinstanceref + instancerefpart1len, tmpnetportref->instanceref, instancerefpart2len);
-				iptrnetportref->instanceref = newinstanceref;
+				name = edifinstance_getrealname(library, newinstanceref);
+				iptrnetportref->instanceref = name;
 				iptrnetportref->next = netportref;
 				netportref = iptrnetportref;
 			}

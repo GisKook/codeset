@@ -7,6 +7,7 @@
 
 global char * glibrary;
 
+struct edifinstance * edifinstance_getinternalintance(struct ediflibrary * library, struct ediflibrary * referlibrary, char * libraryname, char * cellname, char * szinstance);
 int edifinstance_getcount(struct edifinstance * edifinstance){
 	int count = 0;
 	struct edifinstance * instance = NULL;
@@ -45,12 +46,105 @@ struct edifinstance * edifinstance_addtail(struct edifinstance * instance, struc
 	return instance;
 }
 
-struct edifinstance * edifinstance_flatten(struct edifinstance * edifinstance, struct ediflibrary * library, struct edifsubcircuit * subcircuit){
+int edifinstance_hasused(struct ediflibrary * library, char * instancename){
+	struct edifinstancename ** names = NULL;
+	int namecount = 0;
+	int i;
+	names = library->usedinstance;
+	namecount = library->instancecount;
+	for(i = 0; i < namecount; ++i){
+		if(strlen(names[i]->instancename) == strlen(instancename) && 0 == strcmp(names[i]->instancename, instancename)){
+			return 1;
+		}
+	}
+
+	return 0;
+}
+
+void edifinstance_addusedinstance(struct ediflibrary * library, char * instancename, char * originalname, char * uidname){
+	struct edifinstancename * name = NULL;
+	struct edifinstancename ** names = NULL;
+	int i;
+	name = (struct edifinstancename *)malloc(sizeof(struct edifinstancename));
+	memset(name, 0, sizeof(struct edifinstancename));
+	name->instancename = strdup(instancename);
+	name->originalname = strdup(originalname);
+	name->uidname = strdup(uidname);
+	if (library->instancecount >= library->instancecapacity) {
+		names = (struct edifinstancename **)malloc(sizeof(struct edifinstancename *) * library->instancecapacity * 2);
+		memset(names, 0, sizeof(struct edifinstancename *) * library->instancecapacity * 2);
+		library->instancecapacity = library->instancecapacity * 2;
+		for(i = 0; i < library->instancecount; ++i){
+			names[i] = (struct edifinstancename *)malloc(sizeof(struct edifinstancename));
+			memset(names[i], 0, sizeof(struct edifinstancename));
+			names[i]->instancename = strdup(library->usedinstance[i]->instancename);
+			names[i]->originalname = strdup(library->usedinstance[i]->originalname);
+			names[i]->uidname = strdup(library->usedinstance[i]->uidname);
+			free(library->usedinstance[i]->instancename);
+			free(library->usedinstance[i]->originalname);
+			free(library->usedinstance[i]->uidname);
+			free(library->usedinstance[i]);
+		}
+		library->usedinstance[library->instancecount] = name;
+		library->instancecount++;
+	}else{
+		library->usedinstance[library->instancecount] = name;
+		library->instancecount++;
+	}
+}
+
+char * edifinstance_rename(struct ediflibrary * library, char * instancename){
+	char * newname = NULL, iptrname = NULL;
+	char c = 0;
+	int i = 0, num = 0;
+	char tmpname[16] = {0};
+	newname = strdup(instancename); 
+	while(edifinstance_hasused(library, newname) == 1){
+		i = strlen(newname)-1;
+		for(;i != 0; i--){
+			if(newname[i] == '_'){
+				if(gkisdigit(newname + i + 1)){
+					num = atoi(newname + i + 1);
+					num ++;
+					sprintf(tmpname, "%d", num);
+					iptrname = (char *)malloc(i+strlen(num)+2);
+					memset(iptrname, 0, i + strlen(num) + 2);
+					memcpy(iptrname, newname, i + 1);
+					memcpy(iptrname + i + 1, tmpname, strlen(tmpname));
+					free(newname);
+					newname = iptrname;
+					break;
+				}else{
+					free(newname);
+					newname = (char *)malloc(strlen(instancename)+3);
+					memset(newname, 0, strlen(instancename) + 3);
+					memcpy(newname, instancename, strlen(instancename));
+					newname[strlen(instancename)] = '_';
+					newname[strlen(instancename) + 1] = '1';
+				}
+			}
+		}
+		if(i == 0){
+			free(newname);
+			newname = (char *)malloc(strlen(instancename)+3);
+			memset(newname, 0, strlen(instancename) + 3);
+			memcpy(newname, instancename, strlen(instancename));
+			newname[strlen(instancename)] = '_';
+			newname[strlen(instancename) + 1] = '1';
+		}
+	}
+
+	return newname;
+}
+
+struct edifinstance * edifinstance_flatten(struct ediflibrary * library, struct edifinstance * edifinstance, struct ediflibrary * referlibrary, struct edifsubcircuit * subcircuit){
 	char * szinstance = NULL;
 	char * cellref = NULL;
 	char * viewref = NULL;
 	char * libraryref = NULL; 
 	struct edifinstance * tmpinstances = NULL, * iptrinstance = NULL, * flatteninstance = NULL, * instance = NULL;
+
+	char * newname = NULL;
 
 	if(edifinstance == NULL || subcircuit == NULL){
 		fprintf(stderr, "%s error.\n", __FUNCTION__);
@@ -65,15 +159,22 @@ struct edifinstance * edifinstance_flatten(struct edifinstance * edifinstance, s
 			libraryref = glibrary;
 		}
 		if (edifsubcircuit_search(subcircuit, libraryref, cellref)) {
-			flatteninstance = ediflibrary_getintance(library, libraryref, cellref, szinstance);
+			flatteninstance = edifinstance_getinternalintance(library, referlibrary, libraryref, cellref, szinstance);
 			iptrinstance = edifinstance_addtail(flatteninstance, instance);
 			instance = iptrinstance;
 		}else{
 			iptrinstance = (struct edifinstance *)malloc(sizeof(struct edifinstance));
 			memset(iptrinstance, 0, sizeof(struct edifinstance)); 
+			if(edifinstance_hasused(library, szinstance) == 1){ 
+				newname = edifinstance_rename(library, szinstance);
+				edifinstance_addusedinstance(library, newname, szinstance, newname);
+			}else{
+				newname = strdup(szinstance);
+				edifinstance_addusedinstance(library, newname, szinstance, newname);
+			}
 			iptrinstance->libraryref = strdup(libraryref);
 			iptrinstance->cellref = strdup(cellref);
-			iptrinstance->instance = strdup(szinstance);
+			iptrinstance->instance = newname;
 			iptrinstance->viewref = strdup(viewref);
 			iptrinstance->next = instance;
 			instance = iptrinstance;
@@ -173,3 +274,63 @@ void edifinstance_addnames(char ** instancenames, char * instancename){
 //	subcellcount = edifcell_getsubcellcount(library->edifcell, ""); 
 //	for(i = 0; i < subcellcount; ++i){
 //}
+struct edifinstance * edifinstance_getinternalintance(struct ediflibrary * library, struct ediflibrary * referlibrary, char * libraryname, char * cellname, char * szinstance){
+	struct ediflibrary *iptrlibrary = NULL;
+	struct edifinstance * instance = NULL, *iptrinstance = NULL, *tmpinstance = NULL;
+	struct edifcell * cell = NULL;
+	char * instancename = NULL;
+	int instancepart1len, instancepart2len;
+	char * name = NULL;
+	for(iptrlibrary = referlibrary; iptrlibrary != NULL; iptrlibrary = iptrlibrary->next){
+		if (strlen(iptrlibrary->library, libraryname) == strlen(libraryname) && 0 == strcmp(iptrlibrary->library, libraryname)){
+			cell = referlibrary->edifcell;
+			for(cell = referlibrary->edifcell; cell != NULL; cell = cell->next){
+				if(cell != NULL && strlen(cell->cell) == strlen(cellname) && 0 == strcmp(cell->cell, cellname)){ 
+					if(cell->edifcontents != NULL && cell->edifcontents->edifinstance != NULL){ 
+						for(tmpinstance = cell->edifcontents->edifinstance; tmpinstance != NULL; tmpinstance = tmpinstance->next) {
+							iptrinstance = (struct edifinstance *)malloc(sizeof(struct edifinstance));
+							memset(iptrinstance, 0, sizeof(struct edifinstance)); 
+							iptrinstance->libraryref = strdup(tmpinstance->libraryref);
+							iptrinstance->cellref = strdup(tmpinstance->cellref);
+							iptrinstance->viewref = strdup(tmpinstance->viewref);
+							instancepart1len = strlen(szinstance);
+							instancepart2len = strlen(tmpinstance->instance);
+							instancename = (char *)malloc(instancepart1len+instancepart2len+1);
+							memset(instancename, 0, instancepart1len+instancepart2len+1);
+							memcpy(instancename, szinstance, instancepart1len);
+							memcpy(instancename+instancepart1len, tmpinstance->instance, instancepart2len); 
+							if(edifinstance_hasused(library, tmpinstance->instance)){
+								name = edifinstance_rename(library, tmpinstance->instance);
+								edifinstance_addusedinstance(library, name, tmpinstance->instance, instancename);
+							}else{
+								name = strdup(tmpinstance->instance);
+								edifinstance_addusedinstance(library, name, tmpinstance->instance, instancename);
+							}
+							iptrinstance->instance = name;
+							iptrinstance->next = instance;
+							instance = iptrinstance;
+						}
+						break;
+					}
+				} 
+			}
+		}
+	}
+
+	return instance;
+}
+
+char * edifinstance_getrealname(struct ediflibrary * library, char * uidname){
+	int i;
+	char * realname = NULL;
+	for(i = 0; i < library->instancecount; ++i){
+		if(library->usedinstance[i]->uidname != NULL){
+			if(strlen(library->usedinstance[i]->uidname) == strlen(uidname) && strcmp(library->usedinstance[i]->uidname, uidname) == 0){
+				realname = strdup(library->usedinstance[i]->instancename);
+				return realname;
+			}
+		}
+	}
+
+	return NULL;
+}

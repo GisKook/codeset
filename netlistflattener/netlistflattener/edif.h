@@ -47,10 +47,21 @@ struct edifcell{
 	struct edifcell * next;
 };
 
+struct edifinstancename{
+	char * instancename;
+	char * originalname;
+	char * uidname;
+};
+
 struct ediflibrary{
 	char * library;
 	struct edifcell * edifcell;
 	struct ediflibrary * next;
+	struct edifinstancename ** usedinstance;
+	int instancecount;
+	int instancecapacity;
 };
+
+#define INSTANCECOUNT 256
 
 #endif
