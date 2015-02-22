@@ -8,7 +8,7 @@
 #include "edifcontents.h"
 #include "ediflibrary.h"
 
-struct edifcell * edifcell_flatten(struct edifcell * cell, struct ediflibrary * library, struct edifsubcircuit * edifsubcircuit){
+struct edifcell * edifcell_flatten(struct ediflibrary * library, struct edifcell * cell, struct ediflibrary * referlibrary, struct edifsubcircuit * edifsubcircuit){
 	struct edifcell * edifcell = NULL, *iptredifcell = NULL, *tmpcell = NULL;
 	if(cell == NULL || edifsubcircuit == NULL){ 
 		fprintf(stdout, "%s error.\n", __FUNCTION__);
@@ -22,7 +22,7 @@ struct edifcell * edifcell_flatten(struct edifcell * cell, struct ediflibrary * 
 			iptredifcell->celltype = strdup(tmpcell->celltype);
 			iptredifcell->edifinterfaceport = edifinterface_copy(tmpcell->edifinterfaceport);
 			iptredifcell->next = edifcell;
-			iptredifcell->edifcontents = edifcontents_flatten(tmpcell->edifcontents, library, edifsubcircuit);
+			iptredifcell->edifcontents = edifcontents_flatten(library, tmpcell->edifcontents, referlibrary, edifsubcircuit);
 			edifcell = iptredifcell;
 		}
 	}

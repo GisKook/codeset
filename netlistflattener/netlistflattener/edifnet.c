@@ -446,15 +446,30 @@ void edifnet_writer(struct edifnet * edifnet, FILE * out){
 	}
 }
 
+struct edifnet * edifnet_getportnet(struct edifnet * net, char * portname){
+	struct edifnet * iptrnet = NULL;
+	struct edifnetportref * iptrportref = NULL;
+	for(iptrnet = net; iptrnet != NULL; iptrnet = iptrnet->next){
+		for(iptrportref = iptrnet->edifnetportref; iptrportref != NULL; iptrportref = iptrportref->next){
+			if (strlen(iptrportref->portref)  == strlen(portname) && strcmp(iptrportref->portref, portname) == 0){
+				return iptrnet;
+			}
+		}
+	}
+	return NULL;
+}
+
 struct edifnetportref * edifnet_getportrefs(struct ediflibrary * library, struct edifnet * net, char * instancename, char * portref){
 	struct edifnetportref * netportref = NULL, *iptrnetportref = NULL, * tmpnetportref = NULL;
 	char * newinstanceref = NULL;
 	int instancerefpart1len = 0;
 	int instancerefpart2len = 0;
 	char * name = NULL;
+	struct edifnet * iptrnet = NULL;
 	instancerefpart1len = strlen(instancename);
-	if(net != NULL && net->edifnetportref != NULL){
-		for(tmpnetportref = net->edifnetportref; tmpnetportref != NULL; tmpnetportref = tmpnetportref->next){ 
+	iptrnet = edifnet_getportnet(net, portref);
+	if(iptrnet != NULL && iptrnet->edifnetportref != NULL){
+		for(tmpnetportref = iptrnet->edifnetportref; tmpnetportref != NULL; tmpnetportref = tmpnetportref->next){
 			if(tmpnetportref->instanceref != NULL){
 				iptrnetportref = (struct edifnetportref *)malloc(sizeof(struct edifnetportref));
 				memset(iptrnetportref, 0, sizeof(struct edifnetportref));
@@ -465,6 +480,7 @@ struct edifnetportref * edifnet_getportrefs(struct ediflibrary * library, struct
 				memcpy(newinstanceref, instancename, instancerefpart1len);
 				memcpy(newinstanceref + instancerefpart1len, tmpnetportref->instanceref, instancerefpart2len);
 				name = edifinstance_getrealname(library, newinstanceref);
+				free(newinstanceref);
 				iptrnetportref->instanceref = name;
 				iptrnetportref->next = netportref;
 				netportref = iptrnetportref;
