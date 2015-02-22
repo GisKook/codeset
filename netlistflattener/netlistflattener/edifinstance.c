@@ -34,6 +34,21 @@ struct edifinstance * edifinstance_copy(struct edifinstance * edifinstance){
 	return instance;
 }
 
+struct edifinstance * edifinstance_copysingle(struct edifinstance * edifinstance){
+	struct edifinstance * instance = NULL;
+	if(edifinstance == NULL){
+		return NULL;
+	}
+	instance = (struct edifinstance *)malloc(sizeof(struct edifinstance));
+	memset(instance, 0, sizeof(struct edifinstance));
+	instance->instance = strdup(edifinstance->instance);
+	instance->cellref = strdup(edifinstance->cellref);
+	instance->libraryref = strdup(edifinstance->libraryref);
+	instance->viewref = strdup(edifinstance->viewref);
+
+	return instance; 
+}
+
 struct edifinstance * edifinstance_addtail(struct edifinstance * instance, struct edifinstance * tail){
 	struct edifinstance * tmpinstance = NULL, *preinstance = NULL;
 	for (tmpinstance = instance; tmpinstance != NULL; preinstance = tmpinstance, tmpinstance = tmpinstance->next);
@@ -333,4 +348,52 @@ char * edifinstance_getrealname(struct ediflibrary * library, char * uidname){
 	}
 
 	return NULL;
+}
+
+int edifinstance_isflat(struct edifinstance * edifinstance, struct edifsubcircuit * edifsubcircuit){
+	struct edifinstance * tmpinstance = NULL, * iptrinstance = NULL;
+	if(edifinstance == NULL || edifsubcircuit == NULL){
+		return 1;
+	}
+	for(tmpinstance = edifinstance; tmpinstance != NULL; tmpinstance = tmpinstance->next){
+		if(tmpinstance->libraryref == NULL){
+			if(edifsubcircuit_search(edifsubcircuit, glibrary, tmpinstance->cellref)){
+				return 0;
+			}
+		}
+	}
+
+	return 1;
+}
+
+struct edifinstance * edifinstance_getflatinstance(struct edifinstance * edifinstance){
+	struct edifinstance * tmpinstance = NULL, *instance = NULL, *iptrinstance = NULL;
+	if(edifinstance == NULL){
+		return NULL;
+	}
+	for(tmpinstance = edifinstance; tmpinstance != NULL; tmpinstance = tmpinstance->next){ 
+		if(tmpinstance->libraryref != NULL){
+			iptrinstance = edifinstance_copysingle(tmpinstance);
+			iptrinstance->next = instance;
+			instance = iptrinstance;
+		}
+	}
+
+	return instance;
+}
+
+struct edifinstance * edifinstance_getfoldinstance(struct edifinstance * edifinstance){
+	struct edifinstance * tmpinstance = NULL, *instance = NULL, *iptrinstance = NULL;
+	if(edifinstance == NULL){
+		return NULL;
+	}
+	for(tmpinstance = edifinstance; tmpinstance != NULL; tmpinstance = tmpinstance->next){ 
+		if(tmpinstance->libraryref == NULL){
+			iptrinstance = edifinstance_copysingle(tmpinstance);
+			iptrinstance->next = instance;
+			instance = iptrinstance;
+		}
+	}
+
+	return instance;
 }

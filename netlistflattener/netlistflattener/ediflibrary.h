@@ -12,6 +12,7 @@ struct edifnet * ediflibrary_getnet(struct ediflibrary * library, struct ediflib
 void ediflibrary_writer(struct ediflibrary * ediflibrary, FILE * out);
 struct ediflibrary * ediflibrary_getlibrary(struct ediflibrary * library, char * libraryname);
 struct edifcell * ediflibrary_getcell(struct ediflibrary * library, char * cellname);
+int ediflibrary_isflat(struct ediflibrary * library);
 
 
 #endif

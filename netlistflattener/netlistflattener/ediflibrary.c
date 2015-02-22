@@ -7,6 +7,7 @@
 #include "edifinstance.h"
 #include "edifnet.h"
 #include "edifwriter.h"
+#include "edifcontents.h"
 
 global char * glibrary = NULL;
 
@@ -166,4 +167,28 @@ struct edifcell * ediflibrary_getcell(struct ediflibrary * library, char * celln
 		}
 	}
 	return NULL;
+}
+
+int ediflibrary_isflat(struct ediflibrary * library){
+	struct edifcell * edifcell = NULL, * lowercell = NULL;
+	struct edifinstance * edifinstance = NULL, *tmpinstance = NULL, *iptrinstance = NULL;
+	char * cellref = NULL;
+	if (library == NULL || library->edifcell == NULL){
+		return 1;
+	}
+	edifcell = ediflibrary_getcells(library);
+	if(edifcell && edifcell->edifcontents){
+		edifinstance = edifcontents_getinstance(edifcell->edifcontents);
+	}
+	for(tmpinstance = edifinstance; tmpinstance != NULL; tmpinstance = tmpinstance->next){
+		if(tmpinstance->libraryref == NULL){
+			cellref = tmpinstance->cellref; 
+			lowercell = edifcell_getcell(edifcell, cellref);
+			if(lowercell != NULL){
+				return 0;
+			}
+		}
+	}
+
+	return 1;
 }

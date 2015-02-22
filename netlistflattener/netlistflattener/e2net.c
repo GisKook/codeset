@@ -25,7 +25,7 @@ global float scale;
 
 main(int argc, char *argv[])
 {
-  char * version      = "0.92";
+  char * version      = "0.93";
   char * progname;
   // bubble sort cons by ref
   struct con *start, *a, *b, *c;
