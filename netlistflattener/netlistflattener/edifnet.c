@@ -316,9 +316,14 @@ struct edifnet * edifnet_flattensingle(struct ediflibrary * library, struct edif
 			cellname = edifnet_getcellname(instance, tmpnetportref->instanceref);
 			iptrnet = edifnet_getnet(referlibrary, glibrary, cellname);
 			iptrnetportref = edifnet_getportrefs(library, iptrnet, tmpnetportref->instanceref, tmpnetportref->portref);
-			iptrnetportref->next = netportref;
-			netportref = iptrnetportref;
-			edifinstance_addnames(instancenames, tmpnetportref->instanceref);
+			if(iptrnetportref != NULL){
+				iptrnetportref->next = netportref;
+				netportref = iptrnetportref;
+				edifinstance_addnames(instancenames, tmpnetportref->instanceref);
+			}else{
+				fprintf(stdout, "can not find instance %s's port %s\n", tmpnetportref->instanceref, tmpnetportref->portref);
+			}
+
 		}else{
 			iptrnetportref = edifnetportref_copy(tmpnetportref); 
 			iptrnetportref->next = netportref;
