@@ -32,9 +32,9 @@ void edifcontents_destroy(struct edifcontents * edifcontents){
 
 struct edifcontents * edifcontents_flatten(struct ediflibrary * library, struct edifcontents * edifcontents, struct ediflibrary * referlibrary, struct edifsubcircuit * subcircuit){
 	struct edifcontents * con = NULL;
-	int subcircuitcount = 0, i = 0;
+	int i = 0;
 	struct edifinstance * instance = NULL, * iptrinstance = NULL, *iptrflatinstance = NULL, *iptrfoldinstance = NULL;
-	struct edifnet * net = NULL, *iptrnet = NULL;
+	struct edifnet * net = NULL, *iptrnet = NULL, *iptrflatnet = NULL, *iptrfoldnet = NULL;
 	struct edifcontents * contents = NULL, * iptrcontents = NULL;
 	if(edifcontents == NULL || referlibrary == NULL || subcircuit == NULL){
 		fprintf(stderr, "%s error.\n", __FUNCTION__);
@@ -42,11 +42,8 @@ struct edifcontents * edifcontents_flatten(struct ediflibrary * library, struct 
 	con = (struct edifcontents *)malloc(sizeof(struct edifcontents));
 	memset(con, 0, sizeof(struct edifcontents));
 
-	//subcircuitcount = edifsubcircuit_getcount(subcircuit);
-	//iptrinstance = edifinstance_copy(edifcontents->edifinstance);
 	iptrflatinstance = edifinstance_getflatinstance(edifcontents->edifinstance);
 	iptrfoldinstance = edifinstance_getfoldinstance(edifcontents->edifinstance);
-	//free(iptrinstance);
 	while(iptrfoldinstance != NULL){
 		instance = edifinstance_flatten(library, iptrfoldinstance, referlibrary, subcircuit);
 		iptrinstance = edifinstance_getflatinstance(instance);
@@ -57,17 +54,8 @@ struct edifcontents * edifcontents_flatten(struct ediflibrary * library, struct 
 
 	con->edifinstance = iptrflatinstance;
 	
-//	contents = edifcontents_copy(edifcontents);
-//	for(i = 0; i < subcircuitcount; ++i){
-//		net = edifnet_flattenex(contents, referlibrary, subcircuit); 
-//		edifnet_destroy(contents->edifnet);
-//		contents->edifnet = net;
-//	}
-//	iptrnet = edifnet_copynets(net);
-//	edifcontents_destroy(contents);
-//	con->edifnet = iptrnet;
-
 	con->edifnet = edifnet_flattenex(library, edifcontents, referlibrary, subcircuit);
+
 	return con;
 }
 
