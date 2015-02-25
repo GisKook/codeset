@@ -54,7 +54,7 @@ struct edifcontents * edifcontents_flatten(struct ediflibrary * library, struct 
 
 	con->edifinstance = iptrflatinstance;
 	
-	con->edifnet = edifnet_flattenex(library, edifcontents, referlibrary, subcircuit);
+	con->edifnet = edifnet_flattenrecursive(edifcontents, referlibrary, subcircuit);
 
 	return con;
 }

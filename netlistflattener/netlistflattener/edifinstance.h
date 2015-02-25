@@ -20,5 +20,6 @@ struct edifinstance * edifinstance_getflatinstance(struct edifinstance * edifins
 struct edifinstance * edifinstance_getfoldinstance(struct edifinstance * edifinstance);
 struct edifinstance * edifinstance_addtail(struct edifinstance * instance, struct edifinstance * tail);
 struct edifinstance * edifinstance_copysingle(struct edifinstance * edifinstance);
+struct edifinstance * edifinstance_flattenonce(struct ediflibrary * library, struct edifinstance * edifinstance, struct ediflibrary * referlibrary, struct edifsubcircuit * subcircuit);
 
 #endif

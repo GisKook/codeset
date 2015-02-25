@@ -192,3 +192,16 @@ int ediflibrary_isflat(struct ediflibrary * library){
 
 	return 1;
 }
+
+struct ediflibrary * ediflibrary_create(struct ediflibrary * ediflibrary){
+	struct ediflibrary * library;
+	library = (struct ediflibrary *)malloc(sizeof(struct ediflibrary));
+	memset(library, 0, sizeof(struct ediflibrary));
+	library->usedinstance = (struct edifinstancename **)malloc(sizeof(struct edifinstancename *)*INSTANCECOUNT);
+	library->instancecapacity = INSTANCECOUNT;
+	memset(library->usedinstance, 0, sizeof(struct edifinstancename *)*INSTANCECOUNT);
+	library->library = strdup(ediflibrary->library);
+
+	return library;
+
+}

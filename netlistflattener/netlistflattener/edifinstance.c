@@ -397,3 +397,15 @@ struct edifinstance * edifinstance_getfoldinstance(struct edifinstance * edifins
 
 	return instance;
 }
+
+struct edifinstance * edifinstance_flattenonce(struct ediflibrary * library, struct edifinstance * edifinstance, struct ediflibrary * referlibrary, struct edifsubcircuit * subcircuit){
+
+	struct edifinstance * iptrflatinstance = NULL, * iptrfoldinstance = NULL, *instance = NULL;
+	iptrflatinstance = edifinstance_getflatinstance(edifinstance);
+	iptrfoldinstance = edifinstance_getfoldinstance(edifinstance);
+	instance = edifinstance_flatten(library, iptrfoldinstance, referlibrary, subcircuit);
+	iptrflatinstance = edifinstance_addtail(iptrflatinstance, instance);
+	edifinstance_destroy(iptrfoldinstance);
+
+	return iptrflatinstance;
+}

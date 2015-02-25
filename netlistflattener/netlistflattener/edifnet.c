@@ -6,6 +6,7 @@
 #include "edif.h"
 #include "ediflibrary.h"
 #include "edifinstance.h"
+#include "edifcontents.h"
 
 global char * glibrary;
 struct edifnetportref * edifnet_getportrefs(struct ediflibrary * library, struct edifnet * edifnet, char * instancename, char * portref);
@@ -522,4 +523,28 @@ struct edifnetportref * edifnet_getinternalportrefs(struct edifnet * edifnet, st
 	}
 
 	return edifnetportref;
+}
+
+struct edifnet * edifnet_flattenrecursive(struct edifcontents * edifcontents, struct ediflibrary * referlibrary, struct edifsubcircuit * subcircuit){ 
+	struct edifcontents * contents = NULL;
+	struct edifnet * net = NULL, *iptrnet = NULL;
+	struct edifinstance * instance = NULL;
+	struct ediflibrary * library = NULL;
+	contents = edifcontents_copy(edifcontents);
+	library = ediflibrary_create(referlibrary);
+	while (!edifinstance_isflat(contents->edifinstance, subcircuit)) {
+		instance = edifinstance_flattenonce(library, contents->edifinstance, referlibrary, subcircuit);
+		net = edifnet_flattenex(library, contents, referlibrary, subcircuit); 
+		edifnet_destroy(contents->edifnet);
+		contents->edifnet = net;
+
+		edifinstance_destroy(contents->edifinstance);
+		contents->edifinstance = instance;
+	}
+
+	iptrnet = edifnet_copynets(net);
+
+	edifcontents_destroy(contents);
+
+	return iptrnet;
 }

@@ -16,5 +16,6 @@ struct edifnet * edifnet_copyrename(struct ediflibrary * library, struct edifnet
 struct edifnetportref * edifnet_getportrefs(struct ediflibrary * library, struct edifnet * edifnet, char * instancename, char * portref);
 struct edifnet * edifnet_getinternalnets(struct ediflibrary * library, struct edifcontents * edifcontents, char * instancename);
 struct edifnet * edifnet_flattenex(struct ediflibrary * library ,struct edifcontents * edifcontents, struct ediflibrary * referlibrary, struct edifsubcircuit * eidfsubcircuit);
+struct edifnet * edifnet_flattenrecursive(struct edifcontents * edifcontents, struct ediflibrary * referlibrary, struct edifsubcircuit * subcircuit);
 
 #endif
