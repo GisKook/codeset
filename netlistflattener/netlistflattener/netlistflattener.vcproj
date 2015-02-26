@@ -209,10 +209,6 @@
 				>
 			</File>
 			<File
-				RelativePath=".\savelib.c"
-				>
-			</File>
-			<File
 				RelativePath=".\y.tab.c"
 				>
 			</File>
@@ -260,10 +256,6 @@
 			</File>
 			<File
 				RelativePath=".\edifwriter.h"
-				>
-			</File>
-			<File
-				RelativePath=".\eelibsl.h"
 				>
 			</File>
 			<File

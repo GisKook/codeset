@@ -23,7 +23,7 @@
 #include "ed.h"
 #include "eelibsl.h"
 #include "edif.h"
-#define M_PI 3.1415926
+////#define M_PI 3.1415926
 #define SIZE_PIN_TEXT 60
 #define EDIFPARSENON 0
 #define EDIFPARSING 1
@@ -34,11 +34,11 @@ static FILE *Error = NULL;              /* error stream */
 static int   LineNumber;                /* current input line number */
 static FILE *Output = NULL;
 
-global struct inst *insts, *iptr; 
-global struct con  *cons,  *cptr;
-global int    pass2;
-global float  scale;
-global char   fName[SCH_NAME_LEN + 1];
+////global struct inst *insts, *iptr; 
+////global struct con  *cons,  *cptr;
+////global float  scale;
+////global char   fName[SCH_NAME_LEN + 1];
+char szversion[] = "0.95";
 //global struct edifinstance *edifinstance = NULL, *iptredifinstance = NULL;
 
 // interfaces
@@ -67,8 +67,8 @@ char * libraryname = NULL;
 
 
 int TempR, TempMat[2][2];
-LibraryStruct		 *LSptr;
-LibraryEntryStruct	 *LEptr;
+////LibraryStruct		 *LSptr;
+////LibraryEntryStruct	 *LEptr;
 LibraryDrawEntryStruct   *LDptr, *New=NULL, *INew;
 int  		 num, *Poly, TextSize=SIZE_PIN_TEXT, unit=1;
 char 		*bad="BBBB", *s, refdesg[30], str[40];
@@ -529,30 +529,30 @@ _Apply :	Cycle
        ;
 
 Arc :		ARC PointValue PointValue PointValue PopC
-		{
-		if(bug>3)fprintf(Error,"New ARC LibraryDrawEntryStruct\n");
-		    New = (LibraryDrawEntryStruct *) Malloc(sizeof(LibraryDrawEntryStruct));
-            New->nxt = LibEntry->Drawings;
-		    LibEntry->Drawings = New; 
-			New->Unit = unit; 
-			New->Convert = convert;
-            New->DrawType = ARC_DRAW_TYPE; 
-		
-		    a=$2->x; b= $2->y; c=$3->x; d= $3->y; e=$4->x; f= $4->y;
-		    h = ((a*a+b*b)*(f-d)+(c*c+d*d)*(b-f)+(e*e+f*f)*(d-b))/(a*(f-d)+c*(b-f)+e*(d-b))/2;
-		    k = ((a*a+b*b)*(e-c)+(c*c+d*d)*(a-e)+(e*e+f*f)*(c-a))/(b*(e-c)+d*(a-e)+f*(c-a))/2;
-            New->U.Arc.x  = (int)  h ;
-            New->U.Arc.y  = (int)  k ;
-		    New->U.Arc.r = sqrt((a-h)*(a-h) + (b-k)*(b-k));
-		    if(bug>3)fprintf(Error," a=%06f b=%06f c=%06f d=%06f e=%06f f=%06f : h=%06f k=%06f x %d y %d r %d\n", 
-				a,b,c,d,e,f,h,k, New->U.Arc.x, New->U.Arc.y, New->U.Arc.r);
-
-		    New->U.Arc.t1 = (int)(atan2(b-k, a-h) * 1800 /M_PI);
-            while( New->U.Arc.t1 < 0 ) New->U.Arc.t1 += 3600;
-		    New->U.Arc.t2 = (int)(atan2(f-k, e-h) * 1800 /M_PI);
-            while( New->U.Arc.t2 < 0 ) New->U.Arc.t2 += 3600;
-            New->U.Arc.width = 0;
-		}
+////		{
+////		if(bug>3)fprintf(Error,"New ARC LibraryDrawEntryStruct\n");
+////		    New = (LibraryDrawEntryStruct *) Malloc(sizeof(LibraryDrawEntryStruct));
+////            New->nxt = LibEntry->Drawings;
+////		    LibEntry->Drawings = New; 
+////			New->Unit = unit; 
+////			New->Convert = convert;
+////            New->DrawType = ARC_DRAW_TYPE; 
+////		
+////		    a=$2->x; b= $2->y; c=$3->x; d= $3->y; e=$4->x; f= $4->y;
+////		    h = ((a*a+b*b)*(f-d)+(c*c+d*d)*(b-f)+(e*e+f*f)*(d-b))/(a*(f-d)+c*(b-f)+e*(d-b))/2;
+////		    k = ((a*a+b*b)*(e-c)+(c*c+d*d)*(a-e)+(e*e+f*f)*(c-a))/(b*(e-c)+d*(a-e)+f*(c-a))/2;
+////            New->U.Arc.x  = (int)  h ;
+////            New->U.Arc.y  = (int)  k ;
+////		    New->U.Arc.r = sqrt((a-h)*(a-h) + (b-k)*(b-k));
+////		    if(bug>3)fprintf(Error," a=%06f b=%06f c=%06f d=%06f e=%06f f=%06f : h=%06f k=%06f x %d y %d r %d\n", 
+////				a,b,c,d,e,f,h,k, New->U.Arc.x, New->U.Arc.y, New->U.Arc.r);
+////
+////		    New->U.Arc.t1 = (int)(atan2(b-k, a-h) * 1800 /M_PI);
+////            while( New->U.Arc.t1 < 0 ) New->U.Arc.t1 += 3600;
+////		    New->U.Arc.t2 = (int)(atan2(f-k, e-h) * 1800 /M_PI);
+////            while( New->U.Arc.t2 < 0 ) New->U.Arc.t2 += 3600;
+////            New->U.Arc.width = 0;
+////		}
     ;
 
 Array :		ARRAY NameDef Int _Array PopC
@@ -751,12 +751,12 @@ CellNameRef :	NameRef
 CellRef :	CELLREF CellNameRef _CellRef PopC
 		{$$=$2; 
 		edifinstancecellref = $2->s;
-		 cellRef = $2->s;
-		 strncpy(fName,        $2->s, SCH_NAME_LEN);
-		 if(bug>1            )fprintf(Error,"%05d CELLREF: %s ", LineNumber, $2->s); 
-		 if(bug>1            )fprintf(Error,"\n");
-
-		 inst_pin_name_vis=1, inst_pin_num_vis=1;
+////		 cellRef = $2->s;
+////		 strncpy(fName,        $2->s, SCH_NAME_LEN);
+////		 if(bug>1            )fprintf(Error,"%05d CELLREF: %s ", LineNumber, $2->s); 
+////		 if(bug>1            )fprintf(Error,"\n");
+////
+////		 inst_pin_name_vis=1, inst_pin_num_vis=1;
 		}
 	    ;
 
@@ -986,20 +986,20 @@ DesignNameDef :	NameDef
 	      ;
 
 Design 	    :	DESIGN DesignNameDef _Design PopC
-		{$$=$2;
-		 if(bug>0 && $3 != NULL)fprintf(Error,"Design: '%s' '%s'\n\n", $2->s, $3->s); 
-		 if(bug>0 && $3 == NULL)fprintf(Error,"Design: '%s' ''  \n\n", $2->s); 
-	
-		 DesignName = CurrentLib;
-		 OutPro(Libs);
-		 strncpy(fName,        $2->s, SCH_NAME_LEN);
-		 if(bug>0)fprintf(Error,"  Set fName '%s'\n", fName);
-		 if( nPages > 1 ){
-        	OpenSch(50000, 50000); /* psize->nxt->x, psize->nxt->y */
-        	OutSheets(pgs);
-        	CloseSch();
-		 }
-		}
+////		{$$=$2;
+////		 if(bug>0 && $3 != NULL)fprintf(Error,"Design: '%s' '%s'\n\n", $2->s, $3->s); 
+////		 if(bug>0 && $3 == NULL)fprintf(Error,"Design: '%s' ''  \n\n", $2->s); 
+////	
+////		 DesignName = CurrentLib;
+////		 OutPro(Libs);
+////		 strncpy(fName,        $2->s, SCH_NAME_LEN);
+////		 if(bug>0)fprintf(Error,"  Set fName '%s'\n", fName);
+////		 if( nPages > 1 ){
+////        	OpenSch(50000, 50000); /* psize->nxt->x, psize->nxt->y */
+////        	OutSheets(pgs);
+////        	CloseSch();
+////		 }
+////		}
        	    ;
 
 _Design     :	CellRef
@@ -1012,19 +1012,18 @@ _Design     :	CellRef
 Designator  :	DESIGNATOR _Designator PopC
 		{$$=$2;}
 	    ;
-
 _Designator :	Str
-		{$$=$1;
-		 if(bug>3)fprintf(Error,"  _Designator Str  '%s'\n",$1->s);
-		}
-	    |	StrDisplay
-		{$$=$1;
-		 if(bug>3)fprintf(Error,"  _Designator StrDisp:'%s' ",$1->s); 
-		 if(bug>3 && $1->p  )fprintf(Error,"%d %d\n",$1->p->x, $1->p->y); 
-		 if(bug>3 && $1->nxt)fprintf(Error,"  ='%s' \n",$1->nxt->s);
-		}
-	    ;
-
+////		{$$=$1;
+////		 if(bug>3)fprintf(Error,"  _Designator Str  '%s'\n",$1->s);
+////		}
+////	    |	StrDisplay
+////		{$$=$1;
+////		 if(bug>3)fprintf(Error,"  _Designator StrDisp:'%s' ",$1->s); 
+////		 if(bug>3 && $1->p  )fprintf(Error,"%d %d\n",$1->p->x, $1->p->y); 
+////		 if(bug>3 && $1->nxt)fprintf(Error,"  ='%s' \n",$1->nxt->s);
+////		}
+////	    ;
+////
 DesignRule :	PHYSICALDESIGNRULE _DesignRule PopC
 	   ;
 
@@ -1075,33 +1074,33 @@ _Direction  :	INOUT
 	    ;
 
 Display : DISPLAY _Display _DisplayJust _DisplayOrien _DisplayOrg PopC
-		{$$ = (struct st *)Malloc(sizeof(struct st));
-		 $$->s=$2->s; $$->p=$5; $$->nxt = $2;
-		 if(bug>2                   )fprintf(Error,"%5d DISPLAY: '%s' ", LineNumber, $2->s);
-		 if(bug>2 && $2->nxt != NULL)fprintf(Error,"nxt %s ", $2->nxt->s);
-		 if(bug>2 && $3 != NULL     )fprintf(Error,"_DisplayJust %s ", $3->s);
-		 if(bug>2 && $4 != 0        )fprintf(Error,"_DisplayOrien %c ", $4);
-		 if(bug>2 && $5 != NULL     )fprintf(Error,"_DisplayOrg %d %d", $5->x, $5->y);
-		 if(bug>2                   )fprintf(Error,"\n");
-
-		 if($4!=0 && New!=NULL){
-		    cur_Orient = $4;
-            // find Pin to add Orient
-            for( LDptr=New ; LDptr != NULL ; LDptr=LDptr->nxt ) {
-				if(bug>6)fprintf(Error,"  Check '%s' '%s' %s\n", 
-					$$->s, LDptr->U.Pin.Name, LDptr->U.Pin.ReName);
-                if( LDptr->DrawType != PIN_DRAW_TYPE)
-                    continue;
-                if(  !strcmp(LDptr->U.Pin.Name, $$->s) )
-                    break;
-            }
-            if( LDptr != NULL ){
-				if(bug>2)fprintf(Error,"  Display Found %s Orient %c\n", 
-					LDptr->U.Pin.Name, $4);
-                LDptr->U.Pin.Orient = $4;
-            }
-		  }
-		}
+////		{$$ = (struct st *)Malloc(sizeof(struct st));
+////		 $$->s=$2->s; $$->p=$5; $$->nxt = $2;
+////		 if(bug>2                   )fprintf(Error,"%5d DISPLAY: '%s' ", LineNumber, $2->s);
+////		 if(bug>2 && $2->nxt != NULL)fprintf(Error,"nxt %s ", $2->nxt->s);
+////		 if(bug>2 && $3 != NULL     )fprintf(Error,"_DisplayJust %s ", $3->s);
+////		 if(bug>2 && $4 != 0        )fprintf(Error,"_DisplayOrien %c ", $4);
+////		 if(bug>2 && $5 != NULL     )fprintf(Error,"_DisplayOrg %d %d", $5->x, $5->y);
+////		 if(bug>2                   )fprintf(Error,"\n");
+////
+////		 if($4!=0 && New!=NULL){
+////		    cur_Orient = $4;
+////            // find Pin to add Orient
+////            for( LDptr=New ; LDptr != NULL ; LDptr=LDptr->nxt ) {
+////				if(bug>6)fprintf(Error,"  Check '%s' '%s' %s\n", 
+////					$$->s, LDptr->U.Pin.Name, LDptr->U.Pin.ReName);
+////                if( LDptr->DrawType != PIN_DRAW_TYPE)
+////                    continue;
+////                if(  !strcmp(LDptr->U.Pin.Name, $$->s) )
+////                    break;
+////            }
+////            if( LDptr != NULL ){
+////				if(bug>2)fprintf(Error,"  Display Found %s Orient %c\n", 
+////					LDptr->U.Pin.Name, $4);
+////                LDptr->U.Pin.Orient = $4;
+////            }
+////		  }
+////		}
    	    ;
 
 FigGrpNameRef :	NameRef
@@ -1542,8 +1541,8 @@ InstNameDef :	NameDef
 
 Instance :	INSTANCE InstNameDef _Instance PopC
 		{
-		int fcr;
-		char part[PART_NAME_LEN]; int i;
+////		int fcr;
+////		char part[PART_NAME_LEN]; int i;
 		
 		iptredifinstance = (struct edifinstance *)Malloc(sizeof(struct edifinstance));
 		iptredifinstance->instance = strdup($2->s);
@@ -1557,72 +1556,72 @@ Instance :	INSTANCE InstNameDef _Instance PopC
 		edifinstancelibraryref = NULL;
 		
 		// check for multi-part symbol
-		strncpy(part, cellRef, PART_NAME_LEN);
-		for( i=PART_NAME_LEN ; part[i] == '\0' && i>0 ; i-- );
-		//fprintf(Error,"'%s' %c%c\n", part, part[i-1],part[i]);
-		if( isdigit(part[i-1]) && isalpha(part[i]) ){ // mult-part symbol
-			unit = part[i]-'A'+1;
-			part[i] = '\0';
-		}else
-			unit=1;
-
-		$$=$2; ox=oy=0; 
-		if(bug>1){
-		    fprintf(Error,"  INSTANCE %s %d cellRef '%s' ", part, unit, cellRef);
-		    if(ref->s) fprintf(Error,"ref '%s' ", ref->s);
-		    if(val->s) fprintf(Error,"val '%s' ", val->s); 
-			fprintf(Error,"\n");
-		}
-
-        for( stp=pwrSym ; stp !=NULL ; stp=stp->nxt) {
-			if( !strcmp(cellRef, stp->s)){
-            	if(bug>2)fprintf(Error,"   Check Power '%s' '%s' '%s'\n", cellRef, stp->s, stp->r);
-				 break;
-            }
-		}
-
-
-	    if( (val->s == NULL) && (strstr(cellRef, "JUNCTION")!=NULL || strstr($2->s, "TIE")!=NULL) ){
-			if(bug>3)fprintf(Error,"  OutConn '%s' %d %d \n", $2->s, tx, ty);
-	      	OutConn( tx, -ty);
-	    } else {
-			// Is cellRef a Power Symbol, find HOTSPOT
-			ox=0; oy=0;
-    	    for( fcr=0, LSptr=Libs ; LSptr != NULL ; LSptr=LSptr->nxt ) {
-	    		if(fcr) break;
-        		for( LEptr=LSptr->Entries ; LEptr != NULL && stp!=NULL ; LEptr=LEptr->nxt ) {
-                	if( cellRef != NULL ) {
-                		fcr = (strcmp(LEptr->Name, cellRef) == 0);
-                		if(fcr) {
-							ox=LEptr->PrefixPosX ; oy=LEptr->PrefixPosY ;
-							if(bug>3)fprintf(Error,"   HOTSPOT for %s oxy:%d %d\n", LEptr->Name, ox, oy);
-							break;
-						}
-                	}
-        		}
-    	    }
-      	  if( stp == NULL ){ // not power Symbol
-		    if( ref->s ){ // normal symbol
-              OutInst(part, ref->s, val->s, Foot, MfgName, MfgPart, TextSize, tx, -ty, 
-	                ox+ref->p->x, -oy-ref->p->y, ox+val->p->x, -oy-val->p->y, 0, 0, unit, IRot);
-		    } else {
-	          sprintf(refdesg,"#ND%d", nPwr++);
-	          OutInst(part, refdesg, null, null, MfgName, MfgPart, TextSize, tx, -ty, 
-		      		tx, -ty, tx, -ty, 0, 0, unit, IRot);
-			}
-		  }else{ // power symbol
-            sprintf(refdesg,"#PWR%d", nPwr++);
-		 	ox=oy=0;
-            OutInst(part, refdesg, cur_pnam, null, MfgName, MfgPart, TextSize, tx+ox, -ty-oy, 
-					tx, -ty, tx, -ty, 0, 1, unit, IRot);
-			val->s=0;
-			cur_pnam = NULL;
-		  }
-		ref->s=NULL; ref->p = &zplst;
-		val->s=NULL; val->p = &zplst;
-		New = NULL;
-		InInstance = 0;
-		}
+////		strncpy(part, cellRef, PART_NAME_LEN);
+////		for( i=PART_NAME_LEN ; part[i] == '\0' && i>0 ; i-- );
+////		//fprintf(Error,"'%s' %c%c\n", part, part[i-1],part[i]);
+////		if( isdigit(part[i-1]) && isalpha(part[i]) ){ // mult-part symbol
+////			unit = part[i]-'A'+1;
+////			part[i] = '\0';
+////		}else
+////			unit=1;
+////
+////		$$=$2; ox=oy=0; 
+////		if(bug>1){
+////		    fprintf(Error,"  INSTANCE %s %d cellRef '%s' ", part, unit, cellRef);
+////		    if(ref->s) fprintf(Error,"ref '%s' ", ref->s);
+////		    if(val->s) fprintf(Error,"val '%s' ", val->s); 
+////			fprintf(Error,"\n");
+////		}
+////
+////        for( stp=pwrSym ; stp !=NULL ; stp=stp->nxt) {
+////			if( !strcmp(cellRef, stp->s)){
+////            	if(bug>2)fprintf(Error,"   Check Power '%s' '%s' '%s'\n", cellRef, stp->s, stp->r);
+////				 break;
+////            }
+////		}
+////
+////
+////	    if( (val->s == NULL) && (strstr(cellRef, "JUNCTION")!=NULL || strstr($2->s, "TIE")!=NULL) ){
+////			if(bug>3)fprintf(Error,"  OutConn '%s' %d %d \n", $2->s, tx, ty);
+////	      	OutConn( tx, -ty);
+////	    } else {
+////			// Is cellRef a Power Symbol, find HOTSPOT
+////			ox=0; oy=0;
+////    	    for( fcr=0, LSptr=Libs ; LSptr != NULL ; LSptr=LSptr->nxt ) {
+////	    		if(fcr) break;
+////        		for( LEptr=LSptr->Entries ; LEptr != NULL && stp!=NULL ; LEptr=LEptr->nxt ) {
+////                	if( cellRef != NULL ) {
+////                		fcr = (strcmp(LEptr->Name, cellRef) == 0);
+////                		if(fcr) {
+////							ox=LEptr->PrefixPosX ; oy=LEptr->PrefixPosY ;
+////							if(bug>3)fprintf(Error,"   HOTSPOT for %s oxy:%d %d\n", LEptr->Name, ox, oy);
+////							break;
+////						}
+////                	}
+////        		}
+////    	    }
+////      	  if( stp == NULL ){ // not power Symbol
+////		    if( ref->s ){ // normal symbol
+////              OutInst(part, ref->s, val->s, Foot, MfgName, MfgPart, TextSize, tx, -ty, 
+////	                ox+ref->p->x, -oy-ref->p->y, ox+val->p->x, -oy-val->p->y, 0, 0, unit, IRot);
+////		    } else {
+////	          sprintf(refdesg,"#ND%d", nPwr++);
+////	          OutInst(part, refdesg, null, null, MfgName, MfgPart, TextSize, tx, -ty, 
+////		      		tx, -ty, tx, -ty, 0, 0, unit, IRot);
+////			}
+////		  }else{ // power symbol
+////            sprintf(refdesg,"#PWR%d", nPwr++);
+////		 	ox=oy=0;
+////            OutInst(part, refdesg, cur_pnam, null, MfgName, MfgPart, TextSize, tx+ox, -ty-oy, 
+////					tx, -ty, tx, -ty, 0, 1, unit, IRot);
+////			val->s=0;
+////			cur_pnam = NULL;
+////		  }
+////		ref->s=NULL; ref->p = &zplst;
+////		val->s=NULL; val->p = &zplst;
+////		New = NULL;
+////		InInstance = 0;
+////		}
 		}
 	 ;
 
@@ -2430,29 +2429,29 @@ Page :		PAGE _Page PopC
      ;
 
 _Page :		InstNameDef
-		{	if(bug>1)fprintf(Error,"_Page: InstNameDef? '%s'\n", $1->s);
-			strncpy(fName, $1->s, SCH_NAME_LEN + 1);
-			if (strlen($1->s) > SCH_NAME_LEN) {
-				fName[SCH_NAME_LEN] = '\0';
-				fprintf(Error, "WARNING: '%s' is reduced to '%s'\n", $1->s, fName);
-			}
-			if(bug>1)fprintf(Error,"SchHead INSTANCE fName: '%s' \n", fName);
-			OpenSch(50000, 50000);	/* No pageSize yet */
-			SchHead = 0;
-
-  		 	CurrentLib = (LibraryStruct *) Malloc(sizeof(LibraryStruct));
-  		 	CurrentLib->Name = strdup(fName);
-  		 	CurrentLib->isSheet = 1;
-		 	CurrentLib->Entries = NULL; CurrentLib->NumOfParts=0; 
-  		 	CurrentLib->nxt = Libs;
-	 	 	Libs=CurrentLib;
-	    	pptr = (struct pwr *) Malloc(sizeof(struct pwr));
-	    	pptr->s   = strdup(fName); 
-	    	pptr->r   = NULL;
-	    	pptr->nxt = pgs;
-	    	pgs = pptr;
-		 	nPages++;
-		}
+////		{	if(bug>1)fprintf(Error,"_Page: InstNameDef? '%s'\n", $1->s);
+////			strncpy(fName, $1->s, SCH_NAME_LEN + 1);
+////			if (strlen($1->s) > SCH_NAME_LEN) {
+////				fName[SCH_NAME_LEN] = '\0';
+////				fprintf(Error, "WARNING: '%s' is reduced to '%s'\n", $1->s, fName);
+////			}
+////			if(bug>1)fprintf(Error,"SchHead INSTANCE fName: '%s' \n", fName);
+////			OpenSch(50000, 50000);	/* No pageSize yet */
+////			SchHead = 0;
+////
+////  		 	CurrentLib = (LibraryStruct *) Malloc(sizeof(LibraryStruct));
+////  		 	CurrentLib->Name = strdup(fName);
+////  		 	CurrentLib->isSheet = 1;
+////		 	CurrentLib->Entries = NULL; CurrentLib->NumOfParts=0; 
+////  		 	CurrentLib->nxt = Libs;
+////	 	 	Libs=CurrentLib;
+////	    	pptr = (struct pwr *) Malloc(sizeof(struct pwr));
+////	    	pptr->s   = strdup(fName); 
+////	    	pptr->r   = NULL;
+////	    	pptr->nxt = pgs;
+////	    	pgs = pptr;
+////		 	nPages++;
+////		}
       |		_Page Instance
       |		_Page Net
       |		_Page NetBundle
@@ -2488,13 +2487,13 @@ ParamAssign :	PARAMETERASSIGN ValueNameRef TypedValue PopC
 	    ;
 
 Path :		PATH _Path PopC
-		{$$=$2;
-			for( pl=$2 ; pl->nxt != NULL ; pl=pl->nxt ){
-           	    if(bug>3)fprintf(Error,"  PATH OutWire  %d %d %d %d\n", 
-			        pl->x, -pl->y, pl->nxt->x, -pl->nxt->y);
-	    	    OutWire(pl->x, -pl->y, pl->nxt->x, -pl->nxt->y);
-			}
-		}
+////		{$$=$2;
+////			for( pl=$2 ; pl->nxt != NULL ; pl=pl->nxt ){
+////           	    if(bug>3)fprintf(Error,"  PATH OutWire  %d %d %d %d\n", 
+////			        pl->x, -pl->y, pl->nxt->x, -pl->nxt->y);
+////	    	    OutWire(pl->x, -pl->y, pl->nxt->x, -pl->nxt->y);
+////			}
+////		}
      ;
 
 _Path 	  :	PointList
@@ -2748,14 +2747,14 @@ _PortGroup :
 	   ;
 
 PortImpl :	PORTIMPLEMENTATION _PortImpl PopC
-		{ $$=$2;
-		  if(bug>2) {
-		     fprintf(Error,"%05d  PORTIMPLEMENTATION: _PortImpl '%s' cur_pnam:'%s' %1d ", 
-				LineNumber, $2->s, cur_pnam, unit);
-		     fprintf(Error,"  \n");
-		  }
-		  doPin();
-		}
+////		{ $$=$2;
+////		  if(bug>2) {
+////		     fprintf(Error,"%05d  PORTIMPLEMENTATION: _PortImpl '%s' cur_pnam:'%s' %1d ", 
+////				LineNumber, $2->s, cur_pnam, unit);
+////		     fprintf(Error,"  \n");
+////		  }
+////		  doPin();
+////		}
 	 ;
 
 _PortImpl :	Name
@@ -2852,14 +2851,14 @@ PortRef     :	PORTREF PortNameRef _PortRef PopC
 		edifnetportrefs = iptredifnetportref;
 		netinstanceref = NULL;
 		
-		if(bug>3){
-		     fprintf(Error," PORTREF:'%s' ", $2->s);
-		     if($2->nxt != NULL)fprintf(Error,"rename:'%s' ", $2->nxt->s);
-		     if($3      != NULL)fprintf(Error,"InstRef:'%s' ", $3->s);
-		     fprintf(Error,"\n");
-		}
-		if(cptr != NULL && $3 != NULL) 
-       		cptr->pin = $2->s;
+////		if(bug>3){
+////		     fprintf(Error," PORTREF:'%s' ", $2->s);
+////		     if($2->nxt != NULL)fprintf(Error,"rename:'%s' ", $2->nxt->s);
+////		     if($3      != NULL)fprintf(Error,"InstRef:'%s' ", $3->s);
+////		     fprintf(Error,"\n");
+////		}
+////		if(cptr != NULL && $3 != NULL) 
+////       		cptr->pin = $2->s;
 		}
 	    ;
 
@@ -2867,14 +2866,14 @@ _PortRef :
 		{$$=NULL;}
 	 |	PortRef
 	 |	InstanceRef
-        {$$=$1; 
-         if(bug>3)fprintf(Error,"new cptr, InstRef: %8s curr_nnam '%s'\n", $1->s, cur_nnam);
-         cptr = (struct con *) Malloc (sizeof (struct con));
-         cptr->ref = $1->s;
-         cptr->nnam = cur_nnam;
-         cptr->nxt = cons;
-         cons = cptr;
-        }
+////        {$$=$1; 
+////         if(bug>3)fprintf(Error,"new cptr, InstRef: %8s curr_nnam '%s'\n", $1->s, cur_nnam);
+////         cptr = (struct con *) Malloc (sizeof (struct con));
+////         cptr->ref = $1->s;
+////         cptr->nnam = cur_nnam;
+////         cptr->nxt = cons;
+////         cons = cptr;
+////        }
 	 |	ViewRef
 	 ;
 
@@ -3048,11 +3047,11 @@ ScaledInt :	Int
 	  ;
 
 Scale     :	SCALE ScaledInt ScaledInt Unit PopC
-		{	
-		 scale = 100000.0 * $3 / (2.54 * $2);
-		 if(bug>4)fprintf(stderr, "SCALE %f %g %f\n", $2, $3, scale);
-		 // scale =1.0;
-		}
+////		{	
+////		 scale = 100000.0 * $3 / (2.54 * $2);
+////		 if(bug>4)fprintf(stderr, "SCALE %f %g %f\n", $2, $3, scale);
+////		 // scale =1.0;
+////		}
           ;
 
 ScaleX :	SCALEX Int Int PopC
@@ -3179,24 +3178,24 @@ _StrDisplay :   STR
          if(bug>2)fprintf(Error,"  _StrDisplay STR: '%s' \n",$1->s);
         }
 	       |   _StrDisplay Display
-        {$$ = (struct st *)Malloc(sizeof(struct st));
-         $$->s=$1->s; $$->nxt=$1; net=$$;
-         if($2->p != NULL){
-            $$->p=$1->p; $1->p=$2->p;
-            if(bug>2)
-                fprintf(Error,"%5d _StrDisplay Disp: '%s' '%s' %d %d ts=%d\n",
-                LineNumber, $1->s, $2->s, $2->p->x, $2->p->y, TextSize );
-            if( !strcmp($2->s, "PARTREFERENCE"))
-                {ref->s=$1->s; ref->p=$2->p;}
-            if( !strcmp($2->s, "PARTVALUE"))
-                {val->s=$1->s; val->p=$2->p;}
-            OutText(TEXT_TEXT, $1->s, $2->p->x +ox, -$2->p->y +oy, TextSize);
-         }else{
-            if(bug>3)
-                fprintf(Error,"%5d _StrDisplay Disp: '%s' NULL NULL  ts=%d\n",
-                LineNumber, $1->s,                            TextSize );
-         }
-        }
+////        {$$ = (struct st *)Malloc(sizeof(struct st));
+////         $$->s=$1->s; $$->nxt=$1; net=$$;
+////         if($2->p != NULL){
+////            $$->p=$1->p; $1->p=$2->p;
+////            if(bug>2)
+////                fprintf(Error,"%5d _StrDisplay Disp: '%s' '%s' %d %d ts=%d\n",
+////                LineNumber, $1->s, $2->s, $2->p->x, $2->p->y, TextSize );
+////            if( !strcmp($2->s, "PARTREFERENCE"))
+////                {ref->s=$1->s; ref->p=$2->p;}
+////            if( !strcmp($2->s, "PARTVALUE"))
+////                {val->s=$1->s; val->p=$2->p;}
+////            OutText(TEXT_TEXT, $1->s, $2->p->x +ox, -$2->p->y +oy, TextSize);
+////         }else{
+////            if(bug>3)
+////                fprintf(Error,"%5d _StrDisplay Disp: '%s' NULL NULL  ts=%d\n",
+////                LineNumber, $1->s,                            TextSize );
+////         }
+////        }
         ;
 
 String :	STRING _String PopC
@@ -3535,13 +3534,13 @@ ViewNameRef :	NameRef
 ViewRef :	VIEWREF ViewNameRef _ViewRef PopC
 		{
 		edifinstanceviewref = $2->s;	  
-		$$=$2; 
-		if(bug>2               )fprintf(Error,"  VIEWREF ViewNameRef '%s'  ",$2->s);
-		if(bug>2 && $3->s!=NULL)fprintf(Error,"_ViewRef: '%s' \n", $3->s);
-
-		iptr = (struct inst *)Malloc(sizeof (struct inst));
-		iptr->nxt = insts;
-		insts = iptr;
+////		$$=$2; 
+////		if(bug>2               )fprintf(Error,"  VIEWREF ViewNameRef '%s'  ",$2->s);
+////		if(bug>2 && $3->s!=NULL)fprintf(Error,"_ViewRef: '%s' \n", $3->s);
+////
+////		iptr = (struct inst *)Malloc(sizeof (struct inst));
+////		iptr->nxt = insts;
+////		insts = iptr;
 		}
 	;
 
@@ -3613,7 +3612,7 @@ Written :	WRITTEN _Written PopC
 	 curtime = asctime(timeinfo);
 	 memcpy(sztime, curtime, strlen(curtime) - 1);
 	 
-	 sprintf(comment, "\n  (comment \"\")\n  (comment \"processed by netlistflattener.exe ver 0.91 at %s\")", sztime);
+	 sprintf(comment, "\n  (comment \"\")\n  (comment \"processed by netlistflattener.exe ver %s at %s\")", szversion, sztime);
 	 fputs(comment, Output);
 	 
 	 }
@@ -3645,44 +3644,44 @@ _Name   :	Ident
 		 if(bug>3)fprintf(Error,"%5d _Name Ident '%s'\n", LineNumber, $1->s); 
         }
         |	_Name Display
-		{
-		 $$=$1; $$->p = $2->p; $$->nxt=$2;
-		 if(bug>4 && $2->p == NULL)fprintf(Error,"%5d _Name Display '%s'\n", LineNumber, $1->s); 
-		 if(bug>4 && $2->p != NULL)fprintf(Error,"%5d _Name Display '%s' (%d,%d)\n", 
-				LineNumber, $1->s, $2->p->x, $2->p->y); 
-
-		   if($2->p != NULL){
-			 if( !SchHead && !InInstance){
-		        // search for an ReName
-		        s = $1->s;
-		        for( LEptr=CurrentLib->Entries, stop=0 ; LEptr != NULL && !stop ; LEptr=LEptr->nxt )
-		    	    for( LDptr=LEptr->Drawings ; LDptr != NULL && !stop ; LDptr=LDptr->nxt ){
-			          if( LDptr->DrawType != PIN_DRAW_TYPE)
-                      	continue;
-			          if(bug>3)fprintf(Error,"  _Name Check '%s' '%s' %s\n", 
-				    	s, LDptr->U.Pin.Name, LDptr->U.Pin.ReName);
-			          if( !strcmp(s, LDptr->U.Pin.Name )){
-			    	    if( LDptr->U.Pin.ReName != NULL )
-			   	       		s = LDptr->U.Pin.ReName;
-				    	else
-			   	        	s = LDptr->U.Pin.Name;
-				    	stop=1;
-			          }
-		            }
-		        // Global Label or Normal
-		        if(inst_pin_num_vis==1 || inst_pin_name_vis==1){
-		            if( $1->nxt != NULL && !strcmp($1->nxt->s, "OFFPAGECONNECTOR")) {
-						inst_pin_name_vis=0;
-		    	        OutText(TEXT_LABEL_GLOBAL, s, $2->p->x +ox, -$2->p->y +oy, TextSize);
-		    	    } else {
-		    	        OutText(TEXT_LABEL_NORMAL, s, $2->p->x +ox, -$2->p->y +oy, TextSize);
-		    	    }
-		        }
-		        // TextSize=SIZE_PIN_TEXT;
-		        ox=oy=0;
-		  }
-		}
-		}
+////		{
+////		 $$=$1; $$->p = $2->p; $$->nxt=$2;
+////		 if(bug>4 && $2->p == NULL)fprintf(Error,"%5d _Name Display '%s'\n", LineNumber, $1->s); 
+////		 if(bug>4 && $2->p != NULL)fprintf(Error,"%5d _Name Display '%s' (%d,%d)\n", 
+////				LineNumber, $1->s, $2->p->x, $2->p->y); 
+////
+////		   if($2->p != NULL){
+////			 if( !SchHead && !InInstance){
+////		        // search for an ReName
+////		        s = $1->s;
+////		        for( LEptr=CurrentLib->Entries, stop=0 ; LEptr != NULL && !stop ; LEptr=LEptr->nxt )
+////		    	    for( LDptr=LEptr->Drawings ; LDptr != NULL && !stop ; LDptr=LDptr->nxt ){
+////			          if( LDptr->DrawType != PIN_DRAW_TYPE)
+////                      	continue;
+////			          if(bug>3)fprintf(Error,"  _Name Check '%s' '%s' %s\n", 
+////				    	s, LDptr->U.Pin.Name, LDptr->U.Pin.ReName);
+////			          if( !strcmp(s, LDptr->U.Pin.Name )){
+////			    	    if( LDptr->U.Pin.ReName != NULL )
+////			   	       		s = LDptr->U.Pin.ReName;
+////				    	else
+////			   	        	s = LDptr->U.Pin.Name;
+////				    	stop=1;
+////			          }
+////		            }
+////		        // Global Label or Normal
+////		        if(inst_pin_num_vis==1 || inst_pin_name_vis==1){
+////		            if( $1->nxt != NULL && !strcmp($1->nxt->s, "OFFPAGECONNECTOR")) {
+////						inst_pin_name_vis=0;
+////		    	        OutText(TEXT_LABEL_GLOBAL, s, $2->p->x +ox, -$2->p->y +oy, TextSize);
+////		    	    } else {
+////		    	        OutText(TEXT_LABEL_NORMAL, s, $2->p->x +ox, -$2->p->y +oy, TextSize);
+////		    	    }
+////		        }
+////		        // TextSize=SIZE_PIN_TEXT;
+////		        ox=oy=0;
+////		  }
+////		}
+////		}
           ;
 
 Ident    :	IDENT
@@ -3710,100 +3709,100 @@ Keyword :	KEYWORD
 //  figure out Pin Orientation
 //  add Power Pin hotspot mentioned in Instance
 //
-doPin()
-{
-int fcr=0;
-
-if(bug>2) {
-                   fprintf(Error,"doPin: ");
-if(libRef   !=NULL)fprintf(Error,"libRef '%s'\n", libRef);
-if(cellRef  !=NULL)fprintf(Error,"  cellRef '%s'", cellRef);
-if(cur_pnam !=NULL)fprintf(Error,"  cur_pnam '%s'", cur_pnam);
-                   fprintf(Error,"  txy:(%d,%d) pxy:(%d,%d)",tx,ty, px,py); 
-if(pl       !=NULL)fprintf(Error,"  pl:(%d,%d)", pl->x, pl->y);
-if(pl!=NULL && pl->nxt!=NULL)fprintf(Error," plnxt:(%d,%d)", pl->nxt->x, pl->nxt->y);
-                   fprintf(Error,"\n"); 
-}
-
-if( cur_pnam == NULL )
-	return;
-else {
-    if( cellRef == NULL ) { // existing Pin for cellDef
-        for( LDptr=New ; LDptr != NULL ; LDptr=LDptr->nxt ) { // find Pin
-            if( LDptr->DrawType != PIN_DRAW_TYPE)
-                continue;
-            if(bug>6)fprintf(Error,"   Check '%s' %s %s\n",
-                cur_pnam, LDptr->U.Pin.Name, LDptr->U.Pin.ReName);
-            if( !strcmp(LDptr->U.Pin.Name, cur_pnam) )
-                break;
-        }
-        if( LDptr != NULL) {
-            if(bug>2)fprintf(Error,"  cur_pnam:%s LDptr:%s pxy:(%d,%d) txy:(%d,%d)\n\n ",
-				cur_pnam,LDptr->U.Pin.Name, px,py, tx,ty); 
-            LDptr->U.Pin.posX = px;
-            LDptr->U.Pin.posY = py;
-
-            // compute pin Orientation
-	    if( pl != NULL && pl->nxt != NULL ){
-            	if( pl->x == pl->nxt->x ) {
-                    LDptr->U.Pin.Len = abs(pl->y - pl->nxt->y)*(int)scale;
-                    if( pl->y < pl->nxt->y )
-                        LDptr->U.Pin.Orient = PIN_DOWN;
-                    else
-                        LDptr->U.Pin.Orient = PIN_UP;
-                }
-                if( pl->y == pl->nxt->y ) {
-                    LDptr->U.Pin.Len = abs(pl->x - pl->nxt->x)*(int)scale;
-                    if( pl->x < pl->nxt->x )
-                        LDptr->U.Pin.Orient = PIN_LEFT;
-                    else
-                        LDptr->U.Pin.Orient = PIN_RIGHT;
-                }
-	    }
-	}
-    } else { // find cellRef
-    	    for( fcr=0, LSptr=Libs ; LSptr != NULL ; LSptr=LSptr->nxt ) {
-	    		if(fcr) break;
-        		for( LEptr=LSptr->Entries ; LEptr != NULL ; LEptr=LEptr->nxt ) {
-                	if( cellRef != NULL ) {
-                		fcr = (strcmp(LEptr->Name, cellRef) == 0);
-                		if(fcr) break;
-                	}
-        		}
-    	    }
-    	    // find pin in cellRef
-    	    if(fcr) // if cellRef exists
-            for( LDptr=LEptr->Drawings ; LDptr != NULL ; LDptr=LDptr->nxt ) {
-                if( LDptr->DrawType != PIN_DRAW_TYPE )
-                	continue;
-	    		if(bug>4)fprintf(Error,"  _Name Check '%s' '%s'\n", LDptr->U.Pin.Name, cellRef);
-            	if( !strcmp(LDptr->U.Pin.Name, cellRef) )
-                    break;
-	    	}
-	        if( fcr && LDptr == NULL ){ // new (Power) Pin if it doesn't already exist
-                     if(bug>2)fprintf(Error,"  new Power Pin:%s pxy:(%d,%d) txy:(%d,%d)\n\n",cur_pnam, px,py, tx,ty); 
-                     // OrCad 10 puts HOTSPOTS in Instance, S/B pin posX in Cell definition
-                     New = (LibraryDrawEntryStruct *) Malloc(sizeof(LibraryDrawEntryStruct));
-                     New->DrawType = PIN_DRAW_TYPE; New->Convert = convert;
-                     New->nxt = LEptr->Drawings;
-                     LEptr->Drawings = New;
-                     New->Unit = unit; 
-                     New->U.Pin.posX     =  px-tx;
-                     New->U.Pin.posY     =  py-ty;
-                     New->U.Pin.Len      = 300;
-                     New->U.Pin.PinShape = NONE;         // NONE, DOT, CLOCK, SHORT
-                     New->U.Pin.PinType  = PIN_POWER;
-                     New->U.Pin.Orient   = PIN_UP;
-                     New->U.Pin.Flags    = 0;            /* Pin Visible */
-                     New->U.Pin.SizeNum  = TextSize;
-                     New->U.Pin.SizeName = TextSize;
-                     New->U.Pin.Name     = strdup(cur_pnam);
-                     New->U.Pin.ReName   = New->U.Pin.Name;
-                     strcpy(New->U.Pin.Num, "99");
-   	        }
-        }
-    }
-}
+////doPin()
+////{
+////int fcr=0;
+////
+////if(bug>2) {
+////                   fprintf(Error,"doPin: ");
+////if(libRef   !=NULL)fprintf(Error,"libRef '%s'\n", libRef);
+////if(cellRef  !=NULL)fprintf(Error,"  cellRef '%s'", cellRef);
+////if(cur_pnam !=NULL)fprintf(Error,"  cur_pnam '%s'", cur_pnam);
+////                   fprintf(Error,"  txy:(%d,%d) pxy:(%d,%d)",tx,ty, px,py); 
+////if(pl       !=NULL)fprintf(Error,"  pl:(%d,%d)", pl->x, pl->y);
+////if(pl!=NULL && pl->nxt!=NULL)fprintf(Error," plnxt:(%d,%d)", pl->nxt->x, pl->nxt->y);
+////                   fprintf(Error,"\n"); 
+////}
+////
+////if( cur_pnam == NULL )
+////	return;
+////else {
+////    if( cellRef == NULL ) { // existing Pin for cellDef
+////        for( LDptr=New ; LDptr != NULL ; LDptr=LDptr->nxt ) { // find Pin
+////            if( LDptr->DrawType != PIN_DRAW_TYPE)
+////                continue;
+////            if(bug>6)fprintf(Error,"   Check '%s' %s %s\n",
+////                cur_pnam, LDptr->U.Pin.Name, LDptr->U.Pin.ReName);
+////            if( !strcmp(LDptr->U.Pin.Name, cur_pnam) )
+////                break;
+////        }
+////        if( LDptr != NULL) {
+////            if(bug>2)fprintf(Error,"  cur_pnam:%s LDptr:%s pxy:(%d,%d) txy:(%d,%d)\n\n ",
+////				cur_pnam,LDptr->U.Pin.Name, px,py, tx,ty); 
+////            LDptr->U.Pin.posX = px;
+////            LDptr->U.Pin.posY = py;
+////
+////            // compute pin Orientation
+////	    if( pl != NULL && pl->nxt != NULL ){
+////            	if( pl->x == pl->nxt->x ) {
+////                    LDptr->U.Pin.Len = abs(pl->y - pl->nxt->y)*(int)scale;
+////                    if( pl->y < pl->nxt->y )
+////                        LDptr->U.Pin.Orient = PIN_DOWN;
+////                    else
+////                        LDptr->U.Pin.Orient = PIN_UP;
+////                }
+////                if( pl->y == pl->nxt->y ) {
+////                    LDptr->U.Pin.Len = abs(pl->x - pl->nxt->x)*(int)scale;
+////                    if( pl->x < pl->nxt->x )
+////                        LDptr->U.Pin.Orient = PIN_LEFT;
+////                    else
+////                        LDptr->U.Pin.Orient = PIN_RIGHT;
+////                }
+////	    }
+////	}
+////    } else { // find cellRef
+////    	    for( fcr=0, LSptr=Libs ; LSptr != NULL ; LSptr=LSptr->nxt ) {
+////	    		if(fcr) break;
+////        		for( LEptr=LSptr->Entries ; LEptr != NULL ; LEptr=LEptr->nxt ) {
+////                	if( cellRef != NULL ) {
+////                		fcr = (strcmp(LEptr->Name, cellRef) == 0);
+////                		if(fcr) break;
+////                	}
+////        		}
+////    	    }
+////    	    // find pin in cellRef
+////    	    if(fcr) // if cellRef exists
+////            for( LDptr=LEptr->Drawings ; LDptr != NULL ; LDptr=LDptr->nxt ) {
+////                if( LDptr->DrawType != PIN_DRAW_TYPE )
+////                	continue;
+////	    		if(bug>4)fprintf(Error,"  _Name Check '%s' '%s'\n", LDptr->U.Pin.Name, cellRef);
+////            	if( !strcmp(LDptr->U.Pin.Name, cellRef) )
+////                    break;
+////	    	}
+////	        if( fcr && LDptr == NULL ){ // new (Power) Pin if it doesn't already exist
+////                     if(bug>2)fprintf(Error,"  new Power Pin:%s pxy:(%d,%d) txy:(%d,%d)\n\n",cur_pnam, px,py, tx,ty); 
+////                     // OrCad 10 puts HOTSPOTS in Instance, S/B pin posX in Cell definition
+////                     New = (LibraryDrawEntryStruct *) Malloc(sizeof(LibraryDrawEntryStruct));
+////                     New->DrawType = PIN_DRAW_TYPE; New->Convert = convert;
+////                     New->nxt = LEptr->Drawings;
+////                     LEptr->Drawings = New;
+////                     New->Unit = unit; 
+////                     New->U.Pin.posX     =  px-tx;
+////                     New->U.Pin.posY     =  py-ty;
+////                     New->U.Pin.Len      = 300;
+////                     New->U.Pin.PinShape = NONE;         // NONE, DOT, CLOCK, SHORT
+////                     New->U.Pin.PinType  = PIN_POWER;
+////                     New->U.Pin.Orient   = PIN_UP;
+////                     New->U.Pin.Flags    = 0;            /* Pin Visible */
+////                     New->U.Pin.SizeNum  = TextSize;
+////                     New->U.Pin.SizeName = TextSize;
+////                     New->U.Pin.Name     = strdup(cur_pnam);
+////                     New->U.Pin.ReName   = New->U.Pin.Name;
+////                     strcpy(New->U.Pin.Num, "99");
+////   	        }
+////        }
+////    }
+////}
 
 /*
  *	Token & context carriers:
