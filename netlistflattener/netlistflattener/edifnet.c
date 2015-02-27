@@ -11,6 +11,7 @@
 global char * glibrary;
 struct edifnetportref * edifnet_getportrefs(struct ediflibrary * library, struct edifnet * edifnet, char * instancename, char * portref);
 struct edifnetportref * edifnetportref_copy(struct edifnetportref * portref);
+struct edifnet *edifnet_add(struct edifnet * edifnet, struct edifnet * net); 
 int edifnet_getcount(struct edifnet * edifnet){
 	int count = 0;
 	struct edifnet * net = NULL;
@@ -57,6 +58,7 @@ struct edifnet * edifnet_copyrename(struct ediflibrary * library, struct edifnet
 	if (edifnet != NULL){
 		net = (struct edifnet *)malloc(sizeof(struct edifnet));
 		memset(net, 0, sizeof(struct edifnet));
+		netpart2len = strlen(edifnet->net);
 		sznet = (char *)malloc(netpart1len + netpart2len + 1);
 		memset(sznet, 0, netpart1len + netpart2len + 1);
 		memcpy(sznet, instance, netpart1len);
@@ -350,7 +352,7 @@ struct edifnet * edifnet_getallinternalnets(struct ediflibrary * library,  struc
 		iptrnet = ediflibrary_getnet(library, referlibrary, glibrary, subcircuit, tmpinstance);
 	//	iptrnet = edifnet_getinternalnets(net, tmpinstance);
 		if(iptrnet){
-			iptrnet->next = net;
+			iptrnet = edifnet_add(iptrnet, net);
 			net = iptrnet;
 		}
 		

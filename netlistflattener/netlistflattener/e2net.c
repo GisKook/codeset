@@ -25,7 +25,7 @@ global float scale;
 
 main(int argc, char *argv[])
 {
-  char * version      = "0.95";
+  char * version      = "0.96";
   char * progname;
   // bubble sort cons by ref
   struct con *start, *a, *b, *c;
@@ -80,38 +80,38 @@ main(int argc, char *argv[])
 //      fprintf(stderr,"%s %25s %s\n", start->ref, start->pin, start->nnam);
 //  }
 
-  if(cons != NULL){
-  while (e != cons->nxt ) {
-    c = a = cons; b = a->nxt;
-    while(a != e) {
-      sprintf(s1, "%s%25s", a->ref, a->pin);
-      sprintf(s2, "%s%25s", b->ref, b->pin);
-      if( strcmp( s1, s2 ) >0 ) {
-        if(a == cons) {
-          tmp = b->nxt; b->nxt = a; a->nxt = tmp;
-          cons = b; c = b;
-        } else {
-          tmp = b->nxt; b->nxt = a; a->nxt = tmp;
-          c->nxt = b; c = b;
-        }
-      } else {
-        c = a; a = a->nxt;
-      }
-      b = a->nxt;
-      if(b == e)
-        e = a;
-    }
-  }
-  }
+////  if(cons != NULL){
+////  while (e != cons->nxt ) {
+////    c = a = cons; b = a->nxt;
+////    while(a != e) {
+////      sprintf(s1, "%s%25s", a->ref, a->pin);
+////      sprintf(s2, "%s%25s", b->ref, b->pin);
+////      if( strcmp( s1, s2 ) >0 ) {
+////        if(a == cons) {
+////          tmp = b->nxt; b->nxt = a; a->nxt = tmp;
+////          cons = b; c = b;
+////        } else {
+////          tmp = b->nxt; b->nxt = a; a->nxt = tmp;
+////          c->nxt = b; c = b;
+////        }
+////      } else {
+////        c = a; a = a->nxt;
+////      }
+////      b = a->nxt;
+////      if(b == e)
+////        e = a;
+////    }
+////  }
+////  }
 
   // dump connections by component
-  strcpy(s1,  "" );
-  for (start=cons ; start != NULL ; start = start->nxt ){
-      if(strcmp(s1, start->ref) != 0)
-		printf("\n");
-      printf("%4s %3s %s\n", start->ref, start->pin, start->nnam);
-      strcpy(s1,  start->ref);
-  }
+///  strcpy(s1,  "" );
+///  for (start=cons ; start != NULL ; start = start->nxt ){
+///      if(strcmp(s1, start->ref) != 0)
+///		printf("\n");
+///      printf("%4s %3s %s\n", start->ref, start->pin, start->nnam);
+///      strcpy(s1,  start->ref);
+///  }
 
 #ifdef NOT
   while(insts != NULL){
