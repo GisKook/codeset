@@ -2,9 +2,9 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="9.00"
-	Name="netlistflattener"
-	ProjectGUID="{E7134339-583F-4E48-A435-6BA2C9D35946}"
-	RootNamespace="netlistflattener"
+	Name="edifflattener"
+	ProjectGUID="{19697351-7C4A-4591-B331-FCB45639CC6E}"
+	RootNamespace="edifflattener"
 	TargetFrameworkVersion="196613"
 	>
 	<Platforms>
@@ -13,16 +13,13 @@
 		/>
 	</Platforms>
 	<ToolFiles>
-		<ToolFile
-			RelativePath="..\Bison.rules"
-		/>
 	</ToolFiles>
 	<Configurations>
 		<Configuration
 			Name="Debug|Win32"
 			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
 			IntermediateDirectory="$(ConfigurationName)"
-			ConfigurationType="2"
+			ConfigurationType="1"
 			CharacterSet="2"
 			>
 			<Tool
@@ -30,9 +27,6 @@
 			/>
 			<Tool
 				Name="VCCustomBuildTool"
-			/>
-			<Tool
-				Name="Bison"
 			/>
 			<Tool
 				Name="VCXMLDataGeneratorTool"
@@ -46,7 +40,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				PreprocessorDefinitions="_CRT_SECURE_NO_DEPRECATE;DEBUG;_CRT_NONSTDC_NO_DEPRECATE"
+				AdditionalIncludeDirectories="../netlistflattener/"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="0"
@@ -65,6 +59,8 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				AdditionalDependencies="netlistflattener.lib"
+				AdditionalLibraryDirectories="../Debug"
 				GenerateDebugInformation="true"
 				TargetMachine="1"
 			/>
@@ -103,9 +99,6 @@
 			/>
 			<Tool
 				Name="VCCustomBuildTool"
-			/>
-			<Tool
-				Name="Bison"
 			/>
 			<Tool
 				Name="VCXMLDataGeneratorTool"
@@ -168,118 +161,23 @@
 	</References>
 	<Files>
 		<Filter
-			Name="源文件"
+			Name="Source Files"
 			Filter="cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx"
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
-				RelativePath=".\e2net.c"
-				>
-			</File>
-			<File
-				RelativePath=".\edif.y"
-				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="Bison"
-					/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath=".\edifcell.c"
-				>
-			</File>
-			<File
-				RelativePath=".\edifcontents.c"
-				>
-			</File>
-			<File
-				RelativePath=".\edifinstance.c"
-				>
-			</File>
-			<File
-				RelativePath=".\edifinterface.c"
-				>
-			</File>
-			<File
-				RelativePath=".\ediflibrary.c"
-				>
-			</File>
-			<File
-				RelativePath=".\edifnet.c"
-				>
-			</File>
-			<File
-				RelativePath=".\edifsubcircuit.c"
-				>
-			</File>
-			<File
-				RelativePath=".\y.tab.c"
+				RelativePath=".\edifnetlistflattener.c"
 				>
 			</File>
 		</Filter>
 		<Filter
-			Name="头文件"
+			Name="Header Files"
 			Filter="h;hpp;hxx;hm;inl;inc;xsd"
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
-			<File
-				RelativePath=".\ed.h"
-				>
-			</File>
-			<File
-				RelativePath=".\edif.h"
-				>
-			</File>
-			<File
-				RelativePath=".\edifcell.h"
-				>
-			</File>
-			<File
-				RelativePath=".\edifcontents.h"
-				>
-			</File>
-			<File
-				RelativePath=".\edifheader.h"
-				>
-			</File>
-			<File
-				RelativePath=".\edifinstance.h"
-				>
-			</File>
-			<File
-				RelativePath=".\edifinterface.h"
-				>
-			</File>
-			<File
-				RelativePath=".\ediflibrary.h"
-				>
-			</File>
-			<File
-				RelativePath=".\edifnet.h"
-				>
-			</File>
-			<File
-				RelativePath=".\edifsubcircuit.h"
-				>
-			</File>
-			<File
-				RelativePath=".\edifwriter.h"
-				>
-			</File>
-			<File
-				RelativePath=".\fctsys.h"
-				>
-			</File>
-			<File
-				RelativePath=".\y.tab.h"
-				>
-			</File>
 		</Filter>
 		<Filter
-			Name="资源文件"
+			Name="Resource Files"
 			Filter="rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav"
 			UniqueIdentifier="{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}"
 			>

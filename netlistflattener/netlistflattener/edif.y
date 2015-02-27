@@ -38,7 +38,7 @@ static FILE *Output = NULL;
 ////global struct con  *cons,  *cptr;
 ////global float  scale;
 ////global char   fName[SCH_NAME_LEN + 1];
-char szversion[] = "0.96";
+char szversion[] = "0.97";
 //global struct edifinstance *edifinstance = NULL, *iptredifinstance = NULL;
 
 // interfaces
@@ -5087,11 +5087,23 @@ char *FormString()
  *	It is passed two file streams, the first is where the input comes
  *	from; the second is where error messages get printed.
  */
-int ParseEDIF(inp,err,outp)
-FILE *inp,*err,*outp;
+int EDIFAPI ParseEDIF(szinp,szerr,szoutp)
+char *szinp,*szerr,*szoutp;
 {
   register int i;
   static int ContextDefined = 1;
+  FILE * inp, *err, *outp;
+  if(strlen(szerr) == strlen("stderr") && strcmp(szerr, "stderr") == 0){
+	err = stderr;
+  }
+	if( (inp = fopen( szinp, "rt" )) == NULL ) {
+	  fprintf(stderr, " %s non trouve\n", szinp);
+	  return(-1);
+	}
+	if( (outp = fopen( szoutp, "w" )) == NULL ) {
+		fprintf(stderr, " %s impossible a creer\n", szoutp);
+		return(-1);
+	}
   /*
    *	Set up the file state to something useful.
    */
@@ -5188,6 +5200,17 @@ FILE *inp,*err,*outp;
   return yyparse();
 
  //  DumpStack();
+}
+
+int EDIFAPI CloseEDIF(){
+	if(Input != NULL){ 
+	    fclose(Input);
+	    Input = NULL;
+	}
+	if(Output != NULL){
+		fclose(Output);
+		Output = NULL;
+	}
 }
 
 /*

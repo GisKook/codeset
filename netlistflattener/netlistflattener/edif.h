@@ -63,6 +63,7 @@ struct ediflibrary{
 };
 
 #define INSTANCECOUNT 256
+
 #define EDIFAPI __declspec(dllexport)
 
 #endif
