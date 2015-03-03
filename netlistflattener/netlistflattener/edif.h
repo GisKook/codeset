@@ -66,4 +66,6 @@ struct ediflibrary{
 
 #define EDIFAPI __declspec(dllexport)
 
+#define PRINTFUNC fprintf(stdout, "%s\n", __FUNCTION__);
+
 #endif
