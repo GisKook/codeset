@@ -103,7 +103,7 @@
 			IntermediateDirectory="$(ConfigurationName)"
 			ConfigurationType="1"
 			UseOfMFC="2"
-			CharacterSet="1"
+			CharacterSet="2"
 			WholeProgramOptimization="1"
 			>
 			<Tool
@@ -128,6 +128,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
+				AdditionalIncludeDirectories="../netlistflattener"
 				PreprocessorDefinitions="WIN32;_WINDOWS;NDEBUG"
 				MinimalRebuild="false"
 				RuntimeLibrary="2"
@@ -150,7 +151,9 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				AdditionalDependencies="netlistflattener.lib"
 				LinkIncremental="1"
+				AdditionalLibraryDirectories="../Debug"
 				GenerateDebugInformation="true"
 				SubSystem="2"
 				OptimizeReferences="2"

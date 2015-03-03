@@ -13,7 +13,8 @@ struct edifcell * edifcell_flatten(struct ediflibrary * library, struct edifcell
 	if(cell == NULL || edifsubcircuit == NULL){ 
 		fprintf(stdout, "%s error.\n", __FUNCTION__);
 		return NULL;
-	} 
+	}
+	PRINTFUNC 
 	for(tmpcell = cell; tmpcell != NULL; tmpcell = tmpcell->next){ 
 		if(!edifsubcircuit_isreal(edifsubcircuit, tmpcell->cell)){ 
 			iptredifcell = (struct edifcell *)malloc(sizeof(struct edifcell));
@@ -114,4 +115,8 @@ int edifcell_isinteralinstance(struct edifcell * edifcell, char * instancename){
 	}
 
 	return 0;
+}
+
+void edifcell_destroy(struct edifcell * edifcell){ 
+	struct edifcell * iptrcell = NULL;
 }

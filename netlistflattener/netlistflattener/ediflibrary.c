@@ -47,7 +47,8 @@ struct ediflibrary * ediflibrary_singleflatten(struct ediflibrary * edifsingleli
 	if(totallibrary == NULL || edifsinglelibrary == NULL || edifsubcircuit == NULL){
 		fprintf(stderr, "%s error.\n", __FUNCTION__);
 		return NULL;
-	} 
+	}
+	PRINTFUNC 
 	library = (struct ediflibrary *)malloc(sizeof(struct ediflibrary));
 	memset(library, 0, sizeof(struct ediflibrary));
 	library->usedinstance = (struct edifinstancename **)malloc(sizeof(struct edifinstancename *)*INSTANCECOUNT);
@@ -65,6 +66,7 @@ struct ediflibrary * ediflibrary_singleflatten(struct ediflibrary * edifsingleli
 struct ediflibrary * ediflibrary_flatten(struct ediflibrary * ediflibrarys){
 	struct ediflibrary * library = NULL, *iptrlibrary = NULL, *tmplibrary = NULL;
 	struct edifsubcircuit * edifsubcircuit = edifsubcircuit_create(ediflibrarys);
+	PRINTFUNC 
 	for(tmplibrary = ediflibrarys; tmplibrary != NULL; tmplibrary = ediflibrarys->next){
 		iptrlibrary = ediflibrary_singleflatten(tmplibrary, ediflibrarys, edifsubcircuit);
 		if (iptrlibrary != NULL) {
@@ -95,7 +97,7 @@ struct edifnetportref * ediflibrary_getnetportref(struct ediflibrary * library, 
 	struct edifcell * cell = NULL;
 	struct edifnetportref * tmpnetportref = NULL, *iptrnetportref = NULL, *portrefs = NULL;
 	for(iptrlibrary = library; iptrlibrary != NULL; iptrlibrary = iptrlibrary->next){
-		if (strlen(iptrlibrary->library, libraryname) == strlen(libraryname) && 0 == strcmp(iptrlibrary->library, libraryname)){
+		if (strlen(iptrlibrary->library) == strlen(libraryname) && 0 == strcmp(iptrlibrary->library, libraryname)){
 			cell = library->edifcell;
 			for(cell = library->edifcell; cell != NULL; cell = cell->next){
 				if(cell != NULL && strlen(cell->cell) == strlen(cellname) && 0 == strcmp(cell->cell, cellname)){ 
@@ -121,7 +123,7 @@ struct edifnet * ediflibrary_getnet(struct ediflibrary * library, struct ediflib
 	struct edifcell * cell = NULL;
 	struct edifnetportref * tmpnetportref = NULL, *iptrnetportref = NULL, *portrefs = NULL;
 	for(iptrlibrary = referlibrary; iptrlibrary != NULL; iptrlibrary = iptrlibrary->next){
-		if (strlen(iptrlibrary->library, libraryname) == strlen(libraryname) && 0 == strcmp(iptrlibrary->library, libraryname)){
+		if (strlen(iptrlibrary->library) == strlen(libraryname) && 0 == strcmp(iptrlibrary->library, libraryname)){
 			cell = referlibrary->edifcell;
 			for(cell = referlibrary->edifcell; cell != NULL; cell = cell->next){
 				if(cell != NULL && strlen(cell->cell) == strlen(cellname) && 0 == strcmp(cell->cell, cellname)){ 
@@ -204,4 +206,11 @@ struct ediflibrary * ediflibrary_create(struct ediflibrary * ediflibrary){
 
 	return library;
 
+}
+
+void ediflibrary_destroy(struct ediflibrary * library){
+	struct ediflibrary * iptrlibrary = NULL;
+	struct edifcell * edifcell  = NULL;
+	iptrlibrary = library->edifcell;
+	
 }

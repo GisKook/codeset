@@ -38,7 +38,9 @@ struct edifcontents * edifcontents_flatten(struct ediflibrary * library, struct 
 	struct edifcontents * contents = NULL, * iptrcontents = NULL;
 	if(edifcontents == NULL || referlibrary == NULL || subcircuit == NULL){
 		fprintf(stderr, "%s error.\n", __FUNCTION__);
+		return NULL;
 	}
+	PRINTFUNC 
 	con = (struct edifcontents *)malloc(sizeof(struct edifcontents));
 	memset(con, 0, sizeof(struct edifcontents));
 
@@ -51,10 +53,12 @@ struct edifcontents * edifcontents_flatten(struct ediflibrary * library, struct 
 		edifinstance_destroy(iptrfoldinstance);
 		iptrfoldinstance = edifinstance_getfoldinstance(instance);
 	}
+	fprintf(stdout, "instance flatten successfully.\n");
 
 	con->edifinstance = iptrflatinstance;
 	
 	con->edifnet = edifnet_flattenrecursive(edifcontents, referlibrary, subcircuit);
+	fprintf(stdout, "net flatten successfully.\n");
 
 	return con;
 }
@@ -68,7 +72,9 @@ void edifcontents_writer(struct edifcontents * edifcontents, FILE * out){
 	gkfputs("   (contents");
 	gkfputx;
 	edifinstance_writer(edifcontents->edifinstance, out);
+	fprintf(stdout, "instance write successfully.\n");
 	edifnet_writer(edifcontents->edifnet, out);
+	fprintf(stdout, "net write successfully.\n");
 	gkfputs(")");
 }
 

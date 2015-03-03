@@ -9,7 +9,7 @@ int main(int argc, char *argv[])
 {
 	char FileNameEdn[64];
 	char *InFile = "-";
-	char * version      = "0.97";
+	char * version      = "0.98";
 	char * progname;
 	// bubble sort cons by ref
 	progname = strrchr(argv[0],'/');
@@ -48,10 +48,10 @@ int main(int argc, char *argv[])
 		InFile = argv[1];
 		sprintf(FileNameEdn, "%s.edn", argv[1]);
 	}
+	fprintf(stdout, "Parse start...\n");
 	ParseEDIF(InFile, "stderr", FileNameEdn);
 	fprintf(stderr,"Parse Complete\n");
 	CloseEDIF();
-
 
 	fprintf(stderr,"  output is %s \n", FileNameEdn);
 

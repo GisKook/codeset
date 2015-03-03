@@ -38,7 +38,7 @@ static FILE *Output = NULL;
 ////global struct con  *cons,  *cptr;
 ////global float  scale;
 ////global char   fName[SCH_NAME_LEN + 1];
-char szversion[] = "0.97";
+char szversion[] = "0.98";
 //global struct edifinstance *edifinstance = NULL, *iptredifinstance = NULL;
 
 // interfaces
@@ -981,6 +981,30 @@ DesignNameDef :	NameDef
 		putc('\n', Output);
 		fputs("(design ",Output);
 		fputs($1->s,Output);
+		
+		
+		edifinterfaceports = NULL; iptredifinterfaceport = NULL;
+
+		// instances
+		 edifinstances = NULL, iptredifinstance = NULL;
+		 edifinstanceviewref = NULL; edifinstancecellref = NULL; edifinstancelibraryref = NULL;
+
+		// nets
+		edifnets = NULL, iptredifnet = NULL;
+		edifnetportrefs = NULL; iptredifnetportref = NULL;
+		netinstanceref = NULL;
+
+		// contents
+		edifcellcontents = NULL;
+
+		// cells
+		edifcells = NULL; iptredifcells = NULL;
+		celltype = NULL;  cellname = NULL;
+
+		// libraries
+		ediflibrarys = NULL; iptrediflibrary = NULL; iptrflattenediflibrary = NULL; librarys = NULL;
+		libraryname = NULL;
+
 		
 		}
 	      ;
@@ -2157,10 +2181,10 @@ NetNameDef :	NameDef
 		    if($1->nxt !=NULL)fprintf(Error,"'%s' ", $1->nxt->s);
 		    fprintf(Error,"\n");
 		  }
-		  if($1->nxt == NULL)
-		  	cur_nnam = $1->s;
-		  else
-		  	cur_nnam = $1->nxt->s;
+///		  if($1->nxt == NULL)
+///		  	cur_nnam = $1->s;
+///		  else
+///		  	cur_nnam = $1->nxt->s;
 		}
 	   |	Array
 	   ;
@@ -2168,12 +2192,14 @@ NetNameDef :	NameDef
 Net 	:	NET NetNameDef _Net PopC
 		{$$=$2;
 		iptredifnet	= (struct edifnet *)Malloc(sizeof(sizeof(struct edifnet)));
+		memset(iptredifnet, 0, sizeof(struct edifnet));
 		iptredifnet->net = strdup($2->s);
 		iptredifnet->edifnetportref = edifnetportrefs;
 		iptredifnet->next = edifnets;
 		edifnets = iptredifnet;
 		iptredifnet = NULL;
 		edifnetportrefs = NULL;
+		fprintf(stdout, "Parsing Net %s\n", $2->s);
 		}
     	;
 
@@ -2844,7 +2870,9 @@ PortNameRef :	NameRef
 
 PortRef     :	PORTREF PortNameRef _PortRef PopC
 		{$$=$2; // $$->nxt=$3;
+		fprintf(stdout, "Parsing PortRef %s\n", $2->s);
 		iptredifnetportref = (struct edifnetportref *)Malloc(sizeof(struct edifnetportref));
+		memset(iptredifnetportref, 0, sizeof(struct edifnetportref));
 		iptredifnetportref->portref	= strdup($2->s);
 		iptredifnetportref->instanceref = strdup(netinstanceref);
 		iptredifnetportref->next = edifnetportrefs;
@@ -5080,6 +5108,16 @@ char *FormString()
   return (cp + 1);
 }
 
+void ClearBucket(struct Bucket * CurBucket){
+	struct Bucket * iptrBucket = NULL;
+	struct Bucket * tmpBucket = NULL;
+	iptrBucket = CurBucket;
+	while((tmpBucket = iptrBucket) != NULL){
+		iptrBucket = iptrBucket->Next;
+		free(tmpBucket);
+		tmpBucket = NULL;
+	}
+}
 /*
  *	Parse EDIF:
  *
@@ -5182,6 +5220,9 @@ char *szinp,*szerr,*szoutp;
   /*
    *	Create an initial, empty string bucket.
    */
+  if(CurrentBucket != NULL){ 
+	ClearBucket(CurrentBucket);
+  }
   CurrentBucket = (Bucket *) Malloc(sizeof(Bucket));
   CurrentBucket->Next = NULL;
   CurrentBucket->Index = 0;

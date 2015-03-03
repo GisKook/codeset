@@ -297,7 +297,7 @@ struct edifinstance * edifinstance_getinternalintance(struct ediflibrary * libra
 	int instancepart1len, instancepart2len;
 	char * name = NULL;
 	for(iptrlibrary = referlibrary; iptrlibrary != NULL; iptrlibrary = iptrlibrary->next){
-		if (strlen(iptrlibrary->library, libraryname) == strlen(libraryname) && 0 == strcmp(iptrlibrary->library, libraryname)){
+		if (strlen(iptrlibrary->library) == strlen(libraryname) && 0 == strcmp(iptrlibrary->library, libraryname)){
 			cell = referlibrary->edifcell;
 			for(cell = referlibrary->edifcell; cell != NULL; cell = cell->next){
 				if(cell != NULL && strlen(cell->cell) == strlen(cellname) && 0 == strcmp(cell->cell, cellname)){ 

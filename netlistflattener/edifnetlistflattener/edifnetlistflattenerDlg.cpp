@@ -178,7 +178,7 @@ void CedifnetlistflattenerDlg::OnBnClickedButtonOutfile()
 {
 	// TODO: Add your control notification handler code here
 	TCHAR szFilters[]= _T("EDF Files (*.edf)|*edf|EDN Files (*.edn)|*.edn|All Files (*.*)|*.*||");
-	CFileDialog fileDlg(FALSE, _T("SAVE EDIF File"), _T("*.edf"),
+	CFileDialog fileDlg(FALSE, _T(""), _T("*.edf"),
 		OFN_FILEMUSTEXIST | OFN_HIDEREADONLY, szFilters);
 	if(fileDlg.DoModal() == IDOK)
 	{
@@ -193,13 +193,15 @@ void CedifnetlistflattenerDlg::OnBnClickedOk()
 {
 	// TODO: Add your control notification handler code here
 	// OnOK();
+	m_outfile.GetWindowText(m_strOutFileName);
+	m_infile.GetWindowText(m_strInFileName);
 	int result = ParseEDIF(m_strInFileName.GetBuffer(), "stderr", m_strOutFileName.GetBuffer());
 	if(result == 0){ 
 		m_tips.SetWindowText("Parse successfully");
 	}else{
 		m_tips.SetWindowText("Parse error");
 	}
+	CloseEDIF();
 	m_strInFileName.ReleaseBuffer();
 	m_strOutFileName.ReleaseBuffer();
-	CloseEDIF();
 }
