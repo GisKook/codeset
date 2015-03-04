@@ -38,7 +38,7 @@ static FILE *Output = NULL;
 ////global struct con  *cons,  *cptr;
 ////global float  scale;
 ////global char   fName[SCH_NAME_LEN + 1];
-char szversion[] = "0.98";
+char szversion[] = "0.99";
 //global struct edifinstance *edifinstance = NULL, *iptredifinstance = NULL;
 
 // interfaces

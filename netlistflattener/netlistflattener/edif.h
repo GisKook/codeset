@@ -68,4 +68,12 @@ struct ediflibrary{
 
 #define PRINTFUNC fprintf(stdout, "%s\n", __FUNCTION__);
 
+static int strcicmp(char *a, char *b)
+{
+    for (;; a++, b++) {
+        int d = tolower(*a) - tolower(*b);
+        if (d != 0 || !*a)
+            return d;
+    }
+}
 #endif
