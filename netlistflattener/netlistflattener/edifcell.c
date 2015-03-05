@@ -36,7 +36,7 @@ void edifcell_writer(struct edifcell * cell, FILE * out){
 		gkfputs("\n (cell ");
 		gkfputs(cell->cell);
 		gkfputx; 
-		gkfputs("  (celltype ");
+		gkfputs("  (cellType ");
 		gkfputs(cell->celltype);
 		gkfputy;
 		gkfputz;

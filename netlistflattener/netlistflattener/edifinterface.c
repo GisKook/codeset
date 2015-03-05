@@ -24,7 +24,7 @@ void edifinterface_writer(struct edifinterfaceport * interface, FILE * out){
 	gkfputs("   (interface");
 	for(port = interface; port != NULL; port = port->next){ 
 		nextport = port->next;
-		gkfputs("\n    (portRef ");
+		gkfputs("\n    (port ");
 		if (gkisdigit(port->port)) {
 			gkfputs("&");
 		}
@@ -41,9 +41,9 @@ void edifinterface_writer(struct edifinterfaceport * interface, FILE * out){
 				gkfputs("OUTPUT))");
 				break;
 		}
-		if(nextport != NULL){ 
-			gkfputx;
-		}
+///		if(nextport != NULL){ 
+///			gkfputx;
+///		}
 	}
 	gkfputy;
 	

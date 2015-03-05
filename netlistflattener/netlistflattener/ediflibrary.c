@@ -45,10 +45,14 @@ struct edifcell * ediflibrary_getcells(struct ediflibrary * ediflibrary){
 struct ediflibrary * ediflibrary_singleflatten(struct ediflibrary * edifsinglelibrary, struct ediflibrary * totallibrary, struct edifsubcircuit * edifsubcircuit){
 	struct ediflibrary * library = NULL, *iptrlibrary = NULL;
 	if(totallibrary == NULL || edifsinglelibrary == NULL || edifsubcircuit == NULL){
-		fprintf(stderr, "%s error.\n", __FUNCTION__);
+		fprintf(stdout, "The library does not need to flat.\n");
 		return NULL;
 	}
-	PRINTFUNC 
+	PRINTFUNC;
+	if(ediflibrary_isflat(totallibrary)){
+		fprintf(stdout, "The library does not need to flat.\n");
+		return NULL;
+	}
 	library = (struct ediflibrary *)malloc(sizeof(struct ediflibrary));
 	memset(library, 0, sizeof(struct ediflibrary));
 	library->usedinstance = (struct edifinstancename **)malloc(sizeof(struct edifinstancename *)*INSTANCECOUNT);

@@ -442,8 +442,6 @@ void edifnet_writer(struct edifnet * edifnet, FILE * out){
 				gkfputs("(instanceRef ");
 				gkfputs(portref->instanceref);
 				gkfputs(")"); 
-			}else{
-				assert(0);
 			}
 			gkfputs(")");
 		}
