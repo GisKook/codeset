@@ -15,18 +15,19 @@ struct edifcell * edifcell_flatten(struct ediflibrary * library, struct edifcell
 		return NULL;
 	}
 	PRINTFUNC 
-	for(tmpcell = cell; tmpcell != NULL; tmpcell = tmpcell->next){ 
-		if(!edifsubcircuit_isreal(edifsubcircuit, tmpcell->cell)){ 
-			iptredifcell = (struct edifcell *)malloc(sizeof(struct edifcell));
-			memset(iptredifcell, 0, sizeof(struct edifcell));
-			iptredifcell->cell = strdup(tmpcell->cell);
-			iptredifcell->celltype = strdup(tmpcell->celltype);
-			iptredifcell->edifinterfaceport = edifinterface_copy(tmpcell->edifinterfaceport);
-			iptredifcell->next = edifcell;
-			iptredifcell->edifcontents = edifcontents_flatten(library, tmpcell->edifcontents, referlibrary, edifsubcircuit);
-			edifcell = iptredifcell;
-		}
-	}
+		///	for(tmpcell = cell; tmpcell != NULL; tmpcell = tmpcell->next){ 
+		///		if(!edifsubcircuit_isreal(edifsubcircuit, tmpcell->cell)){ 
+	tmpcell = cell;
+	iptredifcell = (struct edifcell *)malloc(sizeof(struct edifcell));
+	memset(iptredifcell, 0, sizeof(struct edifcell));
+	iptredifcell->cell = strdup(tmpcell->cell);
+	iptredifcell->celltype = strdup(tmpcell->celltype);
+	iptredifcell->edifinterfaceport = edifinterface_copy(tmpcell->edifinterfaceport);
+	iptredifcell->next = edifcell;
+	iptredifcell->edifcontents = edifcontents_flatten(library, tmpcell->edifcontents, referlibrary, edifsubcircuit);
+	edifcell = iptredifcell;
+	///		}
+	///	}
 
 	return edifcell;
 }
@@ -85,7 +86,7 @@ char * edifcell_getsubcellname(struct ediflibrary * ediflibrary, char * libraryn
 	struct edifcell * cell = NULL;
 	struct edifinstance * iptrinstance = NULL, * instance = NULL;
 	int count = 0;
-	
+
 	library = ediflibrary_getlibrary(ediflibrary, libraryname);
 
 	if(library){ 

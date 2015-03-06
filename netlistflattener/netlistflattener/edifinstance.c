@@ -239,6 +239,9 @@ void edifinstance_writer(struct edifinstance * instance, FILE * out){
 
 int edifinstance_needflatten(struct edifinstance * instance, char * instancename){
 	struct edifinstance * tmpinstance = NULL;
+	if(instancename == NULL){
+		return 0;
+	}
 	if(instance){
 		for(tmpinstance = instance; tmpinstance != NULL; tmpinstance = tmpinstance->next){
 			if (strlen(tmpinstance->instance) == strlen(instancename) && strcmp(tmpinstance->instance, instancename) == 0) {
