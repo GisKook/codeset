@@ -9,7 +9,7 @@ int main(int argc, char *argv[])
 {
 	char FileNameEdn[64];
 	char *InFile = "-";
-	char * version      = "1.00";
+	char * version      = "1.01";
 	char * progname;
 	// bubble sort cons by ref
 	progname = strrchr(argv[0],'/');
