@@ -41,4 +41,10 @@ public:
 	CEdit m_outfile;
 	afx_msg void OnBnClickedOk();
 	CStatic m_tips;
+private:
+	CString m_strfilepath;
+private:
+	CString m_conf;
+public:
+	afx_msg void OnBnClickedCancel();
 };

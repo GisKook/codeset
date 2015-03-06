@@ -8,6 +8,9 @@ extern "C"{
 #include "edifheader.h"
 };
 
+#include <iosfwd>
+#include <fstream>
+#include <fstream>
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -72,6 +75,7 @@ BEGIN_MESSAGE_MAP(CedifnetlistflattenerDlg, CDialog)
 	ON_BN_CLICKED(IDC_BUTTON_INFILE, &CedifnetlistflattenerDlg::OnBnClickedButtonInfile)
 	ON_BN_CLICKED(IDC_BUTTON_OUTFILE, &CedifnetlistflattenerDlg::OnBnClickedButtonOutfile)
 	ON_BN_CLICKED(IDOK, &CedifnetlistflattenerDlg::OnBnClickedOk)
+	ON_BN_CLICKED(IDCANCEL, &CedifnetlistflattenerDlg::OnBnClickedCancel)
 END_MESSAGE_MAP()
 
 
@@ -105,6 +109,18 @@ BOOL CedifnetlistflattenerDlg::OnInitDialog()
 	SetIcon(m_hIcon, FALSE);		// Set small icon
 
 	// TODO: Add extra initialization here
+	m_conf = "./conf.ini";
+
+	std::ifstream conf;
+	conf.open(m_conf.GetBuffer());
+	int count = conf.gcount(); 
+	char * filepath = (char *)malloc(count + 1);
+	filepath[count] = 0;
+	conf.read(filepath, count);
+	m_strfilepath = filepath;
+	free(filepath);
+	conf.close();
+	m_conf.ReleaseBuffer();
 
 	return TRUE;  // return TRUE  unless you set the focus to a control
 }
@@ -165,13 +181,29 @@ void CedifnetlistflattenerDlg::OnBnClickedButtonInfile()
 	TCHAR szFilters[]= _T("EDF Files (*.edn)|*edn|EDN Files (*.edf)|*.edf|All Files (*.*)|*.*||");
 	CFileDialog fileDlg(TRUE, _T("Open EDIF File"), _T("*.edn"),
 		OFN_FILEMUSTEXIST | OFN_HIDEREADONLY, szFilters);
+	///	if(m_strfilepath.IsEmpty()){
+	///		fileDlg.GetOFN().lpstrInitialDir = "c:";
+	///	}else{
+	///		fileDlg.GetOFN().lpstrInitialDir = m_strfilepath;
+	///	}
+	char * buffer = (char *)malloc(m_strfilepath.GetLength()+1);
+	memset(buffer, 0, m_strfilepath.GetLength() + 1);
+	int count = m_strfilepath.ReverseFind('\\');
+	if(count != -1){
+		memcpy(buffer, m_strfilepath.GetBuffer(), count);
+		fileDlg.GetOFN().lpstrInitialDir = buffer;
+	}
+
+	fileDlg.GetOFN().lpstrTitle = "open netlist file";
 	if(fileDlg.DoModal() == IDOK)
 	{
 		m_strInFileName = fileDlg.GetPathName();
-///		CString fileName = fileDlg.GetFileTitle();
-///		SetWindowText(fileName);
+		///		CString fileName = fileDlg.GetFileTitle();
+		///		SetWindowText(fileName);
 		m_infile.SetWindowText(m_strInFileName);
+		m_strfilepath = m_strInFileName;
 	}
+	free(buffer);
 }
 
 void CedifnetlistflattenerDlg::OnBnClickedButtonOutfile()
@@ -180,6 +212,7 @@ void CedifnetlistflattenerDlg::OnBnClickedButtonOutfile()
 	TCHAR szFilters[]= _T("EDF Files (*.edf)|*edf|EDN Files (*.edn)|*.edn|All Files (*.*)|*.*||");
 	CFileDialog fileDlg(FALSE, _T(""), _T("*.edf"),
 		OFN_FILEMUSTEXIST | OFN_HIDEREADONLY, szFilters);
+	fileDlg.GetOFN().lpstrFileTitle = "save netlist file";
 	if(fileDlg.DoModal() == IDOK)
 	{
 		m_strOutFileName = fileDlg.GetPathName();
@@ -202,6 +235,22 @@ void CedifnetlistflattenerDlg::OnBnClickedOk()
 		m_tips.SetWindowText("Parse error");
 	}
 	CloseEDIF();
-	m_strInFileName.ReleaseBuffer();
-	m_strOutFileName.ReleaseBuffer();
+	m_strfilepath = m_strInFileName;
+}
+
+
+void CedifnetlistflattenerDlg::OnBnClickedCancel()
+{
+	// TODO: 在此添加控件通知处理程序代码
+
+	if(!m_strfilepath.IsEmpty()){
+		std::ofstream conf;
+		conf.open(m_conf.GetBuffer(), std::ios_base::trunc | std::ios_base::out);
+		conf.write(m_strfilepath.GetBuffer(), m_strfilepath.GetLength());
+		conf.flush();
+		conf.close();
+		m_strfilepath.ReleaseBuffer();
+		m_conf.ReleaseBuffer();
+	}
+	OnCancel();
 }
