@@ -109,7 +109,7 @@ void edifinstance_addusedinstance(struct ediflibrary * library, char * instancen
 }
 
 char * edifinstance_rename(struct ediflibrary * library, char * instancename){
-	char * newname = NULL, iptrname = NULL;
+	char * newname = NULL, *iptrname = NULL;
 	char c = 0;
 	int i = 0, num = 0;
 	char tmpname[16] = {0};
@@ -121,9 +121,10 @@ char * edifinstance_rename(struct ediflibrary * library, char * instancename){
 				if(gkisdigit(newname + i + 1)){
 					num = atoi(newname + i + 1);
 					num ++;
+					memset(tmpname, 0, 16);
 					sprintf(tmpname, "%d", num);
-					iptrname = (char *)malloc(i+strlen(num)+2);
-					memset(iptrname, 0, i + strlen(num) + 2);
+					iptrname = (char *)malloc(i+strlen(tmpname)+2);
+					memset(iptrname, 0, i + strlen(tmpname) + 2);
 					memcpy(iptrname, newname, i + 1);
 					memcpy(iptrname + i + 1, tmpname, strlen(tmpname));
 					free(newname);
