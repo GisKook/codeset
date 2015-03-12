@@ -3,6 +3,7 @@
 
 int ParseEDIF(char * inp, char *err ,char *outp);
 int CloseEDIF();
+int IsLogicalerror();
 
 #endif
 

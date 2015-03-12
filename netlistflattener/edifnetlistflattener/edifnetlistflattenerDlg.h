@@ -45,6 +45,7 @@ private:
 	CString m_strfilepath;
 private:
 	CString m_conf;
+    CString m_logfilename;
 public:
 	afx_msg void OnBnClickedCancel();
 };

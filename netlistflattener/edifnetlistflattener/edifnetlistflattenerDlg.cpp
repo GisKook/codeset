@@ -122,7 +122,11 @@ BOOL CedifnetlistflattenerDlg::OnInitDialog()
 	conf.close();
 	m_conf.ReleaseBuffer();
 
-	return TRUE;  // return TRUE  unless you set the focus to a control
+    char directory[256] = {0};
+	CString logdir;
+	::GetCurrentDirectory(255, directory);
+	logdir = directory;
+	m_logfilename = logdir+"\\netlistflattener.log";	return TRUE;  // return TRUE  unless you set the focus to a control
 }
 
 void CedifnetlistflattenerDlg::OnSysCommand(UINT nID, LPARAM lParam)
@@ -228,12 +232,28 @@ void CedifnetlistflattenerDlg::OnBnClickedOk()
 	// OnOK();
 	m_outfile.GetWindowText(m_strOutFileName);
 	m_infile.GetWindowText(m_strInFileName);
-	int result = ParseEDIF(m_strInFileName.GetBuffer(), "stderr", m_strOutFileName.GetBuffer());
+	int result = ParseEDIF(m_strInFileName.GetBuffer(), m_logfilename.GetBuffer(), m_strOutFileName.GetBuffer());
+	time_t rawtime;
+	struct tm * timeinfo;
+	char comment[256] = {0};
+	char * curtime = NULL;
+	char sztime[128] = {0};
+
+	time(&rawtime);
+	timeinfo = localtime(&rawtime);
+	curtime = asctime(timeinfo);
+	memcpy(sztime, curtime, strlen(curtime) - 1);
+	CString strtips;
 	if(result == 0){ 
-		m_tips.SetWindowText("Parse successfully");
+		if(IsLogicalerror() == 1){ 
+			strtips.Format("[%s] Parse successfully. but some nets are not correct.see log file for details", sztime);
+		}else{
+			strtips.Format("[%s] Parse successfully", sztime);
+		}
 	}else{
-		m_tips.SetWindowText("Parse error");
+		strtips.Format("[%s] Parse error, The input file have syntax error. see log file for details", sztime);
 	}
+	m_tips.SetWindowText(strtips);
 	CloseEDIF();
 	m_strfilepath = m_strInFileName;
 }

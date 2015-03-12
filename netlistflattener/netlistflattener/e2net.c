@@ -12,7 +12,7 @@
 
 int yydebug=0;
 int bug=0;  		// debug level: >2 netlist, >5 schematic, >8 all
-
+int blogicalerror = 0;
 char *InFile = "-";
 
 char FileNameEdn[64], FileNameSdtLib[64], FileNameEESchema[64], FileNameKiPro[64];

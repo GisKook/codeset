@@ -38,7 +38,8 @@ static FILE *Output = NULL;
 ////global struct con  *cons,  *cptr;
 ////global float  scale;
 ////global char   fName[SCH_NAME_LEN + 1];
-char szversion[] = "1.04";
+global int blogicalerror;
+char szversion[] = "1.05";
 //global struct edifinstance *edifinstance = NULL, *iptredifinstance = NULL;
 
 // interfaces
@@ -66,7 +67,7 @@ struct ediflibrary * ediflibrarys = NULL, *iptrediflibrary = NULL, *iptrflattene
 char * libraryname = NULL;
 
 
-int TempR, TempMat[2][2];
+void Clear();int TempR, TempMat[2][2];
 ////LibraryStruct		 *LSptr;
 ////LibraryEntryStruct	 *LEptr;
 LibraryDrawEntryStruct   *LDptr, *New=NULL, *INew;
@@ -715,6 +716,7 @@ Cell    :  CELL CellNameDef _Cell PopC
  		 edifcellcontents = NULL;
  		 iptredifcells->next = edifcells;
  		 edifcells = iptredifcells;
+ 		 iptredifcells = NULL;
  		 }
 		}
         ;
@@ -981,29 +983,9 @@ DesignNameDef :	NameDef
 		putc('\n', Output);
 		fputs("(design ",Output);
 		fputs($1->s,Output);
+		Clear();
 		
 		
-		edifinterfaceports = NULL; iptredifinterfaceport = NULL;
-
-		// instances
-		 edifinstances = NULL, iptredifinstance = NULL;
-		 edifinstanceviewref = NULL; edifinstancecellref = NULL; edifinstancelibraryref = NULL;
-
-		// nets
-		edifnets = NULL, iptredifnet = NULL;
-		edifnetportrefs = NULL; iptredifnetportref = NULL;
-		netinstanceref = NULL;
-
-		// contents
-		edifcellcontents = NULL;
-
-		// cells
-		edifcells = NULL; iptredifcells = NULL;
-		celltype = NULL;  cellname = NULL;
-
-		// libraries
-		ediflibrarys = NULL; iptrediflibrary = NULL; iptrflattenediflibrary = NULL; librarys = NULL;
-		libraryname = NULL;
 
 		
 		}
@@ -2199,7 +2181,7 @@ Net 	:	NET NetNameDef _Net PopC
 		edifnets = iptredifnet;
 		iptredifnet = NULL;
 		edifnetportrefs = NULL;
-		fprintf(stdout, "Parsing Net %s\n", $2->s);
+		//fprintf(stdout, "Parsing Net %s\n", $2->s);
 		}
     	;
 
@@ -2870,7 +2852,7 @@ PortNameRef :	NameRef
 
 PortRef     :	PORTREF PortNameRef _PortRef PopC
 		{$$=$2; // $$->nxt=$3;
-		fprintf(stdout, "Parsing PortRef %s\n", $2->s);
+		//fprintf(stdout, "Parsing PortRef %s\n", $2->s);
 		iptredifnetportref = (struct edifnetportref *)Malloc(sizeof(struct edifnetportref));
 		memset(iptredifnetportref, 0, sizeof(struct edifnetportref));
 		iptredifnetportref->portref	= strdup($2->s);
@@ -5038,6 +5020,8 @@ char *ers;
 {
 #ifdef	DEBUG
   DumpStack();
+  Clear();
+  edifparsestatus = EDIFPARSENON; 
 #endif
   fprintf(Error,"%s, Line %d: %s\n", InFile, LineNumber, ers);
 }
@@ -5108,6 +5092,18 @@ char *FormString()
   return (cp + 1);
 }
 
+void ClearCSP(struct ContextCar * csp){
+	struct ContextCar * iptrcsp = NULL;
+	struct ContextCar * tmpcsp = NULL;
+	iptrcsp = csp;
+	while((tmpcsp = iptrcsp) != NULL){
+		iptrcsp = iptrcsp ->Next;
+		free(tmpcsp);
+		tmpcsp= NULL;
+	}
+
+}
+
 void ClearBucket(struct Bucket * CurBucket){
 	struct Bucket * iptrBucket = NULL;
 	struct Bucket * tmpBucket = NULL;
@@ -5118,7 +5114,29 @@ void ClearBucket(struct Bucket * CurBucket){
 		tmpBucket = NULL;
 	}
 }
-/*
+void Clear(){
+	edifinterfaceports = NULL; iptredifinterfaceport = NULL;
+	// instances
+	 edifinstances = NULL, iptredifinstance = NULL;
+	 edifinstanceviewref = NULL; edifinstancecellref = NULL; edifinstancelibraryref = NULL;
+
+	// nets
+	edifnets = NULL, iptredifnet = NULL;
+	edifnetportrefs = NULL; iptredifnetportref = NULL;
+	netinstanceref = NULL;
+
+	// contents
+	edifcellcontents = NULL;
+
+	// cells
+	edifcells = NULL; iptredifcells = NULL;
+	celltype = NULL;  cellname = NULL;
+
+	// libraries
+	ediflibrarys = NULL; iptrediflibrary = NULL; iptrflattenediflibrary = NULL; librarys = NULL;
+	libraryname = NULL;
+
+}/*
  *	Parse EDIF:
  *
  *	  This builds the context tree and then calls the real parser.
@@ -5131,9 +5149,12 @@ char *szinp,*szerr,*szoutp;
   register int i;
   static int ContextDefined = 1;
   FILE * inp, *err, *outp;
+  blogicalerror = 0;
   if(strlen(szerr) == strlen("stderr") && strcmp(szerr, "stderr") == 0){
 	err = stderr;
-  }
+   }else{
+	err = stdout;
+	freopen(szerr, "w", stdout);  }
 	if( (inp = fopen( szinp, "rt" )) == NULL ) {
 	  fprintf(stderr, " %s non trouve\n", szinp);
 	  return(-1);
@@ -5216,10 +5237,20 @@ char *szinp,*szerr,*szoutp;
     CSP->Context = FindContext(NULL);
     CSP->u.Used = NULL;
     ContextDefined = 0;
+  } else{
+	ClearCSP(CSP);
+	CSP = NULL;
+    CSP = (ContextCar *) Malloc(sizeof(ContextCar));
+    CSP->Next = NULL;
+    CSP->Context = FindContext(NULL);
+    CSP->u.Used = NULL;
+    memset(yytext, 0, IDENT_LENGTH + 1);
+    memset(CharBuf, 0, IDENT_LENGTH + 1);
   }
   /*
    *	Create an initial, empty string bucket.
    */
+  
   if(CurrentBucket != NULL){ 
 	ClearBucket(CurrentBucket);
   }
@@ -5230,9 +5261,12 @@ char *szinp,*szerr,*szoutp;
    *	Fill the token stack with NULLs if debugging is enabled.
    */
 #ifdef	DEBUG
-  for (i = TS_DEPTH; i--; TokenStack[i] = NULL)
-    if (TokenStack[i])
+   for (i = TS_DEPTH; i--; TokenStack[i] = NULL){
+    if (TokenStack[i]){
       Free(TokenStack[i]);
+      TokenStack[i] = NULL;
+      }
+   }
   TSP = 0;
 #endif
   /*
@@ -5252,9 +5286,13 @@ int EDIFAPI CloseEDIF(){
 		fclose(Output);
 		Output = NULL;
 	}
+    fflush(stdout);
+	//fclose(stdout);
 }
 
-/*
+int EDIFAPI IsLogicalerror(){
+	return blogicalerror;
+}/*
  *	Match token:
  *
  *	  The passed string is looked up in the current context's token

@@ -9,6 +9,7 @@
 #include "edifcontents.h"
 
 global char * glibrary;
+global int blogicalerror;
 struct edifnetportref * edifnet_getportrefs(struct ediflibrary * library, struct edifnet * edifnet, char * instancename, char * portref);
 struct edifnetportref * edifnetportref_copy(struct edifnetportref * portref);
 struct edifnet *edifnet_add(struct edifnet * edifnet, struct edifnet * net); 
@@ -324,7 +325,8 @@ struct edifnet * edifnet_flattensingle(struct ediflibrary * library, struct edif
 				netportref = iptrnetportref;
 				edifinstance_addnames(instancenames, tmpnetportref->instanceref);
 			}else{
-				fprintf(stdout, "can not find instance %s's port %s\n", tmpnetportref->instanceref, tmpnetportref->portref);
+				blogicalerror = 1;
+				fprintf(stdout, "[need check]can not find instance %s's port %s\n", tmpnetportref->instanceref, tmpnetportref->portref);
 			}
 
 		}else{

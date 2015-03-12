@@ -100,6 +100,7 @@ void edifinstance_addusedinstance(struct ediflibrary * library, char * instancen
 			free(library->usedinstance[i]->uidname);
 			free(library->usedinstance[i]);
 		}
+        library->usedinstance = names;
 		library->usedinstance[library->instancecount] = name;
 		library->instancecount++;
 	}else{
