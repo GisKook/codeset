@@ -34,12 +34,45 @@ char ** ediflibrary_getnames(struct ediflibrary * ediflibrary){
 		}
 		libname[i] = NULL;
 	}
-	
+
 	return libname;
 }
 
 struct edifcell * ediflibrary_getcells(struct ediflibrary * ediflibrary){ 
 	return ediflibrary != NULL?ediflibrary->edifcell:NULL;
+}
+
+
+void ediflibrary_dumplog(struct ediflibrary * library){
+	int i, j;
+	int spacecount;
+	fprintf(stdout, "\n");
+	fprintf(stdout, "--------------------------instance---------------------------\n");
+	fprintf(stdout, "    original name         uidname               new name\n");
+	for (i = 0; i < library->instancecount; ++i) {
+		if(!(strlen(library->usedinstance[i]->originalname) == strlen(library->usedinstance[i]->instancename) &&
+			strcmp(library->usedinstance[i]->originalname, library->usedinstance[i]->instancename) == 0)){
+				fprintf(stdout, "    %s", library->usedinstance[i]->originalname); 
+				spacecount = 18-strlen(library->usedinstance[i]->originalname);
+				for(j = 0; j < spacecount; ++j)
+					fprintf(stdout, " ");
+				fprintf(stdout, "    %s", library->usedinstance[i]->uidname); 
+				spacecount = 18-strlen(library->usedinstance[i]->uidname);
+				for(j = 0; j < spacecount; ++j)
+					fprintf(stdout, " ");
+				fprintf(stdout, "    %s", library->usedinstance[i]->instancename); 
+				spacecount = 18-strlen(library->usedinstance[i]->instancename);
+				for(j = 0; j < spacecount; ++j)
+					fprintf(stdout, " ");
+				fprintf(stdout,"\n");
+		}
+
+	}
+	fprintf(stdout, "-------------------------------------------------------------\n");
+	fprintf(stdout, "\n");
+
+	
+
 }
 
 struct ediflibrary * ediflibrary_singleflatten(struct ediflibrary * edifsinglelibrary, struct ediflibrary * totallibrary, struct edifsubcircuit * edifsubcircuit){
@@ -57,12 +90,17 @@ struct ediflibrary * ediflibrary_singleflatten(struct ediflibrary * edifsingleli
 	memset(library, 0, sizeof(struct ediflibrary));
 	library->usedinstance = (struct edifinstancename **)malloc(sizeof(struct edifinstancename *)*INSTANCECOUNT);
 	library->instancecapacity = INSTANCECOUNT;
-	memset(library->usedinstance, 0, sizeof(struct edifinstancename *)*INSTANCECOUNT);
+
+	library->netnames = (struct edifnetnames **)malloc(sizeof(struct edifnetnames *)*NETCOUNT);
+	memset(library->netnames, 0, sizeof(struct edifnetnames*)*NETCOUNT);
+	library->netcapacity = NETCOUNT;
 	library->library = strdup(edifsinglelibrary->library);
 	if(edifsinglelibrary->edifcell != NULL){
 		glibrary = library->library;
 		library->edifcell = edifcell_flatten(library, edifsinglelibrary->edifcell, totallibrary, edifsubcircuit);
-	}
+	} 
+	ediflibrary_dumplog(library);
+
 
 	return library;
 }
@@ -71,18 +109,18 @@ struct ediflibrary * ediflibrary_flatten(struct ediflibrary * ediflibrarys){
 	struct ediflibrary * library = NULL, *iptrlibrary = NULL, *tmplibrary = NULL;
 	struct edifsubcircuit * edifsubcircuit = edifsubcircuit_create(ediflibrarys);
 	PRINTFUNC 
-	for(tmplibrary = ediflibrarys; tmplibrary != NULL; tmplibrary = ediflibrarys->next){
-		iptrlibrary = ediflibrary_singleflatten(tmplibrary, ediflibrarys, edifsubcircuit);
-		if (iptrlibrary != NULL) {
-			iptrlibrary->next = library;
-			library = iptrlibrary;
+		for(tmplibrary = ediflibrarys; tmplibrary != NULL; tmplibrary = ediflibrarys->next){
+			iptrlibrary = ediflibrary_singleflatten(tmplibrary, ediflibrarys, edifsubcircuit);
+			if (iptrlibrary != NULL) {
+				iptrlibrary->next = library;
+				library = iptrlibrary;
+			}
 		}
-	}
 
-	if (library == NULL) {
-		return ediflibrarys;
-	}
-	return library;
+		if (library == NULL) {
+			return ediflibrarys;
+		}
+		return library;
 }
 
 void ediflibrary_writer(struct ediflibrary * ediflibrary, FILE * out){
@@ -135,6 +173,7 @@ struct edifnet * ediflibrary_getnet(struct ediflibrary * library, struct ediflib
 						for(tmpnet = cell->edifcontents->edifnet; tmpnet != NULL; tmpnet = tmpnet->next) { 
 							if(edifnet_isinteral(tmpnet)){ 
 								iptrnet = edifnet_copyrename(library, tmpnet, instancename);
+								edifnet_addnames(library, tmpnet->net, iptrnet->net);
 								iptrnet->next = net;
 								net = iptrnet;
 							}
@@ -145,7 +184,7 @@ struct edifnet * ediflibrary_getnet(struct ediflibrary * library, struct ediflib
 			}
 		}
 	}
-	
+
 	return NULL;
 }
 
@@ -203,18 +242,22 @@ struct ediflibrary * ediflibrary_create(struct ediflibrary * ediflibrary){
 	struct ediflibrary * library;
 	library = (struct ediflibrary *)malloc(sizeof(struct ediflibrary));
 	memset(library, 0, sizeof(struct ediflibrary));
+
 	library->usedinstance = (struct edifinstancename **)malloc(sizeof(struct edifinstancename *)*INSTANCECOUNT);
 	library->instancecapacity = INSTANCECOUNT;
 	memset(library->usedinstance, 0, sizeof(struct edifinstancename *)*INSTANCECOUNT);
 	library->library = strdup(ediflibrary->library);
 
+	library->netnames = (struct edifnetnames **)malloc(sizeof(struct edifnetnames *)*NETCOUNT);
+	memset(library->netnames, 0, sizeof(struct edifnetnames *)*NETCOUNT);
+	library->netcapacity = NETCOUNT;
+	
 	return library;
-
 }
 
 void ediflibrary_destroy(struct ediflibrary * library){
 	struct ediflibrary * iptrlibrary = NULL;
 	struct edifcell * edifcell  = NULL;
 	iptrlibrary = library->edifcell;
-	
+
 }

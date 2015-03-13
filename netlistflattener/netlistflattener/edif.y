@@ -39,7 +39,7 @@ static FILE *Output = NULL;
 ////global float  scale;
 ////global char   fName[SCH_NAME_LEN + 1];
 global int blogicalerror;
-char szversion[] = "1.05";
+char szversion[] = "1.06";
 //global struct edifinstance *edifinstance = NULL, *iptredifinstance = NULL;
 
 // interfaces
@@ -5154,7 +5154,10 @@ char *szinp,*szerr,*szoutp;
 	err = stderr;
    }else{
 	err = stdout;
-	freopen(szerr, "w", stdout);  }
+	freopen(szerr, "w", stdout);  
+}
+	fprintf(stdout, "Input edn file name %s\n", szinp);
+	fprintf(stdout, "output edn file name %s\n", szoutp);
 	if( (inp = fopen( szinp, "rt" )) == NULL ) {
 	  fprintf(stderr, " %s non trouve\n", szinp);
 	  return(-1);

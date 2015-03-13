@@ -53,6 +53,12 @@ struct edifinstancename{
 	char * uidname;
 };
 
+struct edifnetnames{
+	char * originalname;
+	char * netname;
+	int binter;
+};
+
 struct ediflibrary{
 	char * library;
 	struct edifcell * edifcell;
@@ -60,9 +66,13 @@ struct ediflibrary{
 	struct edifinstancename ** usedinstance;
 	int instancecount;
 	int instancecapacity;
+	struct edifnetnames ** netnames;
+	int netcount;
+	int netcapacity;
 };
 
 #define INSTANCECOUNT 256
+#define NETCOUNT 2
 
 #define EDIFAPI __declspec(dllexport)
 
