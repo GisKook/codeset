@@ -53,12 +53,12 @@ struct edifcontents * edifcontents_flatten(struct ediflibrary * library, struct 
 		edifinstance_destroy(iptrfoldinstance);
 		iptrfoldinstance = edifinstance_getfoldinstance(instance);
 	}
-	fprintf(stdout, "instance flatten successfully.\n");
+	fprintf(stdout, "instance flatten successfully.\n\n");
 
 	con->edifinstance = iptrflatinstance;
 	
 	con->edifnet = edifnet_flattenrecursive(edifcontents, referlibrary, subcircuit);
-	fprintf(stdout, "net flatten successfully.\n");
+	fprintf(stdout, "net flatten successfully.\n\n");
 
 	return con;
 }
