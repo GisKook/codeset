@@ -590,3 +590,52 @@ struct edifnet * edifnet_flattenrecursive(struct edifcontents * edifcontents, st
 
 	return iptrnet;
 }
+
+int edifnetport_samepin(struct edifnet * net, struct edifnetportref * port){
+	struct edifnetportref * iptrport, * tmpport;
+	if(port->instanceref == NULL || port->portref == NULL){
+		return 0;
+	}
+
+	for (tmpport = net->edifnetportref; tmpport != NULL; tmpport = tmpport->next){ 
+		if(tmpport->instanceref == NULL || port->portref == NULL){
+			continue;
+		}
+		if(strlen(tmpport->instanceref) == strlen(port->instanceref) && strcmp(tmpport->instanceref, port->instanceref) == 0 && 
+			strlen(tmpport->portref) == strlen(port->portref) && strcmp(tmpport->portref, port->portref) == 0){
+				return 1;
+		}
+	}
+
+	return 0;
+}
+
+int edifnet_samepin(struct edifnet * refernet, struct edifnet * testnet){
+	struct edifnetportref * iptrport, * tmpport;
+	for(tmpport = testnet->edifnetportref; tmpport != NULL; tmpport = tmpport->next){
+		if(1 == edifnetport_samepin(refernet, tmpport)){
+			return 1;
+		}
+	}
+}
+
+void edifnet_checkpins(struct edifnet * net){
+	struct edifnet * iptrnet, * tmpnet, * nextnet;
+	struct edifnetportref * iptrport, * tmpport, * nextport;
+	int spacecount,i;
+	for(tmpnet = net; tmpnet != NULL; tmpnet = tmpnet->next){
+		nextnet = tmpnet->next;
+		for(iptrnet = nextnet;  iptrnet != NULL; iptrnet = iptrnet->next){
+			if(edifnet_samepin(iptrnet, tmpnet) == 1){
+				fprintf(stdout, "    %s", tmpnet->net);
+				spacecount = 42 - strlen(tmpnet->net);
+				for(i = 0; i < spacecount; ++i){
+					fprintf(stdout, " ");
+				}
+				fprintf(stdout, "%s\n", iptrnet->net);
+				free(tmpnet->net);
+				tmpnet->net = strdup(iptrnet->net);
+			}
+		}
+	}
+}

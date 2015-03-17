@@ -18,5 +18,6 @@ struct edifnet * edifnet_getinternalnets(struct ediflibrary * library, struct ed
 struct edifnet * edifnet_flattenex(struct ediflibrary * library ,struct edifcontents * edifcontents, struct ediflibrary * referlibrary, struct edifsubcircuit * eidfsubcircuit);
 struct edifnet * edifnet_flattenrecursive(struct edifcontents * edifcontents, struct ediflibrary * referlibrary, struct edifsubcircuit * subcircuit);
 void edifnet_addnames(struct ediflibrary * library, char * orignalname, char * newname);
+void edifnet_checkpins(struct edifnet * net);
 
 #endif

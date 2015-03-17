@@ -1,0 +1,10 @@
+Debug/
+netlistflattener/y.dot netlistflattener/y.output netlistflattener/y.tab.c netlistflattener/y.tab.h
+netlistflattener/y.dot
+netlistflattener/y.output
+netlistflattener/y.tab.h
+netlistflattener/y.tab.c
+edifnetlistflattener/netlistflattener.log
+netlistflattener.ncb
+edifnetlistflattener/edifnetlistflattener.vcproj.ZHANGKAI.z.user
+netlistflattener.suo

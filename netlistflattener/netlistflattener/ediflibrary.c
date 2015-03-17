@@ -71,7 +71,7 @@ void ediflibrary_dumplog(struct ediflibrary * library){
 	fprintf(stdout, "-------------------------------------------------------------\n");
 	fprintf(stdout, "\n");
 
-	
+
 
 }
 
@@ -105,22 +105,45 @@ struct ediflibrary * ediflibrary_singleflatten(struct ediflibrary * edifsingleli
 	return library;
 }
 
+struct edifnet * ediflibrary_getnets(struct ediflibrary * library){ 
+	struct edifcell * cell = NULL;
+	struct edifnet * nets = NULL;
+	cell = ediflibrary_getcells(library);
+	if(cell && cell->edifcontents){
+		nets = edifcontents_getnets(cell->edifcontents);
+	} 
+
+	return nets;
+}
+
+void ediflibrary_checkpins(struct ediflibrary * library){
+	struct edifnet * net;
+	net = ediflibrary_getnets(library);
+	fprintf(stdout, "\n----------------------------netpin---------------------------\n");
+	fprintf(stdout, "    Original netname                          New netname\n");
+	edifnet_checkpins(net);
+	fprintf(stdout, "-------------------------------------------------------------\n");
+}
+
 struct ediflibrary * ediflibrary_flatten(struct ediflibrary * ediflibrarys){
 	struct ediflibrary * library = NULL, *iptrlibrary = NULL, *tmplibrary = NULL;
 	struct edifsubcircuit * edifsubcircuit = edifsubcircuit_create(ediflibrarys);
-	PRINTFUNC 
-		for(tmplibrary = ediflibrarys; tmplibrary != NULL; tmplibrary = ediflibrarys->next){
-			iptrlibrary = ediflibrary_singleflatten(tmplibrary, ediflibrarys, edifsubcircuit);
-			if (iptrlibrary != NULL) {
-				iptrlibrary->next = library;
-				library = iptrlibrary;
-			}
+	PRINTFUNC;
+	for(tmplibrary = ediflibrarys; tmplibrary != NULL; tmplibrary = ediflibrarys->next){
+		iptrlibrary = ediflibrary_singleflatten(tmplibrary, ediflibrarys, edifsubcircuit);
+		if (iptrlibrary != NULL) {
+			iptrlibrary->next = library;
+			library = iptrlibrary;
 		}
+	}
 
-		if (library == NULL) {
-			return ediflibrarys;
-		}
-		return library;
+	if (library == NULL) {
+		return ediflibrarys;
+	}
+
+	ediflibrary_checkpins(library);
+
+	return library;
 }
 
 void ediflibrary_writer(struct ediflibrary * ediflibrary, FILE * out){
@@ -251,7 +274,7 @@ struct ediflibrary * ediflibrary_create(struct ediflibrary * ediflibrary){
 	library->netnames = (struct edifnetnames **)malloc(sizeof(struct edifnetnames *)*NETCOUNT);
 	memset(library->netnames, 0, sizeof(struct edifnetnames *)*NETCOUNT);
 	library->netcapacity = NETCOUNT;
-	
+
 	return library;
 }
 

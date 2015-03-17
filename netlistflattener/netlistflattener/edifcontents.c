@@ -22,6 +22,14 @@ struct edifcontents * edifcontents_copy(struct edifcontents * edifcontents){
 	return contents;
 }
 
+struct edifnet * edifcontents_getnets(struct edifcontents * contents){
+	if(contents){
+		return contents->edifnet;
+	}
+
+	return NULL;
+}
+
 void edifcontents_destroy(struct edifcontents * edifcontents){ 
 	if (edifcontents) {
 		edifinstance_destroy(edifcontents->edifinstance);
