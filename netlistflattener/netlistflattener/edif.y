@@ -39,7 +39,7 @@ static FILE *Output = NULL;
 ////global float  scale;
 ////global char   fName[SCH_NAME_LEN + 1];
 global int blogicalerror;
-char szversion[] = "1.07";
+char szversion[] = "1.08";
 //global struct edifinstance *edifinstance = NULL, *iptredifinstance = NULL;
 
 // interfaces
@@ -5291,6 +5291,7 @@ int EDIFAPI CloseEDIF(){
 	}
     fflush(stdout);
 	//fclose(stdout);
+	freopen("CON","r",stdin);
 }
 
 int EDIFAPI IsLogicalerror(){
