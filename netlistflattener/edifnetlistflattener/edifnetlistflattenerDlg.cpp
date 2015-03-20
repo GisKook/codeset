@@ -232,6 +232,10 @@ void CedifnetlistflattenerDlg::OnBnClickedOk()
 	// OnOK();
 	m_outfile.GetWindowText(m_strOutFileName);
 	m_infile.GetWindowText(m_strInFileName);
+	int index = m_strOutFileName.ReverseFind('.');
+	char path[512] = {0};
+	memcpy(path, m_strOutFileName.GetBuffer(), index);
+	m_logfilename = ((CString)path) + ".log";
 	int result = ParseEDIF(m_strInFileName.GetBuffer(), m_logfilename.GetBuffer(), m_strOutFileName.GetBuffer());
 	time_t rawtime;
 	struct tm * timeinfo;
