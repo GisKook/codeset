@@ -232,6 +232,10 @@ void CedifnetlistflattenerDlg::OnBnClickedOk()
 	// OnOK();
 	m_outfile.GetWindowText(m_strOutFileName);
 	m_infile.GetWindowText(m_strInFileName);
+	if(m_strOutFileName.IsEmpty() || m_strInFileName.IsEmpty()){
+		m_tips.SetWindowText("Please check the [in/out]put path");
+		return;
+	}
 	int index = m_strOutFileName.ReverseFind('.');
 	char path[512] = {0};
 	memcpy(path, m_strOutFileName.GetBuffer(), index);

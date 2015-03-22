@@ -39,7 +39,7 @@ static FILE *Output = NULL;
 ////global float  scale;
 ////global char   fName[SCH_NAME_LEN + 1];
 global int blogicalerror;
-char szversion[] = "1.08";
+char szversion[] = "1.09";
 //global struct edifinstance *edifinstance = NULL, *iptredifinstance = NULL;
 
 // interfaces
@@ -5149,13 +5149,22 @@ char *szinp,*szerr,*szoutp;
   register int i;
   static int ContextDefined = 1;
   FILE * inp, *err, *outp;
+ time_t rawtime;
+ struct tm * timeinfo;
+ char * curtime = NULL;
+	 
   blogicalerror = 0;
   if(strlen(szerr) == strlen("stderr") && strcmp(szerr, "stderr") == 0){
 	err = stderr;
    }else{
+	freopen("CON","w",stdout);
 	err = stdout;
 	freopen(szerr, "w", stdout);  
 }
+	 time(&rawtime);
+	 timeinfo = localtime(&rawtime);
+	 curtime = asctime(timeinfo);
+	 fprintf(stdout, "Software NetListFlattener version %s at %s", szversion, curtime);
 	fprintf(stdout, "Input edn file name %s\n", szinp);
 	fprintf(stdout, "output edn file name %s\n", szoutp);
 	if( (inp = fopen( szinp, "rt" )) == NULL ) {
@@ -5291,7 +5300,7 @@ int EDIFAPI CloseEDIF(){
 	}
     fflush(stdout);
 	//fclose(stdout);
-	freopen("CON","r",stdin);
+	//freopen("CON","w",stdout);
 }
 
 int EDIFAPI IsLogicalerror(){
