@@ -180,13 +180,13 @@ int sockets_buffer_del(struct sockets_buffer* buf, int fd){
 		struct list_head * pos, *n;
 		list_for_each_safe(pos, n, &p->normalprilist){
 			struct fmtreportsockdata *fmtreportsockdata = list_entry(pos, struct fmtreportsockdata, list);
-			fmtreportsockdata_clear(fmtreportsockdata);
 			list_del(pos);
+			fmtreportsockdata_clear(fmtreportsockdata);
 		}
 		list_for_each_safe(pos, n, &p->highprilist){
 			struct fmtreportsockdata *fmtreportsockdata = list_entry(pos, struct fmtreportsockdata, list);
-			fmtreportsockdata_clear(fmtreportsockdata);
 			list_del(pos);
+			fmtreportsockdata_clear(fmtreportsockdata);
 		}
 		free(p);
 	}

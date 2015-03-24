@@ -100,7 +100,9 @@ void * processlogin(void * param){
 		fdscount = fds[0]; 
 		for(i = 0; i < fdscount; ++i){
 			loginlist = sockets_buffer_gethighlist(pad->sbuf, fds[i+1]); 
+			pos = NULL; n = NULL;
 			list_for_each_safe(pos,n,loginlist){ 
+				logindata = NULL;
 				logindata = list_entry(pos, struct fmtreportsockdata, list);
 				assert(logindata != NULL);
 
@@ -180,7 +182,9 @@ void * processmessage(void * param){
 			if(tasklist == NULL){ 
 				continue;
 			}
+			pos = NULL; n= NULL; 
 			list_for_each_safe(pos, n, tasklist){
+				fmtrepdata = NULL;
 				fmtrepdata = list_entry(pos, struct fmtreportsockdata, list);
 				assert(fmtrepdata != NULL); 
 				request = fmtrepdata->message;

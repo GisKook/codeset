@@ -26,14 +26,18 @@ using namespace std;
 #define DOWNSTREAM 1
 #define MESSAGETYPE_BEIDOU 0
 #define MESSAGETYPE_MSM 1
+#define INPORCPROTO "inproc://upstream"
 
 int zmq_buffer_push(struct zmq_buffer *, unsigned char * buf, int len);
+int zmq_buffer_pushex(struct zmq_buffer * zb, unsigned char * buf, int len);
 int zmq_buffer_downstream_add(struct zmq_buffer * zmq_buffer, Beidoumessage * beidoumessage);
 void zmq_buffer_downstream_push(struct zmq_buffer * zmq_buffer, char * enterpriseid, struct encodeprotocol_respond * encodeprotocol_respond);
 unsigned char * zmq_buffer_generateauthentication(unsigned int sendindex, char * enterpriseid, unsigned int messagetype, unsigned int * len);
 int zmq_buffer_upstream_add(struct zmq_buffer * zmq_buffer, struct fmtreportsockdata * fmtreportsockdata,  unsigned int messagetype, char * enterpriseid, int fd, unsigned int usersendindex);
 struct zmq_buffer_authentication * zmq_buffer_get(struct zmq_buffer * zmq_buffer, unsigned int authenticationid); 
 void zmq_buffer_charge(struct zmq_buffer * zmq_buffer, char * enterpriseid, unsigned char messagetype, unsigned long long recvid );
+void _zmq_buffer_passmesssage(void * pairsocket, void * sendsocket);
+int zmq_buffer_pushex(void * socket, unsigned char * buf, int len);
 
 // 这里设置一个hash表，这个hash表可能被覆盖。也就是发送了验证消息后一直收不到回执，这应该被作为一个错误回馈给用户。 这里的sendindex是内部使用的，和用户传过来的sendindex是不一样的。
 struct zmq_buffer_authentication{
@@ -53,8 +57,8 @@ struct zmq_buffer_authentication{
 
 struct zmq_buffer{
 	void * zmq_ctx;
-	void * recvsocket;
-	void * sendsocket; 
+	void * pairsocket; 
+	void * sendsocket;
 	volatile unsigned int internalsendindex; 
 	int slotcount;
 	struct zmq_buffer_authentication ** slot;
@@ -69,6 +73,7 @@ static inline void zmq_buffer_clear(struct zmq_buffer * zmq_buffer, unsigned int
 	}
 }
 
+#if 0
 void * recv_downstream(void* p){
 	void * ctx = zmq_ctx_new();
 	assert(ctx);
@@ -205,6 +210,176 @@ void * recv_downstream(void* p){
 			parseprotocoldownstream_clear(parseprotocoldownstream);
 		}
 	}
+	rc = zmq_close(socket);
+	zmq_ctx_destroy(ctx);
+	pthread_exit(0);
+}
+#endif
+
+void * zmqhub( void * param ){
+	GOOGLE_PROTOBUF_VERIFY_VERSION;
+
+	struct zmq_buffer * zb = (struct zmq_buffer*)param;
+
+	void * subsocket = zmq_socket(zb->zmq_ctx, ZMQ_PULL);
+	assert(subsocket);
+//	int rc = zmq_setsockopt(subsocket, ZMQ_SUBSCRIBE, "", 0);
+//	int rc = zmq_setsockopt(subsocket, ZMQ_SUBSCRIBE, "", 0);
+	const char * zmqrecvaddr = cnconfig_getvalue(ZMQRECVADDR);
+	int rc = zmq_connect(subsocket, zmqrecvaddr);
+	assert(rc == 0);
+
+	void * pairsocket = zmq_socket(zb->zmq_ctx, ZMQ_PAIR);
+	zmq_connect(pairsocket, INPORCPROTO);
+
+	void * sendsocket = zmq_socket(zb->zmq_ctx, ZMQ_PUSH); 
+	assert(sendsocket != NULL);
+	const char * zmqsendaddr = cnconfig_getvalue(ZMQBINDADDR);
+	//rc = zmq_bind(sendsocket, zmqsendaddr);
+	zmq_connect(sendsocket, zmqsendaddr);
+	assert(rc == 0);
+	zb->sendsocket = sendsocket;
+
+	string str;
+	Beidoumessage * bdmsg = NULL;
+	BsfkMsg * authentication = NULL;
+	FsfkMsg * sendfeedbackmessage = NULL;
+
+	struct parseprotocoldownstream * parseprotocoldownstream = NULL;
+	int messagetype = downstream_unknown;
+
+	for(;;){
+		zmq_pollitem_t items[] = {
+			{ pairsocket, 0, ZMQ_POLLIN, 0 },
+			{ subsocket, 0, ZMQ_POLLIN, 0 }
+		};
+
+		rc = zmq_poll(items, 2, -1);
+		assert(rc != -1);
+		if(rc == -1){ break; }
+		if(items[0].revents & ZMQ_POLLIN){ 
+			_zmq_buffer_passmesssage(pairsocket, sendsocket);
+		}
+		if(items[1].revents & ZMQ_POLLIN){
+			zmq_msg_t msg;
+			int rc = zmq_msg_init(&msg);
+			assert(rc == 0); 
+			rc = zmq_msg_recv(&msg, subsocket, 0);
+			assert(rc != -1); 
+			if(rc > 0){
+				parseprotocoldownstream = parseprotocoldownstream_parse((char *)zmq_msg_data(&msg), zmq_msg_size(&msg));
+				messagetype = parseprotocoldownstream_getmessagetype(parseprotocoldownstream);
+
+				switch(messagetype){
+					case downstream_beidoumessage:
+						bdmsg = parseprotocoldownstream->message.beidoumessage; 
+						zmq_buffer_downstream_add(zb, bdmsg); 
+						break;
+					case downstream_authentication:
+						{
+							authentication = parseprotocoldownstream->message.authentication;
+							struct zmq_buffer_authentication * zba = zmq_buffer_get(zb, authentication->nauthenticationid());
+							if(authentication != NULL && authentication->nres() == 0 && zba != NULL){
+								if(zba->internalsendindex == authentication->nauthenticationid()){
+									if(zba->stream == UPSTREAM){  // 收到反馈才算是成功
+										zmq_buffer_pushex(zb, zba->messagebuf, zba->messagelen);
+										//									free(zba->authenticationbuf);
+										//									zba->authenticationbuf = NULL;
+										//									free(zba->messagebuf);
+										//									zba->messagebuf = NULL;
+										//									free(zba);
+										//									zba = NULL;
+									}else if(zba->stream == DOWNSTREAM){ 
+										int * fds = NULL;
+										int fdscount = 0;
+										fds = loginenterprisemanager_getfds(zb->loginenterprisemanager, zba->enterpriseid, &fdscount);
+										if(fds != NULL){
+											int i = 0;
+											for(;i<fdscount;++i){
+												sockets_buffer_write(zb->sockets_buffer,fds[i], zba->encodeprotocol_respond);
+											}
+										}
+										free(zba->authenticationbuf);
+										zba->authenticationbuf = NULL;
+										encodeprotocol_clear(zba->encodeprotocol_respond);
+										zba->encodeprotocol_respond = NULL;
+										free(zba);
+										zba = NULL;
+										zmq_buffer_clear(zb, authentication->nauthenticationid());
+									}else{
+										fprintf(stderr, "recved message has no sense.  %s %s %d", __FILE__, __FUNCTION__, __LINE__);
+									}
+								}else{
+									fprintf(stderr, "recved message has no sense.  %s %s %d", __FILE__, __FUNCTION__, __LINE__);
+								}
+							}else if(authentication != NULL && authentication->nres() != 0 && zba != NULL){ // 没有发送
+								//0:ok,1:state error,2:no money,3:teach date,4:no register,5 no category
+								struct encodeprotocol_respond epr;
+								struct sendfeedback sendfeedback;
+								epr.messagetype = RES_SENDFEEDBACK;
+								epr.message.sendfeedback = &sendfeedback;
+								sendfeedback.sendindex = zba->usersendindex;
+								sendfeedback.feedback = FEEDBACK_NOMONEY;
+								sockets_buffer_write(zb->sockets_buffer, zba->fd, &epr);
+
+								free(zba->authenticationbuf);
+								zba->authenticationbuf = NULL;
+								free(zba->messagebuf);
+								zba->messagebuf = NULL;
+								free(zba);
+								zba = NULL;
+								zmq_buffer_clear(zb, authentication->nauthenticationid()); 
+							}else{
+								fprintf(stdout, "recv a error auth message. %s %s %d zba: 0x%lx authentication: 0x%lx\n", __FILE__, __FUNCTION__, __LINE__, (unsigned long int)zba, (unsigned long int)authentication); 
+								toolkit_printbytes((unsigned char *)zmq_msg_data(&msg), zmq_msg_size(&msg));
+							}
+						}
+						break;
+					case downstream_sendfeedback:
+						{
+							sendfeedbackmessage = parseprotocoldownstream->message.sendfeedback;
+							unsigned int sendindex = sendfeedbackmessage->nserialid();
+							int result = sendfeedbackmessage->nres();
+							struct zmq_buffer_authentication * zba = zmq_buffer_get(zb, sendindex);
+							if(zba != NULL && sendindex == zba->internalsendindex){
+								if(result == 0){ 
+									zmq_buffer_charge(zb, zba->enterpriseid, zba->messagetype, zba->recvid);
+								}
+								struct encodeprotocol_respond epr;
+								struct sendfeedback sendfeedback;
+								epr.messagetype = RES_SENDFEEDBACK;
+								epr.message.sendfeedback = &sendfeedback;
+								sendfeedback.sendindex = sendindex;
+								sendfeedback.feedback = result;
+								sockets_buffer_write(zb->sockets_buffer,zba->fd, &epr); 
+
+								free(zba->authenticationbuf);
+								zba->authenticationbuf = NULL;
+								free(zba->messagebuf);
+								zba->messagebuf = NULL;
+								free(zba);
+								zmq_buffer_clear(zb, sendindex);
+							}else{
+								fprintf(stdout, "recv a error feedback. index %u %s %s %d\n", sendindex, __FILE__, __FUNCTION__, __LINE__);
+								toolkit_printbytes((unsigned char *)zmq_msg_data(&msg), zmq_msg_size(&msg));
+							}
+						}
+						break;
+					case downstream_unknown:
+						fprintf(stderr, "recv a unknow message from 中转软件.%s %s %d\n", __FILE__, __FUNCTION__, __LINE__);
+						toolkit_printbytes((unsigned char *)zmq_msg_data(&msg), zmq_msg_size(&msg));
+						break;
+				}
+
+				zmq_msg_close(&msg);
+				parseprotocoldownstream_clear(parseprotocoldownstream);
+			}
+
+		}
+	}
+
+	rc = zmq_close(subsocket);
+	rc = zmq_close(pairsocket);
 	pthread_exit(0);
 }
 
@@ -214,22 +389,13 @@ struct zmq_buffer * zmq_buffer_create(struct sockets_buffer * sockets_buffer, st
 	assert(zmq_buffer);
 	zmq_buffer->zmq_ctx = zmq_ctx_new();
 	assert(zmq_buffer->zmq_ctx);
-	zmq_buffer->recvsocket = zmq_socket(zmq_buffer->zmq_ctx, ZMQ_SUB);
-	assert( zmq_buffer->recvsocket );
-	int rc = zmq_setsockopt(zmq_buffer->recvsocket, ZMQ_SUBSCRIBE, "", 0);
-	assert(rc == 0);
-	const char * zmqrecvaddr = cnconfig_getvalue(ZMQRECVADDR);
-	rc = zmq_connect(zmq_buffer->recvsocket, zmqrecvaddr);
-	assert(rc == 0);
 
-	zmq_buffer->sendsocket = zmq_socket(zmq_buffer->zmq_ctx, ZMQ_PUSH); 
-	assert(zmq_buffer->sendsocket != NULL);
-	const char * zmqsendaddr = cnconfig_getvalue(ZMQBINDADDR);
-	rc = zmq_bind(zmq_buffer->sendsocket, zmqsendaddr);
+	zmq_buffer->pairsocket = zmq_socket(zmq_buffer->zmq_ctx, ZMQ_PAIR);
+	assert(zmq_buffer->pairsocket != NULL);
+	int rc = zmq_bind(zmq_buffer->pairsocket, INPORCPROTO);
 	if(rc != 0){
 		fprintf(stderr, "errno is %d error message: %s\n", errno, strerror(errno));
-		zmq_close(zmq_buffer->recvsocket);
-		zmq_close(zmq_buffer->sendsocket);
+		zmq_close(zmq_buffer->pairsocket);
 		zmq_ctx_destroy(zmq_buffer->zmq_ctx);
 
 		return NULL;
@@ -241,16 +407,17 @@ struct zmq_buffer * zmq_buffer_create(struct sockets_buffer * sockets_buffer, st
 	memset(zmq_buffer->slot, 0, sizeof(struct zmq_buffer_authentication *)*capacity);
 
 	if(zmq_buffer->slot == NULL){
-		zmq_close(zmq_buffer->recvsocket);
-		zmq_close(zmq_buffer->sendsocket);
+		zmq_close(zmq_buffer->pairsocket);
 		free(zmq_buffer);
 		fprintf(stderr, "malloc %li bytes error.%s %s %d\n", sizeof(struct zmq_buffer_authentication)*capacity, __FILE__, __FUNCTION__, __LINE__);
 		return NULL;
 	}
 	pthread_t tid;
-	if( 0 != pthread_create(&tid, NULL, recv_downstream, (void*)zmq_buffer)){
-		zmq_close(zmq_buffer->recvsocket);
-		zmq_close(zmq_buffer->sendsocket);
+	zmq_buffer->sockets_buffer = sockets_buffer;
+	zmq_buffer->cardmanager = cardmanager;
+	zmq_buffer->loginenterprisemanager = loginenterprisemanager;
+	if( 0 != pthread_create(&tid, NULL, zmqhub, (void*)zmq_buffer)){
+		zmq_close(zmq_buffer->pairsocket);
 		free(zmq_buffer->slot);
 		zmq_buffer->slot = NULL;
 		free(zmq_buffer);
@@ -259,15 +426,23 @@ struct zmq_buffer * zmq_buffer_create(struct sockets_buffer * sockets_buffer, st
 
 		return NULL;
 	}
-	fprintf(stdout, "thread 0x%lx upward message through zmq create successfully, \n", tid);
-	zmq_buffer->sockets_buffer = sockets_buffer;
-	zmq_buffer->cardmanager = cardmanager;
-	zmq_buffer->loginenterprisemanager = loginenterprisemanager;
+	fprintf(stdout, "thread 0x%lx zmqpub create successfully, \n", tid);
 
 	return zmq_buffer; 
 }
 
 int zmq_buffer_push(struct zmq_buffer * zb, unsigned char * buf, int len){
+	zmq_msg_t msg;
+	int rc = zmq_msg_init_size(&msg, len);
+	assert(rc == 0);
+	memcpy(zmq_msg_data(&msg), buf, len);
+	rc = zmq_msg_send(&msg, zb->pairsocket, ZMQ_DONTWAIT);
+	zmq_msg_close(&msg);
+
+	return 0;
+}
+
+int zmq_buffer_pushex(struct zmq_buffer * zb, unsigned char * buf, int len){
 	zmq_msg_t msg;
 	int rc = zmq_msg_init_size(&msg, len);
 	assert(rc == 0);
@@ -478,7 +653,7 @@ void zmq_buffer_downstream_push(struct zmq_buffer * zmq_buffer, char * enterpris
 		memcpy(entry->enterpriseid, enterpriseid, MIN(MAXENTERPRISEIDLEN, strlen(enterpriseid)));
 
 		entry->stream = DOWNSTREAM;
-		zmq_buffer_push(zmq_buffer, entry->authenticationbuf, entry->authenticationlen);
+		zmq_buffer_pushex(zmq_buffer, entry->authenticationbuf, entry->authenticationlen);
 	}
 }
 
@@ -498,7 +673,7 @@ int zmq_buffer_downstream_add(struct zmq_buffer * zmq_buffer, Beidoumessage * be
 		enterpriseid2 = card_getenterpriseid(card); 
 	}
 	if(enterpriseid1 == NULL && enterpriseid2 == NULL){
-		fprintf(stderr, "got a unknow card the first addr %d second addr %d. %s %s %d\n",sendaddr, recvaddr, __FILE__, __FUNCTION__, __LINE__);
+		fprintf(stderr, "The card has no ower! the first addr %d second addr %d. %s %s %d\n",sendaddr, recvaddr, __FILE__, __FUNCTION__, __LINE__);
 		return -1;
 	}
 
@@ -554,15 +729,26 @@ void zmq_buffer_charge(struct zmq_buffer * zmq_buffer, char * enterpriseid, unsi
 	if(encodeprotocolupstream == NULL){
 		return;
 	}
-	zmq_buffer_push(zmq_buffer, encodeprotocolupstream_getmessage(encodeprotocolupstream), encodeprotocolupstream_getmessagelen(encodeprotocolupstream));
+	zmq_buffer_pushex(zmq_buffer, encodeprotocolupstream_getmessage(encodeprotocolupstream), encodeprotocolupstream_getmessagelen(encodeprotocolupstream));
 
 	encodeprotocolupstream_destroy(encodeprotocolupstream);
 }
 
-int zmq_buffer_destroy(struct zmq_buffer * zmq_buffer){ 
-	int rc = zmq_close(zmq_buffer->recvsocket);
-	assert(rc == 0);
-	rc = zmq_ctx_destroy(zmq_buffer->zmq_ctx);
+void _zmq_buffer_passmesssage(void * pairsocket, void * sendsocket){
+	zmq_msg_t msg;
+	int rc = zmq_msg_init(&msg);
+	assert(rc == 0); 
+	rc = zmq_msg_recv(&msg, pairsocket, 0);
+	assert(rc != -1); 
+	if(rc > 0){ 
+		rc = zmq_msg_send(&msg, sendsocket, ZMQ_DONTWAIT);
+	}
+
+	zmq_msg_close(&msg); 
+}
+
+int zmq_buffer_destroy(struct zmq_buffer * zmq_buffer){
+	int rc = zmq_ctx_destroy(zmq_buffer->zmq_ctx);
 	assert(rc == 0);
 	google::protobuf::ShutdownProtobufLibrary();
 

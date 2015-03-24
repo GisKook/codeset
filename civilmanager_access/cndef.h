@@ -19,7 +19,7 @@
 #define MIN(a,b) a>b?b:a
 
 #define BUSINESSSOFTWARE "business"
-#define RECVSOFTWARE "recv"
+#define RECVSOFTWARE "北斗信息接收"
 #define SENDSOFTWARE "send"
 #define BILLINGSOFTWARE "bill"
 #endif

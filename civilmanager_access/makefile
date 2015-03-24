@@ -1,7 +1,7 @@
 CONFIGSRC = cJSON.c cnconfig.c
 PBSRC = ./pb/beidoumessage.pb.cc ./pb/smsTx.pb.cc ./pb/bcTx.pb.cc
 
-TARGET = ca
+TARGET = giskook
 SRC = cardmanager.c cJSON.c cnconfig.c cnconsole.c dbcardinfo.c dblogin.c downstreammessage.c encodeprotocol.c encodeprotocolupstream.c enterprisemanager.c fdfifo.c fmtreportsockdata.c fmtresponddata.c kfifo.c loginenterprisemanager.c loginmanager.c main.c mqueue.c parseprotocol.c PGDatabase.cpp PGRecordset.cpp processappdata.c rbtree.c sockets_buffer.c toolkit.c zmq_buffer.c connectionmanager.c $(PBSRC)
 
 DBENTERPRISETARGET = dbe
