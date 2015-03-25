@@ -12,7 +12,7 @@
 #include "cndef.h"
 
 char tablename[] = "qhcardinfo";
-char sqltable[] = "select qtsentId,qtscardnumber from qhcardinfo";
+char sqltable[] = "select qtsentId,qtdcardnumber from qhcardinfo";
 
 #define MAXATTRCOUNT 128
 
