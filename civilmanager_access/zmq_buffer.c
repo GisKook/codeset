@@ -21,7 +21,6 @@
 
 using namespace std;
 #define MAXFIFOLEN 1024
-#define MAXENTERPRISEIDLEN 32
 #define UPSTREAM 0
 #define DOWNSTREAM 1
 #define MESSAGETYPE_BEIDOU 0

@@ -4,8 +4,6 @@
 #include "rbtree.h"
 #include "cndef.h"
 
-#define MAXENTERPRISEID 32
-
 struct cardmanager{ 
 	struct rb_root root;
 	unsigned int cardcount;
@@ -14,13 +12,13 @@ struct cardmanager{
 struct card{
 	struct rb_node node;
 	unsigned int cardid;
-	char enterpriseid[MAXENTERPRISEID];
+	char enterpriseid[MAXENTERPRISEIDLEN];
 };
 
 
 void card_setenterpriseid(struct card * card, char * enterpriseid){
-	memset(card->enterpriseid, 0, MAXENTERPRISEID);
-	memcpy(card->enterpriseid, enterpriseid, MIN(MAXENTERPRISEID, strlen(enterpriseid)));
+	memset(card->enterpriseid, 0, MAXENTERPRISEIDLEN);
+	memcpy(card->enterpriseid, enterpriseid, MIN(MAXENTERPRISEIDLEN, strlen(enterpriseid)));
 }
 
 char * card_getenterpriseid(struct card * card){
@@ -101,7 +99,7 @@ struct card * cardmanager_insert(struct cardmanager * manager, unsigned int card
 	struct card * card = (struct card *)malloc(sizeof(struct card));
 	memset(card, 0, sizeof(struct card));
 	card->cardid = cardid;
-	memcpy(card->enterpriseid, enterpriseid, MIN(MAXENTERPRISEID - 1, strlen(enterpriseid)));
+	memcpy(card->enterpriseid, enterpriseid, MIN(MAXENTERPRISEIDLEN - 1, strlen(enterpriseid)));
 
 	struct card * ret;
 	if((ret = _cardmanager_insert(manager, card)))

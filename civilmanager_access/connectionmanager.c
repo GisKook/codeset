@@ -1,9 +1,5 @@
 // 根据fd得到其他属性 当前接入的链接
-#define MAXLOGINNAMELEN 100
-#define MAXLOGINLEN 32
-#define MAXENTERPRISEIDLEN 32
 #define MAXTIMEOUT 32
-
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>

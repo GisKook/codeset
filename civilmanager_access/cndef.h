@@ -22,4 +22,12 @@
 #define RECVSOFTWARE "北斗信息接收"
 #define SENDSOFTWARE "send"
 #define BILLINGSOFTWARE "bill"
+
+
+#define MAXENTERPRISEIDLEN 33
+#define MAXLOGINLEN 33
+#define MAXLOGINNAMELEN 100
+#define MAXLOGINNAMELEN 100
+#define MAXPASSWORDLEN 33
+
 #endif

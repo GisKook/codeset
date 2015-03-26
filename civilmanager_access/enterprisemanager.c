@@ -1,7 +1,3 @@
-#define MAXLOGINLEN 32
-#define MAXPASSWORDLEN 32
-#define MAXLOGINNAMELEN 100
-
 #include <string.h>
 #include <stdio.h>
 

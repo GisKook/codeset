@@ -114,21 +114,19 @@ struct dblogin * dblogin_start(struct loginmanager * manager){
 	PGRecordset *res = db->Query(sqltableaccount); 
 	int tuplecount = res->GetTupleCount();
 	int i;
-	char * login = NULL;
 	char * enterpriseid = NULL;
 	char * loginname = NULL;
 	char * password = NULL;
 	char * issuedfrequency = NULL;
 	struct login *logindata = NULL;
 	for (i = 0;i < tuplecount; ++i){
-		login = res->GetValue(i, 0);
 		enterpriseid = res->GetValue(i,1); 
 		loginname = res->GetValue(i,2);
 		password = res->GetValue(i, 3);
 		issuedfrequency = res->GetValue(i,4);
 		logindata = (struct login *)malloc(sizeof(struct login));
 		memset(logindata, 0, sizeof(struct login));
-		memcpy(logindata->login, login, MIN(MAXLOGINLEN, strlen(login)));
+		memcpy(logindata->login, loginname, MIN(MAXLOGINLEN, strlen(loginname)));
 		memcpy(logindata->enterpriseid, enterpriseid, MIN(MAXENTERPRISEIDLEN, strlen(enterpriseid)));
 		memcpy(logindata->loginname, loginname, MIN(MAXLOGINNAMELEN, strlen(loginname)));
 		memcpy(logindata->password, password, MIN(MAXPASSWORDLEN, strlen(password)));

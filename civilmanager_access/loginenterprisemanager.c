@@ -1,8 +1,4 @@
 //管理一个公司下的所有连接
-#define MAXENTERPRISEIDLEN 32
-#define MAXFDCOUNT 1024
-#define MAXLOGINLEN 32
-
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>

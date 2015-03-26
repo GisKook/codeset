@@ -1,12 +1,9 @@
 #ifndef CIVILMANAGER_ACCESS_H_H
 #define CIVILMANAGER_ACCESS_H_H
 
-#define MAXLOGINLEN 32
-#define MAXENTERPRISEIDLEN 32
-#define MAXPASSWORDLEN 200
-#define MAXLOGINNAMELEN 100
 
 #include "rbtree.h"
+#include "cndef.h"
 
 struct login{
 	struct rb_node node;

@@ -212,7 +212,10 @@ void * processmessage(void * param){
 							struct connection * connection = connectionmanager_search(connectionmanager, fds[i+1]);
 							if(connection != NULL){
 								char * enterpriseid = connection_getenterpriseid(connection);
-								zmq_buffer_upstream_add(zmq_buffer, fmtrepdata, 1, enterpriseid, fds[i+1],request->message.request->requestid);
+								char tmp[33];
+								memcpy(tmp, enterpriseid, 32);
+								tmp[32] = 0;
+								zmq_buffer_upstream_add(zmq_buffer, fmtrepdata, 1, tmp, fds[i+1],request->message.request->requestid);
 							}
 						}
 						break;
