@@ -11,6 +11,7 @@ extern "C"{
 #include <iosfwd>
 #include <fstream>
 #include <fstream>
+#include <Shlwapi.h>
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -76,6 +77,7 @@ BEGIN_MESSAGE_MAP(CedifnetlistflattenerDlg, CDialog)
 	ON_BN_CLICKED(IDC_BUTTON_OUTFILE, &CedifnetlistflattenerDlg::OnBnClickedButtonOutfile)
 	ON_BN_CLICKED(IDOK, &CedifnetlistflattenerDlg::OnBnClickedOk)
 	ON_BN_CLICKED(IDCANCEL, &CedifnetlistflattenerDlg::OnBnClickedCancel)
+	ON_BN_CLICKED(IDHELP, &CedifnetlistflattenerDlg::OnBnClickedHelp)
 END_MESSAGE_MAP()
 
 
@@ -281,4 +283,20 @@ void CedifnetlistflattenerDlg::OnBnClickedCancel()
 		m_conf.ReleaseBuffer();
 	}
 	OnCancel();
+}
+
+#define MAX_PATH 256
+void CedifnetlistflattenerDlg::OnBnClickedHelp()
+{
+	char ownPth[MAX_PATH] = {0}; 
+
+	// Will contain exe path
+	HMODULE hModule = GetModuleHandle(NULL);
+	if (hModule != NULL){
+		// When passing NULL to GetModuleHandle, it returns handle of exe itself
+		GetModuleFileName(hModule,ownPth, (sizeof(ownPth))); 
+		PathRemoveFileSpec(ownPth);
+		CString docfilepath = CString(ownPth) + "\\flattener_help.doc";
+		ShellExecute(GetSafeHwnd(),"open","winword.exe",docfilepath, NULL,SW_RESTORE);
+	}
 }

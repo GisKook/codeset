@@ -48,4 +48,5 @@ private:
     CString m_logfilename;
 public:
 	afx_msg void OnBnClickedCancel();
+	afx_msg void OnBnClickedHelp();
 };
