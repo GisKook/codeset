@@ -39,7 +39,7 @@ static FILE *Output = NULL;
 ////global float  scale;
 ////global char   fName[SCH_NAME_LEN + 1];
 global int blogicalerror;
-char szversion[] = "1.09";
+char szversion[] = "1.11";
 //global struct edifinstance *edifinstance = NULL, *iptredifinstance = NULL;
 
 // interfaces
@@ -65,6 +65,12 @@ char * celltype = NULL, * cellname = NULL;
 // libraries
 struct ediflibrary * ediflibrarys = NULL, *iptrediflibrary = NULL, *iptrflattenediflibrary = NULL, * librarys = NULL;
 char * libraryname = NULL;
+
+struct ediflibrary * gs_lib = NULL;
+int HasGlobal = 0;
+
+static int ContextDefined = 1;
+static int IsGlobal = 0;
 
 
 void Clear();int TempR, TempMat[2][2];
@@ -978,11 +984,15 @@ _Derivation :	CALCULATED
 DesignNameDef :	NameDef
 		{if(bug>2)fprintf(Error,"%5d DesignNameDef: '%s'\n", LineNumber, $1->s);
 		edifparsestatus = EDIFPARSENON; 
-		librarys = ediflibrary_flatten(ediflibrarys);
-		ediflibrary_writer(librarys, Output);
-		putc('\n', Output);
-		fputs("(design ",Output);
-		fputs($1->s,Output);
+		if(IsGlobal){ 
+			gs_lib = ediflibrarys;
+		}else{
+			librarys = ediflibrary_flatten(ediflibrarys);
+			ediflibrary_writer(librarys, Output);
+			putc('\n', Output);
+			fputs("(design ",Output);
+			fputs($1->s,Output);
+		}
 		Clear();
 		
 		
@@ -5147,12 +5157,12 @@ int EDIFAPI ParseEDIF(szinp,szerr,szoutp)
 char *szinp,*szerr,*szoutp;
 {
   register int i;
-  static int ContextDefined = 1;
   FILE * inp, *err, *outp;
  time_t rawtime;
  struct tm * timeinfo;
  char * curtime = NULL;
 	 
+	IsGlobal = 0;
   blogicalerror = 0;
   if(strlen(szerr) == strlen("stderr") && strcmp(szerr, "stderr") == 0){
 	err = stderr;
@@ -5289,6 +5299,135 @@ char *szinp,*szerr,*szoutp;
  //  DumpStack();
 }
 
+int EDIFAPI ParseEDIF2(szinp)
+char *szinp;
+{
+  register int i;
+  FILE * inp; 
+ time_t rawtime;
+ struct tm * timeinfo;
+ char * curtime = NULL;
+	 
+	 IsGlobal=1;
+  blogicalerror = 0;
+	if( (inp = fopen( szinp, "rt" )) == NULL ) {
+	  fprintf(stderr, " %s non trouve\n", szinp);
+	  return(-1);
+	}
+  /*
+   *	Set up the file state to something useful.
+   */
+  Input = inp;
+  Error = stderr;
+  Output = stdout;
+  LineNumber = 1;
+  /*
+   *	Define both the enabled token and context strings.
+   */
+  if (ContextDefined){
+    for (i = TokenDefSize; i--; EnterKeyword(TokenDef[i].Name)){
+      register unsigned int hsh;
+      hsh = TokenDef[i].Code % TOKEN_HASH;
+      TokenDef[i].Next = TokenHash[hsh];
+      TokenHash[hsh] = &TokenDef[i];
+    }
+    for (i = ContextDefSize; i--; EnterKeyword(ContextDef[i].Name)){
+      register unsigned int hsh;
+      hsh = ContextDef[i].Code % CONTEXT_HASH;
+      ContextDef[i].Next = ContextHash[hsh];
+      ContextHash[hsh] = &ContextDef[i];
+    }
+    /*
+     *	Build the context tree.
+     */
+    for (i = BinderDefSize; i--;){
+      register Context *cxt;
+      register int j;
+      /*
+       *	Define the current context to have carriers bound to it.
+       */
+      cxt = FindContext(BinderDef[i].Origin);
+      for (j = BinderDef[i].FollowerSize; j--;){
+        register ContextCar *cc;
+        /*
+         *	Add carriers to the current context.
+         */
+        cc = (ContextCar *) Malloc(sizeof(ContextCar));
+        cc->Next = cxt->Context;
+        (cxt->Context = cc)->Context =
+          FindContext(ABS(BinderDef[i].Follower[j]));
+        cc->u.Single = BinderDef[i].Follower[j] < 0;
+      }
+    }
+    /*
+     *	Build the token tree.
+     */
+    for (i = TieDefSize; i--;){
+      register Context *cxt;
+      register int j;
+      /*
+       *	Define the current context to have carriers bound to it.
+       */
+      cxt = FindContext(TieDef[i].Origin);
+      for (j = TieDef[i].EnableSize; j--;){
+        register TokenCar *tc;
+        /*
+         *	Add carriers to the current context.
+         */
+        tc = (TokenCar *) Malloc(sizeof(TokenCar));
+        tc->Next = cxt->Token;
+        (cxt->Token = tc)->Token = FindToken(TieDef[i].Enable[j]);
+      }
+    }
+    /*
+     *	Put a bogus context on the stack which has 'EDIF' as its
+     *	follower.
+     */
+    CSP = (ContextCar *) Malloc(sizeof(ContextCar));
+    CSP->Next = NULL;
+    CSP->Context = FindContext(NULL);
+    CSP->u.Used = NULL;
+    ContextDefined = 0;
+  } else{
+	ClearCSP(CSP);
+	CSP = NULL;
+    CSP = (ContextCar *) Malloc(sizeof(ContextCar));
+    CSP->Next = NULL;
+    CSP->Context = FindContext(NULL);
+    CSP->u.Used = NULL;
+    memset(yytext, 0, IDENT_LENGTH + 1);
+    memset(CharBuf, 0, IDENT_LENGTH + 1);
+  }
+  /*
+   *	Create an initial, empty string bucket.
+   */
+  
+  if(CurrentBucket != NULL){ 
+	ClearBucket(CurrentBucket);
+  }
+  CurrentBucket = (Bucket *) Malloc(sizeof(Bucket));
+  CurrentBucket->Next = NULL;
+  CurrentBucket->Index = 0;
+  /*
+   *	Fill the token stack with NULLs if debugging is enabled.
+   */
+#ifdef	DEBUG
+   for (i = TS_DEPTH; i--; TokenStack[i] = NULL){
+    if (TokenStack[i]){
+      Free(TokenStack[i]);
+      TokenStack[i] = NULL;
+      }
+   }
+  TSP = 0;
+#endif
+  /*
+   *	Go parse things!
+   */
+  return yyparse();
+
+ //  DumpStack();
+}
+
 int EDIFAPI CloseEDIF(){
 	if(Input != NULL){ 
 	    fclose(Input);
@@ -5305,7 +5444,15 @@ int EDIFAPI CloseEDIF(){
 
 int EDIFAPI IsLogicalerror(){
 	return blogicalerror;
-}/*
+}
+
+int EDIFAPI SetAction(action)
+int action;{
+HasGlobal = action;
+return HasGlobal;
+}
+
+/*
  *	Match token:
  *
  *	  The passed string is looked up in the current context's token

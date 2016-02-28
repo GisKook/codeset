@@ -234,6 +234,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\edif_datatype.h"
+				>
+			</File>
+			<File
 				RelativePath=".\edifcell.h"
 				>
 			</File>

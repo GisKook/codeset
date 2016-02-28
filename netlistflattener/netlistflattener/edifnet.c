@@ -10,9 +10,13 @@
 
 global char * glibrary;
 global int blogicalerror;
+global struct ediflibrary * gs_lib;
+global int HasGlobal;
+
 struct edifnetportref * edifnet_getportrefs(struct ediflibrary * library, struct edifnet * edifnet, char * instancename, char * portref);
 struct edifnetportref * edifnetportref_copy(struct edifnetportref * portref);
 struct edifnet *edifnet_add(struct edifnet * edifnet, struct edifnet * net); 
+int edifnet_checkglobalnetname(char * netname); 
 int edifnet_getcount(struct edifnet * edifnet){
 	int count = 0;
 	struct edifnet * net = NULL;
@@ -60,10 +64,17 @@ struct edifnet * edifnet_copyrename(struct ediflibrary * library, struct edifnet
 		net = (struct edifnet *)malloc(sizeof(struct edifnet));
 		memset(net, 0, sizeof(struct edifnet));
 		netpart2len = strlen(edifnet->net);
-		sznet = (char *)malloc(netpart1len + netpart2len + 1);
-		memset(sznet, 0, netpart1len + netpart2len + 1);
-		memcpy(sznet, instance, netpart1len);
-		memcpy(sznet + netpart1len, edifnet->net, netpart2len);
+		if(edifnet_checkglobalnetname(edifnet->net)){
+			sznet = (char *)malloc(netpart2len + 1);
+			memset(sznet, 0, netpart2len + 1);
+			memcpy(sznet, edifnet->net, netpart2len);
+		}else{
+			sznet = (char *)malloc(netpart1len + netpart2len + 1);
+			memset(sznet, 0, netpart1len + netpart2len + 1);
+			memcpy(sznet, instance, netpart1len);
+			memcpy(sznet + netpart1len, edifnet->net, netpart2len);
+		}
+	
 		net->net = sznet;
 		portref = edifnet->edifnetportref;
 		for(port = portref; port != NULL; port = port->next){ 
@@ -71,6 +82,9 @@ struct edifnet * edifnet_copyrename(struct ediflibrary * library, struct edifnet
 			memset(newref, 0, sizeof(struct edifnetportref));
 			newref->portref = strdup(port->portref); 
 			instancerefpart2len = strlen(port->instanceref);
+			if(instancerefpart1len > 1024 || instancerefpart2len > 1024){
+				return NULL;
+			}
 			sznewinstanceref = (char *)malloc(instancerefpart1len + instancerefpart2len + 1);
 			memset(sznewinstanceref, 0, instancerefpart1len+instancerefpart2len+1);
 			memcpy(sznewinstanceref, instance, instancerefpart1len);
@@ -638,4 +652,18 @@ void edifnet_checkpins(struct edifnet * net){
 			}
 		}
 	}
+}
+
+int edifnet_checkglobalnetname(char * netname){ 
+	struct edifnet * tmpnet;
+	if(HasGlobal){ 
+		tmpnet=gs_lib->edifcell->edifcontents->edifnet;
+		while(tmpnet){
+			if (strcmp(tmpnet->net, netname) == 0){
+				return 1;
+			}
+			tmpnet = tmpnet->next;
+		}
+	}
+	return 0;
 }

@@ -11,6 +11,7 @@
 
 global char * glibrary = NULL;
 
+
 int ediflibrary_getcount(struct ediflibrary * ediflibrary){
 	int count = 0;
 	struct ediflibrary * lib = NULL;

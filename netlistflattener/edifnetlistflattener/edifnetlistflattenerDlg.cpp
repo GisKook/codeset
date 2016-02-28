@@ -5,9 +5,9 @@
 #include "edifnetlistflattener.h"
 #include "edifnetlistflattenerDlg.h"
 extern "C"{
+#include "edif_datatype.h"
 #include "edifheader.h"
 };
-
 #include <iosfwd>
 #include <fstream>
 #include <fstream>
@@ -17,7 +17,7 @@ extern "C"{
 #define new DEBUG_NEW
 #endif
 
-
+struct ediflibrary * g_library = NULL;
 // CAboutDlg dialog used for App About
 
 class CAboutDlg : public CDialog
@@ -57,7 +57,8 @@ END_MESSAGE_MAP()
 CedifnetlistflattenerDlg::CedifnetlistflattenerDlg(CWnd* pParent /*=NULL*/)
 : CDialog(CedifnetlistflattenerDlg::IDD, pParent)
 {
-	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
+	//m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
+	m_hIcon = AfxGetApp()->LoadIcon(IDI_ICONPCB);
 }
 
 void CedifnetlistflattenerDlg::DoDataExchange(CDataExchange* pDX)
@@ -66,6 +67,7 @@ void CedifnetlistflattenerDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_EDIT_INFILE, m_infile);
 	DDX_Control(pDX, IDC_EDIT_OUTFILE, m_outfile);
 	DDX_Control(pDX, IDC_STATIC_TIPS, m_tips);
+	DDX_Control(pDX, IDC_EDIT_INFILEGLOBAL, m_infileglobal);
 }
 
 BEGIN_MESSAGE_MAP(CedifnetlistflattenerDlg, CDialog)
@@ -78,6 +80,7 @@ BEGIN_MESSAGE_MAP(CedifnetlistflattenerDlg, CDialog)
 	ON_BN_CLICKED(IDOK, &CedifnetlistflattenerDlg::OnBnClickedOk)
 	ON_BN_CLICKED(IDCANCEL, &CedifnetlistflattenerDlg::OnBnClickedCancel)
 	ON_BN_CLICKED(IDHELP, &CedifnetlistflattenerDlg::OnBnClickedHelp)
+	ON_BN_CLICKED(IDC_BUTTON_INFILEGLOBAL, &CedifnetlistflattenerDlg::OnBnClickedButtonInfileglobal)
 END_MESSAGE_MAP()
 
 
@@ -234,9 +237,19 @@ void CedifnetlistflattenerDlg::OnBnClickedOk()
 	// OnOK();
 	m_outfile.GetWindowText(m_strOutFileName);
 	m_infile.GetWindowText(m_strInFileName);
+	m_infileglobal.GetWindowText(m_strInFileNameGlobal);
 	if(m_strOutFileName.IsEmpty() || m_strInFileName.IsEmpty()){
 		m_tips.SetWindowText("Please check the [in/out]put path");
+		
 		return;
+	}
+	m_needgloable = m_strInFileNameGlobal.IsEmpty()?false:true;
+	if(m_needgloable){
+		SetAction(1);
+		ParseEDIF2(m_strInFileNameGlobal.GetBuffer()); 
+		CloseEDIF();
+	}else{
+		SetAction(0);
 	}
 	int index = m_strOutFileName.ReverseFind('.');
 	char path[512] = {0};
@@ -299,4 +312,35 @@ void CedifnetlistflattenerDlg::OnBnClickedHelp()
 		CString docfilepath = CString(ownPth) + "\\flattener_help.doc";
 		ShellExecute(GetSafeHwnd(),"open","winword.exe",docfilepath, NULL,SW_RESTORE);
 	}
+}
+
+void CedifnetlistflattenerDlg::OnBnClickedButtonInfileglobal()
+{
+	// TODO: Add your control notification handler code here
+	TCHAR szFilters[]= _T("EDF Files (*.edn)|*edn|EDN Files (*.edf)|*.edf|All Files (*.*)|*.*||");
+	CFileDialog fileDlg(TRUE, _T("Open EDIF File"), _T("*.edn"),
+		OFN_FILEMUSTEXIST | OFN_HIDEREADONLY, szFilters);
+	///	if(m_strfilepath.IsEmpty()){
+	///		fileDlg.GetOFN().lpstrInitialDir = "c:";
+	///	}else{
+	///		fileDlg.GetOFN().lpstrInitialDir = m_strfilepath;
+	///	}
+	char * buffer = (char *)malloc(m_strfilepath.GetLength()+1);
+	memset(buffer, 0, m_strfilepath.GetLength() + 1);
+	int count = m_strfilepath.ReverseFind('\\');
+	if(count != -1){
+		memcpy(buffer, m_strfilepath.GetBuffer(), count);
+		fileDlg.GetOFN().lpstrInitialDir = buffer;
+	}
+
+	fileDlg.GetOFN().lpstrTitle = "open netlist file";
+	if(fileDlg.DoModal() == IDOK)
+	{
+		m_strInFileName = fileDlg.GetPathName();
+		///		CString fileName = fileDlg.GetFileTitle();
+		///		SetWindowText(fileName);
+		m_infileglobal.SetWindowText(m_strInFileName);
+	//	m_strfilepath = m_strInFileName;
+	}
+	free(buffer);
 }

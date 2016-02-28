@@ -35,6 +35,8 @@ public:
 private:
 	CString m_strInFileName;
 	CString m_strOutFileName;
+	CString m_strInFileNameGlobal;
+	bool m_needgloable;
 public:
 	CEdit m_infile;
 	afx_msg void OnBnClickedButtonOutfile();
@@ -49,4 +51,6 @@ private:
 public:
 	afx_msg void OnBnClickedCancel();
 	afx_msg void OnBnClickedHelp();
+	afx_msg void OnBnClickedButtonInfileglobal();
+	CEdit m_infileglobal;
 };
