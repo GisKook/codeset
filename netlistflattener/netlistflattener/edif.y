@@ -69,7 +69,7 @@ char * libraryname = NULL;
 struct ediflibrary * gs_lib = NULL;
 int HasGlobal = 0;
 
-static int ContextDefined = 1;
+int ContextDefined = 1;
 static int IsGlobal = 0;
 
 
@@ -5450,6 +5450,10 @@ int EDIFAPI SetAction(action)
 int action;{
 HasGlobal = action;
 return HasGlobal;
+}
+
+int EDIFAPI SetInit(){
+	ContextDefined = 1;
 }
 
 /*

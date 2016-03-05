@@ -10,7 +10,7 @@
 #include "ed.h"
 #include "eelibsl.h"
 
-int yydebug=0;
+int yydebug=10;
 int bug=0;  		// debug level: >2 netlist, >5 schematic, >8 all
 int blogicalerror = 0;
 char *InFile = "-";

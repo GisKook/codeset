@@ -7,5 +7,6 @@ int CloseEDIF();
 int IsLogicalerror();
 int SetAction(int action);
 
+
 #endif
 
