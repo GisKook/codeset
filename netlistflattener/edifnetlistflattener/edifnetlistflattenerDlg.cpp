@@ -219,7 +219,7 @@ void CedifnetlistflattenerDlg::OnBnClickedButtonOutfile()
 {
 	// TODO: Add your control notification handler code here
 	TCHAR szFilters[]= _T("EDF Files (*.edf)|*edf|EDN Files (*.edn)|*.edn|All Files (*.*)|*.*||");
-	CFileDialog fileDlg(FALSE, _T(""), _T("*.edf"),
+	CFileDialog fileDlg(FALSE, _T(""), _T("untitled.edf"),
 		OFN_FILEMUSTEXIST | OFN_HIDEREADONLY, szFilters);
 	fileDlg.GetOFN().lpstrTitle = "save netlist file";
 	if(fileDlg.DoModal() == IDOK)

@@ -560,8 +560,21 @@ struct edifnetportref * edifnet_getinternalportrefs(struct edifnet * edifnet, st
 	return edifnetportref;
 }
 
+void edifnet_dump_global_log(struct ediflibrary * library){
+	int i;
+	fprintf(stdout, "\n-----------------------global net-----------------------------\n");
+	for(i = 0; i < library->netcount; ++i){ 
+		if(strcmp(library->netnames[i]->originalname,library->netnames[i]->netname) == 0){
+			fprintf(stdout, "    %s\n", library->netnames[i]->originalname);
+		}
+	}
+	fprintf(stdout, "\n--------------------------------------------------------------\n");
+
+}
+
 void edifnet_dumplog(struct ediflibrary * library){
 	int i,j,spacecount;
+	edifnet_dump_global_log(library);
 	fprintf(stdout, "\n--------------------------net--------------------------------\n");
 	fprintf(stdout, "    original name                               new name\n");
 	for(i = 0; i < library->netcount; ++i){
