@@ -39,7 +39,7 @@ static FILE *Output = NULL;
 ////global float  scale;
 ////global char   fName[SCH_NAME_LEN + 1];
 global int blogicalerror;
-char szversion[] = "1.11";
+char szversion[] = "1.15";
 //global struct edifinstance *edifinstance = NULL, *iptredifinstance = NULL;
 
 // interfaces

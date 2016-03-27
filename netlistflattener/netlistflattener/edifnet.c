@@ -492,8 +492,10 @@ struct edifnet * edifnet_getportnet(struct edifnet * net, char * portname){
 	struct edifnetportref * iptrportref = NULL;
 	for(iptrnet = net; iptrnet != NULL; iptrnet = iptrnet->next){
 		for(iptrportref = iptrnet->edifnetportref; iptrportref != NULL; iptrportref = iptrportref->next){
-			if (strlen(iptrportref->portref)  == strlen(portname) && (stricmp(iptrportref->portref, portname, strlen(portname)) == 0)){
-				return iptrnet;
+			if (strlen(iptrportref->portref)  == strlen(portname) 
+				&& (stricmp(iptrportref->portref, portname, strlen(portname)) == 0 && 
+				iptrnet->edifnetportref->instanceref == NULL)){
+					return iptrnet;
 			}
 		}
 	}

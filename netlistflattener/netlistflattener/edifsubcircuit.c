@@ -22,7 +22,7 @@ struct edifsubcircuit * edifsubcircuit_create(struct ediflibrary * ediflibrary){
 		for(library = ediflibrary; library != NULL; library = ediflibrary->next){
 			cell = ediflibrary_getcells(library);
 			for(tmpcell = cell; tmpcell != NULL; tmpcell = tmpcell->next){
-				if (tmpcell->edifinterfaceport != NULL) { 
+	//			if (tmpcell->edifinterfaceport != NULL) { 
 					iptrsubcircuit = (struct edifsubcircuit *)malloc(sizeof(struct edifsubcircuit));
 					memset(iptrsubcircuit, 0, sizeof(struct edifsubcircuit));
 					iptrsubcircuit->ediflibrary = strdup(library->library);
@@ -32,7 +32,7 @@ struct edifsubcircuit * edifsubcircuit_create(struct ediflibrary * ediflibrary){
 					iptrsubcircuit->edifnet = edifnet_copynets(tmpcell->edifcontents->edifnet);
 					iptrsubcircuit->next = subcircuit;
 					subcircuit = iptrsubcircuit;
-				}
+				//}
 			}
 		}
 	}
